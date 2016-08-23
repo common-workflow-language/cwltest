@@ -246,7 +246,8 @@ def main():  # type: () -> int
 
 def make_xml_lines(test, rt, test_case_group='N/A'):
     doc = test.get('doc', 'N/A').strip()
-    elem = '    <testcase name="%s" classname="%s"' % (doc, test_case_group)
+    test_case_group = test_case_group.replace(".yaml", "").replace(".yml", "")
+    elem = '    <testcase name="%s" classname="%s"' % (doc, test_case_group.replace(".", "_"))
     if rt == 0:
         return elem + '/>\n'
     if rt == UNSUPPORTED_FEATURE:
