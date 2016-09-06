@@ -98,6 +98,7 @@ def run_test(args, i, t):  # type: (argparse.Namespace, Any, Dict[str,str]) -> i
     outdir, outstr, test_command = None, None, None
     try:
         test_command = [args.tool]
+        test_command.extend(args.args)
         # Add prefixes if running on MacOSX so that boot2docker writes to /Users
         if 'darwin' in sys.platform:
             outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
@@ -163,8 +164,11 @@ def main():  # type: () -> int
                         help="CWL runner executable to use (default 'cwl-runner'")
     parser.add_argument("--only-tools", action="store_true", help="Only test tools")
     parser.add_argument("--junit-xml", type=str, default=None, help="Path to JUnit xml file")
+    parser.add_argument('args', help="arguments to pass first to tool runner", nargs=argparse.REMAINDER)
 
     args = parser.parse_args()
+    if '--' in args.args:
+        args.args.remove('--')
 
     if not args.test:
         parser.print_help()
