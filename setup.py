@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import sys
-import shutil
 
 import setuptools.command.egg_info as egg_info_cmd
 from setuptools import setup, find_packages
