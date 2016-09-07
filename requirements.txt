@@ -1,0 +1,2 @@
+schema-salad >= 1.14
+typing >= 3.5.2

@@ -12,7 +12,7 @@ import ruamel.yaml.scanner as yamlscanner
 import pipes
 import logging
 import schema_salad.ref_resolver
-from typing import Any, Dict
+from typing import Any, Dict, List, Text
 
 _logger = logging.getLogger("cwltest")
 _logger.addHandler(logging.StreamHandler())
@@ -180,7 +180,7 @@ def main():  # type: () -> int
     failures = 0
     unsupported = 0
     passed = 0
-    xml_lines = []
+    xml_lines = []  # type: List[Text]
 
     if args.only_tools:
         alltests = tests
@@ -249,11 +249,12 @@ def main():  # type: () -> int
 
 
 def make_xml_lines(test, rt, test_case_group='N/A'):
+    # type: (Dict[Text, Any], int, Text) -> List[Text]
     doc = test.get('doc', 'N/A').strip()
     test_case_group = test_case_group.replace(".yaml", "").replace(".yml", "")
     elem = '    <testcase name="%s" classname="%s"' % (doc, test_case_group.replace(".", "_"))
     if rt == 0:
-        return elem + '/>\n'
+        return [ elem + '/>\n' ]
     if rt == UNSUPPORTED_FEATURE:
         return [
             elem + '>\n',
