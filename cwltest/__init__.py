@@ -25,7 +25,7 @@ class CompareFail(Exception):
 
     @classmethod
     def format(cls, expected, actual, cause=None):
-        # type: (Any, Any, Any) -> cls
+        # type: (Any, Any, Any) -> CompareFail
         message = u"expected: %s\ngot: %s" % (
             json.dumps(expected, indent=4, sort_keys=True),
             json.dumps(actual, indent=4, sort_keys=True))
