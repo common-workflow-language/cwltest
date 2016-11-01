@@ -22,73 +22,106 @@ UNSUPPORTED_FEATURE = 33
 
 
 class CompareFail(Exception):
-    pass
+
+    @classmethod
+    def format(cls, expected, actual, cause=None):
+        # type: (Any, Any, Any) -> CompareFail
+        message = u"expected: %s\ngot: %s" % (
+            json.dumps(expected, indent=4, sort_keys=True),
+            json.dumps(actual, indent=4, sort_keys=True))
+        if cause:
+            message += u"\ncaused by: %s" % cause
+        return cls(message)
 
 
-def compare(a, b):  # type: (Any, Any) -> bool
-    if a == "Any" or b == "Any":
-        return True
+def compare_file(expected, actual):
+    # type: (Dict[str,Any], Dict[str,Any]) -> None
+    if "path" in expected:
+        comp = "path"
+        if "path" not in actual:
+            actual["path"] = actual["location"]
+    else:
+        comp = "location"
+    if expected[comp] != "Any" and (not (actual[comp].endswith("/" + expected[comp]) or
+                                    ("/" not in actual[comp] and expected[comp] == actual[comp]))):
+        raise CompareFail.format(expected, actual, u"%s does not end with %s" % (actual[comp], expected[comp]))
+
+    check_keys = set(expected.keys()) - {'path', 'location'}
+
+    for k in check_keys:
+        try:
+            compare(expected.get(k), actual.get(k))
+        except CompareFail as e:
+            raise CompareFail.format(expected, actual, u"field '%s' failed comparison: %s" %(
+                k, e.message
+            ))
+
+
+def compare_directory(expected, actual):
+    # type: (Dict[str,Any], Dict[str,Any]) -> None
+    if actual.get("class") != 'Directory':
+        raise CompareFail.format(expected, actual, u"expected object with a class 'Directory'")
+    if "listing" not in actual:
+        raise CompareFail.format(expected, actual, u"'listing' is mandatory field in Directory object")
+    for i in expected["listing"]:
+        found = False
+        for j in actual["listing"]:
+            try:
+                compare(i, j)
+                found = True
+                break
+            except CompareFail:
+                pass
+        if not found:
+            raise CompareFail.format(expected, actual, u"%s not found" % json.dumps(i, indent=4, sort_keys=True))
+
+
+def compare_dict(expected, actual):
+    # type: (Dict[str,Any], Dict[str,Any]) -> None
+    for c in expected:
+        try:
+            compare(expected[c], actual.get(c))
+        except CompareFail as e:
+            raise CompareFail.format(expected, actual, u"failed comparison for key '%s': %s" % (c, e))
+    extra_keys = set(actual.keys()).difference(expected.keys())
+    for k in extra_keys:
+        if actual[k] is not None:
+            raise CompareFail.format(expected, actual, u"unexpected key '%s'" % k)
+
+
+def compare(expected, actual):  # type: (Any, Any) -> None
+    if expected == "Any":
+        return
+    if expected is not None and actual is None:
+        raise CompareFail.format(expected, actual)
+
     try:
-        if isinstance(a, dict):
-            if a.get("class") == "File":
-                if "path" in a:
-                    comp = "path"
-                    if "path" not in b:
-                        b["path"] = b["location"]
-                else:
-                    comp = "location"
-                if a[comp] == "Any" or b[comp] == "Any":
-                    return True
-                if a[comp] and (not (b[comp].endswith("/" + a[comp]) or
-                                     ("/" not in b[comp] and a[comp] == b[comp]))):
-                    raise CompareFail(u"%s does not end with %s" % (b[comp], a[comp]))
-                # ignore empty collections
-                b = {k: v for k, v in b.iteritems()
-                     if not isinstance(v, (list, dict)) or len(v) > 0}
-            elif a.get("class") == "Directory":
-                if len(a["listing"]) != len(b["listing"]):
-                    return False
-                for i in a["listing"]:
-                    found = False
-                    for j in b["listing"]:
-                        try:
-                            if compare(i, j):
-                                found = True
-                                break
-                        except:
-                            pass
-                    if not found:
-                        raise CompareFail(u"%s not in %s" % (
-                            json.dumps(i, indent=4, sort_keys=True), json.dumps(b, indent=4, sort_keys=True)))
+        if isinstance(expected, dict):
+            if not isinstance(actual, dict):
+                raise CompareFail.format(expected, actual)
 
-            a = {k: v for k, v in a.iteritems()
-                 if k not in ("path", "location", "listing", "basename")}
-            b = {k: v for k, v in b.iteritems()
-                 if k not in ("path", "location", "listing", "basename")}
-
-            if len(a) != len(b):
-                raise CompareFail(u"expected %s\ngot %s" % (
-                    json.dumps(a, indent=4, sort_keys=True), json.dumps(b, indent=4, sort_keys=True)))
-            for c in a:
-                if a.get("class") != "File" or c not in ("path", "location", "listing"):
-                    if c not in b:
-                        raise CompareFail(u"%s not in %s" % (c, b))
-                    if not compare(a[c], b[c]):
-                        return False
-            return True
-        elif isinstance(a, list):
-            if len(a) != len(b):
-                raise CompareFail(u"expected %s\ngot %s" % (
-                    json.dumps(a, indent=4, sort_keys=True), json.dumps(b, indent=4, sort_keys=True)))
-            for c in xrange(0, len(a)):
-                if not compare(a[c], b[c]):
-                    return False
-            return True
-        else:
-            if a != b:
-                raise CompareFail(u"%s != %s" % (json.dumps(a), json.dumps(b)))
+            if expected.get("class") == "File":
+                compare_file(expected, actual)
+            elif expected.get("class") == "Directory":
+                compare_directory(expected, actual)
             else:
-                return True
+                compare_dict(expected, actual)
+
+        elif isinstance(expected, list):
+            if not isinstance(actual, list):
+                raise CompareFail.format(expected, actual)
+
+            if len(expected) != len(actual):
+                raise CompareFail.format(expected, actual, u"lengths don't match")
+            for c in xrange(0, len(expected)):
+                try:
+                    compare(expected[c], actual[c])
+                except CompareFail as e:
+                    raise CompareFail.format(expected, actual, e)
+        else:
+            if expected != actual:
+                raise CompareFail.format(expected, actual)
+
     except Exception as e:
         raise CompareFail(str(e))
 
@@ -139,9 +172,6 @@ def run_test(args, i, t):  # type: (argparse.Namespace, Any, Dict[str,str]) -> i
     except CompareFail as ex:
         _logger.warn(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         _logger.warn(t.get("doc"))
-        _logger.warn(u"expected output object %s\n got %s",
-                     json.dumps(t.get("output"), indent=4, sort_keys=True),
-                     json.dumps(out, indent=4, sort_keys=True))
         _logger.warn(u"Compare failure %s", ex)
         failed = True
 
