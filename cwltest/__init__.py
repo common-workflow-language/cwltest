@@ -12,6 +12,7 @@ import ruamel.yaml.scanner as yamlscanner
 import pipes
 import logging
 import schema_salad.ref_resolver
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Text
 
 _logger = logging.getLogger("cwltest")
@@ -126,9 +127,10 @@ def compare(expected, actual):  # type: (Any, Any) -> None
         raise CompareFail(str(e))
 
 
-def run_test(args, i, t):  # type: (argparse.Namespace, Any, Dict[str,str]) -> int
+def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, str]]) -> int
     out = {}  # type: Dict[str,Any]
     outdir, outstr, test_command = None, None, None
+    t = tests[i]
     try:
         test_command = [args.tool]
         test_command.extend(args.args)
@@ -144,6 +146,8 @@ def run_test(args, i, t):  # type: (argparse.Namespace, Any, Dict[str,str]) -> i
         if t.get("job"):
             test_command.append(t["job"])
 
+        sys.stderr.write("\rTest [%i/%i] " % (i + 1, len(tests)))
+        sys.stderr.flush()
         outstr = subprocess.check_output(test_command)
         out = json.loads(outstr)
     except ValueError as v:
@@ -194,7 +198,8 @@ def main():  # type: () -> int
                         help="CWL runner executable to use (default 'cwl-runner'")
     parser.add_argument("--only-tools", action="store_true", help="Only test tools")
     parser.add_argument("--junit-xml", type=str, default=None, help="Path to JUnit xml file")
-    parser.add_argument('args', help="arguments to pass first to tool runner", nargs=argparse.REMAINDER)
+    parser.add_argument("args", help="arguments to pass first to tool runner", nargs=argparse.REMAINDER)
+    parser.add_argument("-j", type=int, default=1, help="Specifies the number of tests to run simultaneously (defaults to one).")
 
     args = parser.parse_args()
     if '--' in args.args:
@@ -241,22 +246,24 @@ def main():  # type: () -> int
         ntest = range(0, len(tests))
 
     total = 0
-    try:
-        for i in ntest:
-            t = tests[i]
-            sys.stderr.write("\rTest [%i/%i] " % (i + 1, len(tests)))
-            sys.stderr.flush()
-            rt = run_test(args, i, t)
-            total += 1
-            if rt == 1:
-                failures += 1
-            elif rt == UNSUPPORTED_FEATURE:
-                unsupported += 1
-            else:
-                passed += 1
-            xml_lines += make_xml_lines(t, rt, args.test)
-    except KeyboardInterrupt:
-        _logger.error("Tests interrupted")
+    with ThreadPoolExecutor(max_workers=args.j) as executor:
+        jobs = [executor.submit(run_test, args, i, tests)
+                for i in ntest]
+        try:
+            for i, job in zip(ntest, jobs):
+                rt = job.result()
+                total += 1
+                if rt == 1:
+                    failures += 1
+                elif rt == UNSUPPORTED_FEATURE:
+                    unsupported += 1
+                else:
+                    passed += 1
+                xml_lines += make_xml_lines(tests[i], rt, args.test)
+        except KeyboardInterrupt:
+            for job in jobs:
+                job.cancel()
+            _logger.error("Tests interrupted")
 
     if args.junit_xml:
         with open(args.junit_xml, 'w') as fp:
