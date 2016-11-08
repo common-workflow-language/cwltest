@@ -26,7 +26,13 @@ setup(name='cwltest',
       packages=["cwltest"],
       install_requires=[
           'schema-salad >= 1.14',
-          'typing >= 3.5.2' ],
+          'typing >= 3.5.2'
+      ],
+      extras_require={
+          ':python_version == "2.7"': [
+              'futures >= 3.0.5',
+          ],
+      },
       tests_require=[],
       entry_points={
           'console_scripts': [ "cwltest=cwltest:main" ]
