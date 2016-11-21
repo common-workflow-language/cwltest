@@ -14,6 +14,7 @@ import logging
 import schema_salad.ref_resolver
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Text
+from xml.sax.saxutils import escape
 
 _logger = logging.getLogger("cwltest")
 _logger.addHandler(logging.StreamHandler())
@@ -33,6 +34,15 @@ class CompareFail(Exception):
         if cause:
             message += u"\ncaused by: %s" % cause
         return cls(message)
+
+
+class TestResult(object):
+
+    """Encapsulate relevant test result data."""
+
+    def __init__(self, return_code, error_output=None):
+        self.return_code = return_code
+        self.error_output = error_output
 
 
 def compare_file(expected, actual):
@@ -127,9 +137,9 @@ def compare(expected, actual):  # type: (Any, Any) -> None
         raise CompareFail(str(e))
 
 
-def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, str]]) -> int
+def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, str]]) -> TestResult
     out = {}  # type: Dict[str,Any]
-    outdir, outstr, test_command = None, None, None
+    outdir = outstr = outerr = test_command = None
     t = tests[i]
     try:
         test_command = [args.tool]
@@ -148,23 +158,32 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
 
         sys.stderr.write("\rTest [%i/%i] " % (i + 1, len(tests)))
         sys.stderr.flush()
-        outstr = subprocess.check_output(test_command)
+
+        process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        outstr, outerr = process.communicate()
+        return_code = process.poll()
+        if return_code:
+            raise subprocess.CalledProcessError(return_code, test_command)
+
         out = json.loads(outstr)
     except ValueError as v:
         _logger.error(str(v))
         _logger.error(outstr)
+        _logger.error(outerr)
     except subprocess.CalledProcessError as err:
         if err.returncode == UNSUPPORTED_FEATURE:
-            return UNSUPPORTED_FEATURE
+            return TestResult(UNSUPPORTED_FEATURE, outerr)
         else:
             _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
             _logger.error(t.get("doc"))
             _logger.error("Returned non-zero")
-            return 1
+            _logger.error(outerr)
+            return TestResult(1, outerr)
     except (yamlscanner.ScannerError, TypeError) as e:
         _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         _logger.error(outstr)
         _logger.error(u"Parse error %s", str(e))
+        _logger.error(outerr)
     except KeyboardInterrupt:
         _logger.error(u"""Test interrupted: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         raise
@@ -182,10 +201,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
     if outdir:
         shutil.rmtree(outdir, True)
 
-    if failed:
-        return 1
-    else:
-        return 0
+    return TestResult((1 if failed else 0), outerr)
 
 
 def main():  # type: () -> int
@@ -251,15 +267,15 @@ def main():  # type: () -> int
                 for i in ntest]
         try:
             for i, job in zip(ntest, jobs):
-                rt = job.result()
+                test_result = job.result()
                 total += 1
-                if rt == 1:
+                if test_result.return_code == 1:
                     failures += 1
-                elif rt == UNSUPPORTED_FEATURE:
+                elif test_result.return_code == UNSUPPORTED_FEATURE:
                     unsupported += 1
                 else:
                     passed += 1
-                xml_lines += make_xml_lines(tests[i], rt, args.test)
+                xml_lines += make_xml_lines(tests[i], test_result, args.test)
         except KeyboardInterrupt:
             for job in jobs:
                 job.cancel()
@@ -285,22 +301,33 @@ def main():  # type: () -> int
         return 1
 
 
-def make_xml_lines(test, rt, test_case_group='N/A'):
-    # type: (Dict[Text, Any], int, Text) -> List[Text]
+def make_xml_lines(test, test_result, test_case_group='N/A'):
+    # type: (Dict[Text, Any], TestResult, Text) -> List[Text]
     doc = test.get('doc', 'N/A').strip()
     test_case_group = test_case_group.replace(".yaml", "").replace(".yml", "")
     elem = '    <testcase name="%s" classname="%s"' % (doc, test_case_group.replace(".", "_"))
-    if rt == 0:
+
+    if test_result.return_code == 0:
         return [ elem + '/>\n' ]
-    if rt == UNSUPPORTED_FEATURE:
+
+    if test_result.return_code == UNSUPPORTED_FEATURE:
         return [
             elem + '>\n',
             '      <skipped/>\n'
             '</testcase>\n',
         ]
+
+    if test_result.error_output:
+        error_output = escape(test_result.error_output) + '\n'
+    else:
+        error_output = ''
+
     return [
         elem + '>\n',
         '      <failure message="N/A">N/A</failure>\n'
+        '      <system-err>\n',
+        error_output,
+        '      </system-err>\n',
         '</testcase>\n',
     ]
 
