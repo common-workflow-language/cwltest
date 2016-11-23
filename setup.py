@@ -26,7 +26,8 @@ setup(name='cwltest',
       packages=["cwltest"],
       install_requires=[
           'schema-salad >= 1.14',
-          'typing >= 3.5.2'
+          'typing >= 3.5.2',
+          'junit-xml >= 1.7'
       ],
       extras_require={
           ':python_version == "2.7"': [

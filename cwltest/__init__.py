@@ -7,6 +7,7 @@ import subprocess
 import sys
 import shutil
 import tempfile
+import junit_xml
 import ruamel.yaml as yaml
 import ruamel.yaml.scanner as yamlscanner
 import pipes
@@ -14,7 +15,6 @@ import logging
 import schema_salad.ref_resolver
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Text
-from xml.sax.saxutils import escape
 
 _logger = logging.getLogger("cwltest")
 _logger.addHandler(logging.StreamHandler())
@@ -40,9 +40,15 @@ class TestResult(object):
 
     """Encapsulate relevant test result data."""
 
-    def __init__(self, return_code, error_output=None):
+    def __init__(self, return_code, standard_output, error_output):
         self.return_code = return_code
+        self.standard_output = standard_output
         self.error_output = error_output
+
+    def create_test_case(self, test):
+        # type: (Dict[Text, Any]) -> junit_xml.TestCase
+        doc = test.get(u'doc', 'N/A').strip()
+        return junit_xml.TestCase(doc, stdout=self.standard_output, stderr=self.error_output)
 
 
 def compare_file(expected, actual):
@@ -172,13 +178,13 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         _logger.error(outerr)
     except subprocess.CalledProcessError as err:
         if err.returncode == UNSUPPORTED_FEATURE:
-            return TestResult(UNSUPPORTED_FEATURE, outerr)
+            return TestResult(UNSUPPORTED_FEATURE, outstr, outerr)
         else:
             _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
             _logger.error(t.get("doc"))
             _logger.error("Returned non-zero")
             _logger.error(outerr)
-            return TestResult(1, outerr)
+            return TestResult(1, outstr, outerr)
     except (yamlscanner.ScannerError, TypeError) as e:
         _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         _logger.error(outstr)
@@ -201,7 +207,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
     if outdir:
         shutil.rmtree(outdir, True)
 
-    return TestResult((1 if failed else 0), outerr)
+    return TestResult((1 if failed else 0), outstr, outerr)
 
 
 def main():  # type: () -> int
@@ -231,7 +237,8 @@ def main():  # type: () -> int
     failures = 0
     unsupported = 0
     passed = 0
-    xml_lines = []  # type: List[Text]
+    suite_name, _ = os.path.splitext(os.path.basename(args.test))
+    report = junit_xml.TestSuite(suite_name, [])
 
     if args.only_tools:
         alltests = tests
@@ -268,14 +275,17 @@ def main():  # type: () -> int
         try:
             for i, job in zip(ntest, jobs):
                 test_result = job.result()
+                test_case = test_result.create_test_case(tests[i])
                 total += 1
                 if test_result.return_code == 1:
                     failures += 1
+                    test_case.add_failure_info("N/A")
                 elif test_result.return_code == UNSUPPORTED_FEATURE:
                     unsupported += 1
+                    test_case.add_skipped_info("Unsupported")
                 else:
                     passed += 1
-                xml_lines += make_xml_lines(tests[i], test_result, args.test)
+                report.test_cases.append(test_case)
         except KeyboardInterrupt:
             for job in jobs:
                 job.cancel()
@@ -283,12 +293,7 @@ def main():  # type: () -> int
 
     if args.junit_xml:
         with open(args.junit_xml, 'w') as fp:
-            fp.write('<testsuites>\n')
-            fp.write('  <testsuite name="%s" tests="%s" failures="%s" skipped="%s">\n' % (
-                args.tool, len(ntest), failures, unsupported))
-            fp.writelines(xml_lines)
-            fp.write('  </testsuite>\n')
-            fp.write('</testsuites>\n')
+            junit_xml.TestSuite.to_file(fp, [report])
 
     if failures == 0 and unsupported == 0:
         _logger.info("All tests passed")
@@ -299,37 +304,6 @@ def main():  # type: () -> int
     else:
         _logger.warn("%i tests passed, %i failures, %i unsupported features", total - (failures + unsupported), failures, unsupported)
         return 1
-
-
-def make_xml_lines(test, test_result, test_case_group='N/A'):
-    # type: (Dict[Text, Any], TestResult, Text) -> List[Text]
-    doc = test.get('doc', 'N/A').strip()
-    test_case_group = test_case_group.replace(".yaml", "").replace(".yml", "")
-    elem = '    <testcase name="%s" classname="%s"' % (doc, test_case_group.replace(".", "_"))
-
-    if test_result.return_code == 0:
-        return [ elem + '/>\n' ]
-
-    if test_result.return_code == UNSUPPORTED_FEATURE:
-        return [
-            elem + '>\n',
-            '      <skipped/>\n'
-            '</testcase>\n',
-        ]
-
-    if test_result.error_output:
-        error_output = escape(test_result.error_output) + '\n'
-    else:
-        error_output = ''
-
-    return [
-        elem + '>\n',
-        '      <failure message="N/A">N/A</failure>\n'
-        '      <system-err>\n',
-        error_output,
-        '      </system-err>\n',
-        '</testcase>\n',
-    ]
 
 
 if __name__ == "__main__":
