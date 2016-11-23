@@ -41,6 +41,7 @@ class TestResult(object):
     """Encapsulate relevant test result data."""
 
     def __init__(self, return_code, standard_output, error_output):
+        # type: (int, str, str) -> None
         self.return_code = return_code
         self.standard_output = standard_output
         self.error_output = error_output
@@ -169,7 +170,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         outstr, outerr = process.communicate()
         return_code = process.poll()
         if return_code:
-            raise subprocess.CalledProcessError(return_code, test_command)
+            raise subprocess.CalledProcessError(return_code, " ".join(test_command))
 
         out = json.loads(outstr)
     except ValueError as v:
