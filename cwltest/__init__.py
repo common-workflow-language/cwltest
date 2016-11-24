@@ -7,6 +7,7 @@ import subprocess
 import sys
 import shutil
 import tempfile
+import junit_xml
 import ruamel.yaml as yaml
 import ruamel.yaml.scanner as yamlscanner
 import pipes
@@ -33,6 +34,22 @@ class CompareFail(Exception):
         if cause:
             message += u"\ncaused by: %s" % cause
         return cls(message)
+
+
+class TestResult(object):
+
+    """Encapsulate relevant test result data."""
+
+    def __init__(self, return_code, standard_output, error_output):
+        # type: (int, str, str) -> None
+        self.return_code = return_code
+        self.standard_output = standard_output
+        self.error_output = error_output
+
+    def create_test_case(self, test):
+        # type: (Dict[Text, Any]) -> junit_xml.TestCase
+        doc = test.get(u'doc', 'N/A').strip()
+        return junit_xml.TestCase(doc, stdout=self.standard_output, stderr=self.error_output)
 
 
 def compare_file(expected, actual):
@@ -127,9 +144,9 @@ def compare(expected, actual):  # type: (Any, Any) -> None
         raise CompareFail(str(e))
 
 
-def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, str]]) -> int
+def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, str]]) -> TestResult
     out = {}  # type: Dict[str,Any]
-    outdir, outstr, test_command = None, None, None
+    outdir = outstr = outerr = test_command = None
     t = tests[i]
     try:
         test_command = [args.tool]
@@ -148,23 +165,32 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
 
         sys.stderr.write("\rTest [%i/%i] " % (i + 1, len(tests)))
         sys.stderr.flush()
-        outstr = subprocess.check_output(test_command)
+
+        process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        outstr, outerr = process.communicate()
+        return_code = process.poll()
+        if return_code:
+            raise subprocess.CalledProcessError(return_code, " ".join(test_command))
+
         out = json.loads(outstr)
     except ValueError as v:
         _logger.error(str(v))
         _logger.error(outstr)
+        _logger.error(outerr)
     except subprocess.CalledProcessError as err:
         if err.returncode == UNSUPPORTED_FEATURE:
-            return UNSUPPORTED_FEATURE
+            return TestResult(UNSUPPORTED_FEATURE, outstr, outerr)
         else:
             _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
             _logger.error(t.get("doc"))
             _logger.error("Returned non-zero")
-            return 1
+            _logger.error(outerr)
+            return TestResult(1, outstr, outerr)
     except (yamlscanner.ScannerError, TypeError) as e:
         _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         _logger.error(outstr)
         _logger.error(u"Parse error %s", str(e))
+        _logger.error(outerr)
     except KeyboardInterrupt:
         _logger.error(u"""Test interrupted: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         raise
@@ -182,10 +208,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
     if outdir:
         shutil.rmtree(outdir, True)
 
-    if failed:
-        return 1
-    else:
-        return 0
+    return TestResult((1 if failed else 0), outstr, outerr)
 
 
 def main():  # type: () -> int
@@ -215,7 +238,8 @@ def main():  # type: () -> int
     failures = 0
     unsupported = 0
     passed = 0
-    xml_lines = []  # type: List[Text]
+    suite_name, _ = os.path.splitext(os.path.basename(args.test))
+    report = junit_xml.TestSuite(suite_name, [])
 
     if args.only_tools:
         alltests = tests
@@ -251,15 +275,18 @@ def main():  # type: () -> int
                 for i in ntest]
         try:
             for i, job in zip(ntest, jobs):
-                rt = job.result()
+                test_result = job.result()
+                test_case = test_result.create_test_case(tests[i])
                 total += 1
-                if rt == 1:
+                if test_result.return_code == 1:
                     failures += 1
-                elif rt == UNSUPPORTED_FEATURE:
+                    test_case.add_failure_info("N/A")
+                elif test_result.return_code == UNSUPPORTED_FEATURE:
                     unsupported += 1
+                    test_case.add_skipped_info("Unsupported")
                 else:
                     passed += 1
-                xml_lines += make_xml_lines(tests[i], rt, args.test)
+                report.test_cases.append(test_case)
         except KeyboardInterrupt:
             for job in jobs:
                 job.cancel()
@@ -267,12 +294,7 @@ def main():  # type: () -> int
 
     if args.junit_xml:
         with open(args.junit_xml, 'w') as fp:
-            fp.write('<testsuites>\n')
-            fp.write('  <testsuite name="%s" tests="%s" failures="%s" skipped="%s">\n' % (
-                args.tool, len(ntest), failures, unsupported))
-            fp.writelines(xml_lines)
-            fp.write('  </testsuite>\n')
-            fp.write('</testsuites>\n')
+            junit_xml.TestSuite.to_file(fp, [report])
 
     if failures == 0 and unsupported == 0:
         _logger.info("All tests passed")
@@ -283,26 +305,6 @@ def main():  # type: () -> int
     else:
         _logger.warn("%i tests passed, %i failures, %i unsupported features", total - (failures + unsupported), failures, unsupported)
         return 1
-
-
-def make_xml_lines(test, rt, test_case_group='N/A'):
-    # type: (Dict[Text, Any], int, Text) -> List[Text]
-    doc = test.get('doc', 'N/A').strip()
-    test_case_group = test_case_group.replace(".yaml", "").replace(".yml", "")
-    elem = '    <testcase name="%s" classname="%s"' % (doc, test_case_group.replace(".", "_"))
-    if rt == 0:
-        return [ elem + '/>\n' ]
-    if rt == UNSUPPORTED_FEATURE:
-        return [
-            elem + '>\n',
-            '      <skipped/>\n'
-            '</testcase>\n',
-        ]
-    return [
-        elem + '>\n',
-        '      <failure message="N/A">N/A</failure>\n'
-        '</testcase>\n',
-    ]
 
 
 if __name__ == "__main__":
