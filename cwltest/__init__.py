@@ -13,6 +13,7 @@ import ruamel.yaml.scanner as yamlscanner
 import pipes
 import logging
 import schema_salad.ref_resolver
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Text
 
@@ -40,16 +41,20 @@ class TestResult(object):
 
     """Encapsulate relevant test result data."""
 
-    def __init__(self, return_code, standard_output, error_output):
-        # type: (int, str, str) -> None
+    def __init__(self, return_code, standard_output, error_output, duration):
+        # type: (int, str, str, float) -> None
         self.return_code = return_code
         self.standard_output = standard_output
         self.error_output = error_output
+        self.duration = duration
 
     def create_test_case(self, test):
         # type: (Dict[Text, Any]) -> junit_xml.TestCase
         doc = test.get(u'doc', 'N/A').strip()
-        return junit_xml.TestCase(doc, stdout=self.standard_output, stderr=self.error_output)
+        return junit_xml.TestCase(
+            doc, elapsed_sec=self.duration,
+            stdout=self.standard_output, stderr=self.error_output
+        )
 
 
 def compare_file(expected, actual):
@@ -147,6 +152,7 @@ def compare(expected, actual):  # type: (Any, Any) -> None
 def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, str]]) -> TestResult
     out = {}  # type: Dict[str,Any]
     outdir = outstr = outerr = test_command = None
+    duration = 0.0
     t = tests[i]
     try:
         test_command = [args.tool]
@@ -166,9 +172,11 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         sys.stderr.write("\rTest [%i/%i] " % (i + 1, len(tests)))
         sys.stderr.flush()
 
+        start_time = time.time()
         process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         outstr, outerr = process.communicate()
         return_code = process.poll()
+        duration = time.time() - start_time
         if return_code:
             raise subprocess.CalledProcessError(return_code, " ".join(test_command))
 
@@ -179,13 +187,13 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         _logger.error(outerr)
     except subprocess.CalledProcessError as err:
         if err.returncode == UNSUPPORTED_FEATURE:
-            return TestResult(UNSUPPORTED_FEATURE, outstr, outerr)
+            return TestResult(UNSUPPORTED_FEATURE, outstr, outerr, duration)
         else:
             _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
             _logger.error(t.get("doc"))
             _logger.error("Returned non-zero")
             _logger.error(outerr)
-            return TestResult(1, outstr, outerr)
+            return TestResult(1, outstr, outerr, duration)
     except (yamlscanner.ScannerError, TypeError) as e:
         _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         _logger.error(outstr)
@@ -208,7 +216,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
     if outdir:
         shutil.rmtree(outdir, True)
 
-    return TestResult((1 if failed else 0), outstr, outerr)
+    return TestResult((1 if failed else 0), outstr, outerr, duration)
 
 
 def main():  # type: () -> int
