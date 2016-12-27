@@ -233,7 +233,7 @@ def main():  # type: () -> int
         return 1
 
     with open(args.test) as f:
-        tests = yaml.load(f)
+        tests = yaml.safe_load(f)
 
     failures = 0
     unsupported = 0
