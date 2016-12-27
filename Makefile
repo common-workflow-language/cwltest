@@ -134,7 +134,7 @@ diff-cover.html: coverage-gcovr.xml coverage.xml
 
 ## test        : run the ${MODULE} test suite
 test: FORCE
-	python tests/test_examples.py 
+	python tests/test_examples.py
 
 sloccount.sc: ${PYSOURCES} Makefile
 	sloccount --duplicates --wide --details $^ > sloccount.sc
