@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 
 import setuptools.command.egg_info as egg_info_cmd
 from setuptools import setup, find_packages
@@ -14,6 +15,15 @@ try:
 except ImportError:
     tagger = egg_info_cmd.egg_info
 
+install_requires=[
+    'schema-salad >= 1.14',
+    'typing >= 3.5.2',
+    'junit-xml >= 1.7'
+]
+
+if sys.version_info.major == 2:
+    install_requires.append('futures >= 3.0.5')
+
 setup(name='cwltest',
       version='1.0',
       description='Common workflow language testing framework',
@@ -24,12 +34,7 @@ setup(name='cwltest',
       download_url="https://github.com/common-workflow-language/cwltest",
       license='Apache 2.0',
       packages=["cwltest"],
-      install_requires=[
-          'schema-salad >= 1.14',
-          'typing >= 3.5.2',
-          'junit-xml >= 1.7',
-          'futures >= 3.0.5 ; python_version == "2.7"'
-      ],
+      install_requires=install_requires,
       tests_require=[],
       entry_points={
           'console_scripts': [ "cwltest=cwltest:main" ]
