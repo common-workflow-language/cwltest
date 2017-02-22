@@ -155,6 +155,12 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
     outdir = outstr = outerr = test_command = None
     duration = 0.0
     t = tests[i]
+    prefix = ""
+    suffix = ""
+    if sys.stderr.isatty():
+        prefix = "\r"
+    else:
+        suffix = "\n"
     try:
         test_command = [args.tool]
         test_command.extend(args.args)
@@ -170,7 +176,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         if t.get("job"):
             test_command.append(t["job"])
 
-        sys.stderr.write("\rTest [%i/%i] " % (i + 1, len(tests)))
+        sys.stderr.write("%sTest [%i/%i] %s" % (prefix, i + 1, len(tests), suffix))
         sys.stderr.flush()
 
         start_time = time.time()
