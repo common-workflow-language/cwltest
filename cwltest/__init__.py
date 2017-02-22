@@ -41,12 +41,13 @@ class TestResult(object):
 
     """Encapsulate relevant test result data."""
 
-    def __init__(self, return_code, standard_output, error_output, duration):
-        # type: (int, str, str, float) -> None
+    def __init__(self, return_code, standard_output, error_output, duration, message=''):
+        # type: (int, str, str, float, str) -> None
         self.return_code = return_code
         self.standard_output = standard_output
         self.error_output = error_output
         self.duration = duration
+        self.message = message
 
     def create_test_case(self, test):
         # type: (Dict[Text, Any]) -> junit_xml.TestCase
@@ -199,7 +200,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
             _logger.error(t.get("doc"))
             _logger.error("Returned non-zero")
             _logger.error(outerr)
-            return TestResult(1, outstr, outerr, duration)
+            return TestResult(1, outstr, outerr, duration, err.message)
     except (yamlscanner.ScannerError, TypeError) as e:
         _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         _logger.error(outstr)
@@ -209,7 +210,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         _logger.error(u"""Test interrupted: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         raise
 
-    failed = False
+    fail_message = ''
 
     try:
         compare(t.get("output"), out)
@@ -217,12 +218,12 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         _logger.warn(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         _logger.warn(t.get("doc"))
         _logger.warn(u"Compare failure %s", ex)
-        failed = True
+        fail_message = ex.message
 
     if outdir:
         shutil.rmtree(outdir, True)
 
-    return TestResult((1 if failed else 0), outstr, outerr, duration)
+    return TestResult((1 if fail_message else 0), outstr, outerr, duration, fail_message)
 
 
 def main():  # type: () -> int
@@ -294,7 +295,7 @@ def main():  # type: () -> int
                 total += 1
                 if test_result.return_code == 1:
                     failures += 1
-                    test_case.add_failure_info("N/A")
+                    test_case.add_failure_info(output=test_result.message)
                 elif test_result.return_code == UNSUPPORTED_FEATURE:
                     unsupported += 1
                     test_case.add_skipped_info("Unsupported")
