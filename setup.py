@@ -4,7 +4,7 @@ import os
 import sys
 
 import setuptools.command.egg_info as egg_info_cmd
-from setuptools import setup, find_packages
+from setuptools import setup
 
 SETUP_DIR = os.path.dirname(__file__)
 README = os.path.join(SETUP_DIR, 'README.rst')
@@ -15,14 +15,17 @@ try:
 except ImportError:
     tagger = egg_info_cmd.egg_info
 
-install_requires=[
+install_requires = [
     'schema-salad >= 1.14',
-    'typing >= 3.5.2',
     'junit-xml >= 1.7'
 ]
 
 if sys.version_info.major == 2:
     install_requires.append('futures >= 3.0.5')
+
+if sys.version_info[:2] < (3, 5):
+    install_requires.append('typing >= 3.5.2')
+
 
 setup(name='cwltest',
       version='1.0',
@@ -37,7 +40,7 @@ setup(name='cwltest',
       install_requires=install_requires,
       tests_require=[],
       entry_points={
-          'console_scripts': [ "cwltest=cwltest:main" ]
+          'console_scripts': ["cwltest=cwltest:main"]
       },
       zip_safe=True,
       cmdclass={'egg_info': tagger},
