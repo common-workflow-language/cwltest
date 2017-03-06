@@ -180,7 +180,8 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         sys.stderr.flush()
 
         start_time = time.time()
-        process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stderr = subprocess.PIPE if not args.verbose else None
+        process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=stderr)
         outstr, outerr = process.communicate()
         return_code = process.poll()
         duration = time.time() - start_time
@@ -238,6 +239,7 @@ def main():  # type: () -> int
     parser.add_argument("--junit-xml", type=str, default=None, help="Path to JUnit xml file")
     parser.add_argument("args", help="arguments to pass first to tool runner", nargs=argparse.REMAINDER)
     parser.add_argument("-j", type=int, default=1, help="Specifies the number of tests to run simultaneously (defaults to one).")
+    parser.add_argument("--verbose", action="store_true", help="More verbose output during test run.")
 
     args = parser.parse_args()
     if '--' in args.args:
