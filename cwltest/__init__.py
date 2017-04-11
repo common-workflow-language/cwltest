@@ -52,10 +52,13 @@ class TestResult(object):
     def create_test_case(self, test):
         # type: (Dict[Text, Any]) -> junit_xml.TestCase
         doc = test.get(u'doc', 'N/A').strip()
-        return junit_xml.TestCase(
+        case = junit_xml.TestCase(
             doc, elapsed_sec=self.duration,
             stdout=self.standard_output, stderr=self.error_output
         )
+        if self.return_code > 0:
+            case.failure_message = self.message
+        return case
 
 
 def compare_file(expected, actual):
