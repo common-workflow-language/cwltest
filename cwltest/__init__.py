@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
+from __future__ import print_function
+
+from six.moves import range
+from six.moves import zip
+
 import argparse
 import json
 import os
@@ -107,7 +113,7 @@ def compare_dict(expected, actual):
             compare(expected[c], actual.get(c))
         except CompareFail as e:
             raise CompareFail.format(expected, actual, u"failed comparison for key '%s': %s" % (c, e))
-    extra_keys = set(actual.keys()).difference(expected.keys())
+    extra_keys = set(actual.keys()).difference(list(expected.keys()))
     for k in extra_keys:
         if actual[k] is not None:
             raise CompareFail.format(expected, actual, u"unexpected key '%s'" % k)
@@ -137,7 +143,7 @@ def compare(expected, actual):  # type: (Any, Any) -> None
 
             if len(expected) != len(actual):
                 raise CompareFail.format(expected, actual, u"lengths don't match")
-            for c in xrange(0, len(expected)):
+            for c in range(0, len(expected)):
                 try:
                     compare(expected[c], actual[c])
                 except CompareFail as e:
@@ -182,7 +188,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         start_time = time.time()
         stderr = subprocess.PIPE if not args.verbose else None
         process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=stderr)
-        outstr, outerr = process.communicate()
+        outstr, outerr = [i.decode('utf-8') for i in process.communicate()]
         return_code = process.poll()
         duration = time.time() - start_time
         if return_code:
@@ -272,7 +278,7 @@ def main():  # type: () -> int
 
     if args.l:
         for i, t in enumerate(tests):
-            print u"[%i] %s" % (i + 1, t["doc"].strip())
+            print(u"[%i] %s" % (i + 1, t["doc"].strip()))
         return 0
 
     if args.n is not None:
@@ -280,11 +286,11 @@ def main():  # type: () -> int
         for s in args.n.split(","):
             sp = s.split("-")
             if len(sp) == 2:
-                ntest.extend(range(int(sp[0]) - 1, int(sp[1])))
+                ntest.extend(list(range(int(sp[0]) - 1, int(sp[1]))))
             else:
                 ntest.append(int(s) - 1)
     else:
-        ntest = range(0, len(tests))
+        ntest = list(range(0, len(tests)))
 
     total = 0
     with ThreadPoolExecutor(max_workers=args.j) as executor:
