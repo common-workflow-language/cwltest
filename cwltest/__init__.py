@@ -188,7 +188,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         start_time = time.time()
         stderr = subprocess.PIPE if not args.verbose else None
         process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=stderr)
-        outstr, outerr = [i.decode('utf-8') for i in process.communicate()]
+        outstr, outerr = [var.decode('utf-8') for var in process.communicate()]
         return_code = process.poll()
         duration = time.time() - start_time
         if return_code:
