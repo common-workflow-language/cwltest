@@ -177,7 +177,6 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         # Add additional arguments given in test case
         for testarg in args.testargs:
             (test_case_name, prefix) = testarg.split('==')
-            print test_case_name
             if test_case_name in t:
                 test_command.extend([prefix, t[test_case_name]])
 
