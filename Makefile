@@ -155,7 +155,7 @@ mypy: ${PYSOURCES}
 	ln -s $(shell python -c 'from __future__ import print_function; import schema_salad; import os.path; print(os.path.dirname(schema_salad.__file__))') \
 		typeshed/2.7/schema_salad
 	MYPYPATH=typeshed/2.7 mypy --py2 --disallow-untyped-calls \
-		 --warn-redundant-casts --warn-unused-ignores --fast-parser \
+		 --warn-redundant-casts --warn-unused-ignores \
 		 ${MODULE}
 
 FORCE:
