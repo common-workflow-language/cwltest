@@ -167,6 +167,14 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
     try:
         test_command = [args.tool]
         test_command.extend(args.args)
+
+        # Add additional arguments given in test case
+        for testarg in args.testargs:
+            (test_case_name, prefix) = testarg.split('==')
+            print test_case_name
+            if test_case_name in t:
+                test_command.extend([prefix, t[test_case_name]])
+
         # Add prefixes if running on MacOSX so that boot2docker writes to /Users
         if 'darwin' in sys.platform:
             outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
@@ -179,7 +187,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         if t.get("job"):
             test_command.append(t["job"])
 
-        sys.stderr.write("%sTest [%i/%i] %s" % (prefix, i + 1, len(tests), suffix))
+        sys.stderr.write("%sTest [%i/%i] %s\n" % (prefix, i + 1, len(tests), suffix))
         sys.stderr.flush()
 
         start_time = time.time()
@@ -238,15 +246,22 @@ def main():  # type: () -> int
     parser.add_argument("-n", type=str, default=None, help="Run a specific tests, format is 1,3-6,9")
     parser.add_argument("--tool", type=str, default="cwl-runner",
                         help="CWL runner executable to use (default 'cwl-runner'")
-    parser.add_argument("--only-tools", action="store_true", help="Only test tools")
+    parser.add_argument("--only-tools", action="store_true", help="Only test CommandLineTools")
     parser.add_argument("--junit-xml", type=str, default=None, help="Path to JUnit xml file")
+    parser.add_argument("--test-arg", type=str, help="Additional argument given in test cases and "
+                                                     "required prefix for tool runner.",
+                        metavar="cache==--cache-dir", action="append", dest="testargs")
     parser.add_argument("args", help="arguments to pass first to tool runner", nargs=argparse.REMAINDER)
-    parser.add_argument("-j", type=int, default=1, help="Specifies the number of tests to run simultaneously (defaults to one).")
+    parser.add_argument("-j", type=int, default=1, help="Specifies the number of tests to run simultaneously "
+                                                        "(defaults to one).")
     parser.add_argument("--verbose", action="store_true", help="More verbose output during test run.")
 
     args = parser.parse_args()
     if '--' in args.args:
         args.args.remove('--')
+
+    # Remove test arguments with wrong syntax
+    args.testargs = [testarg for testarg in args.testargs if testarg.count('==') == 1]
 
     if not args.test:
         parser.print_help()
