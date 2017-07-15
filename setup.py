@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import absolute_import
 
 import os
 import sys
@@ -17,7 +18,8 @@ except ImportError:
 
 install_requires = [
     'schema-salad >= 1.14',
-    'junit-xml >= 1.7'
+    'junit-xml >= 1.7',
+    'six>=1.10.0'
 ]
 
 if sys.version_info.major == 2:
