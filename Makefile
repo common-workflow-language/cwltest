@@ -40,6 +40,7 @@ all:
 help: Makefile
 	@sed -n 's/^##//p' $<
 
+install-dependencies: install-dep
 ## install-dep : install most of the development dependencies via pip
 install-dep:
 	pip install --upgrade $(DEVPKGS)
@@ -134,7 +135,6 @@ diff-cover.html: coverage-gcovr.xml coverage.xml
 
 ## test        : run the ${MODULE} test suite
 test: FORCE
-	python tests/test_examples.py
 
 sloccount.sc: ${PYSOURCES} Makefile
 	sloccount --duplicates --wide --details $^ > sloccount.sc
