@@ -175,10 +175,11 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         test_command.extend(args.args)
 
         # Add additional arguments given in test case
-        for testarg in args.testargs:
-            (test_case_name, prefix) = testarg.split('==')
-            if test_case_name in t:
-                test_command.extend([prefix, t[test_case_name]])
+        if args.testargs is not None:
+            for testarg in args.testargs:
+                (test_case_name, prefix) = testarg.split('==')
+                if test_case_name in t:
+                    test_command.extend([prefix, t[test_case_name]])
 
         # Add prefixes if running on MacOSX so that boot2docker writes to /Users
         if 'darwin' in sys.platform:
@@ -266,7 +267,8 @@ def main():  # type: () -> int
         args.args.remove('--')
 
     # Remove test arguments with wrong syntax
-    args.testargs = [testarg for testarg in args.testargs if testarg.count('==') == 1]
+    if args.testargs is not None:
+        args.testargs = [testarg for testarg in args.testargs if testarg.count('==') == 1]
 
     if not args.test:
         parser.print_help()
