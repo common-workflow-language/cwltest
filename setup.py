@@ -26,7 +26,7 @@ if sys.version_info.major == 2:
     install_requires.append('futures >= 3.0.5')
 
 if sys.version_info[:2] < (3, 5):
-    install_requires.append('typing >= 3.5.2, < 3.6')
+    install_requires.append('typing >= 3.5.2')
 
 
 setup(name='cwltest',
