@@ -182,7 +182,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
                     test_command.extend([prefix, t[test_case_name]])
 
         # Add prefixes if running on MacOSX so that boot2docker writes to /Users
-        if 'darwin' in sys.platform:
+        if 'darwin' in sys.platform and args.tool == 'cwltool':
             outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
             test_command.extend(["--tmp-outdir-prefix={}".format(outdir), "--tmpdir-prefix={}".format(outdir)])
         else:
