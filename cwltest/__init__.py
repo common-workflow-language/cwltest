@@ -29,7 +29,7 @@ _logger.addHandler(logging.StreamHandler())
 _logger.setLevel(logging.INFO)
 
 UNSUPPORTED_FEATURE = 33
-
+RUNTIME = sys.version_info.major
 
 class CompareFail(Exception):
 
@@ -55,13 +55,14 @@ class TestResult(object):
         self.error_output = error_output
         self.duration = duration
         self.message = message
+        self.python_runtime = "Python {}".format(RUNTIME)
 
     def create_test_case(self, test):
         # type: (Dict[Text, Any]) -> junit_xml.TestCase
         doc = test.get(u'doc', 'N/A').strip()
         case = junit_xml.TestCase(
-            doc, elapsed_sec=self.duration,
-            stdout=self.standard_output, stderr=self.error_output
+            doc, elapsed_sec=self.duration, classname=self.python_runtime,
+            stdout=self.standard_output, stderr=self.error_output,
         )
         if self.return_code > 0:
             case.failure_message = self.message
