@@ -20,6 +20,7 @@ import pipes
 import logging
 import schema_salad.ref_resolver
 import time
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Text
 
