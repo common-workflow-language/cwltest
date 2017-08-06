@@ -86,7 +86,7 @@ def compare_file(expected, actual):
             compare(expected.get(k), actual.get(k))
         except CompareFail as e:
             raise CompareFail.format(expected, actual, u"field '%s' failed comparison: %s" %(
-                k, e.message
+                k, str(e)
             ))
 
 
@@ -218,7 +218,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
             _logger.error(t.get("doc"))
             _logger.error("Returned non-zero")
             _logger.error(outerr)
-            return TestResult(1, outstr, outerr, duration, err.message)
+            return TestResult(1, outstr, outerr, duration, str(err))
     except (yamlscanner.ScannerError, TypeError) as e:
         _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         _logger.error(outstr)
@@ -236,7 +236,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         _logger.warn(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         _logger.warn(t.get("doc"))
         _logger.warn(u"Compare failure %s", ex)
-        fail_message = ex.message
+        fail_message = str(ex)
 
     if outdir:
         shutil.rmtree(outdir, True)
