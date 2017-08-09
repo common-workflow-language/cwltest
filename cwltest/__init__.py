@@ -49,7 +49,7 @@ class TestResult(object):
     """Encapsulate relevant test result data."""
 
     def __init__(self, return_code, standard_output, error_output, duration, classname, message=''):
-        # type: (int, Text, Text, float, str) -> None
+        # type: (int, Text, Text, float, Text, str) -> None
         self.return_code = return_code
         self.standard_output = standard_output
         self.error_output = error_output
