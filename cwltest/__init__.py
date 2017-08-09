@@ -29,7 +29,7 @@ _logger.addHandler(logging.StreamHandler())
 _logger.setLevel(logging.INFO)
 
 UNSUPPORTED_FEATURE = 33
-
+RUNTIME = sys.version_info.major
 
 class CompareFail(Exception):
 
@@ -48,20 +48,21 @@ class TestResult(object):
 
     """Encapsulate relevant test result data."""
 
-    def __init__(self, return_code, standard_output, error_output, duration, message=''):
-        # type: (int, Text, Text, float, str) -> None
+    def __init__(self, return_code, standard_output, error_output, duration, classname, message=''):
+        # type: (int, Text, Text, float, Text, str) -> None
         self.return_code = return_code
         self.standard_output = standard_output
         self.error_output = error_output
         self.duration = duration
         self.message = message
+        self.classname = classname
 
     def create_test_case(self, test):
         # type: (Dict[Text, Any]) -> junit_xml.TestCase
         doc = test.get(u'doc', 'N/A').strip()
         case = junit_xml.TestCase(
-            doc, elapsed_sec=self.duration,
-            stdout=self.standard_output, stderr=self.error_output
+            doc, elapsed_sec=self.duration, classname=self.classname,
+            stdout=self.standard_output, stderr=self.error_output,
         )
         if self.return_code > 0:
             case.failure_message = self.message
@@ -218,13 +219,13 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         _logger.error(outerr)
     except subprocess.CalledProcessError as err:
         if err.returncode == UNSUPPORTED_FEATURE:
-            return TestResult(UNSUPPORTED_FEATURE, outstr, outerr, duration)
+            return TestResult(UNSUPPORTED_FEATURE, outstr, outerr, duration, args.classname)
         else:
             _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
             _logger.error(t.get("doc"))
             _logger.error("Returned non-zero")
             _logger.error(outerr)
-            return TestResult(1, outstr, outerr, duration, str(err))
+            return TestResult(1, outstr, outerr, duration, args.classname, str(err))
     except (yamlscanner.ScannerError, TypeError) as e:
         _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         _logger.error(outstr)
@@ -247,7 +248,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
     if outdir:
         shutil.rmtree(outdir, True)
 
-    return TestResult((1 if fail_message else 0), outstr, outerr, duration, fail_message)
+    return TestResult((1 if fail_message else 0), outstr, outerr, duration, args.classname, fail_message)
 
 
 def main():  # type: () -> int
@@ -267,6 +268,7 @@ def main():  # type: () -> int
     parser.add_argument("-j", type=int, default=1, help="Specifies the number of tests to run simultaneously "
                                                         "(defaults to one).")
     parser.add_argument("--verbose", action="store_true", help="More verbose output during test run.")
+    parser.add_argument("--classname", type=str, default="", help="Specify classname for the Test Suite.")
 
     args = parser.parse_args()
     if '--' in args.args:
