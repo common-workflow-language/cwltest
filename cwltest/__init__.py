@@ -163,6 +163,33 @@ def compare(expected, actual):  # type: (Any, Any) -> None
 
 templock = threading.Lock()
 
+def prepare_test_command(args, i, tests):
+    t = tests[i]
+    test_command = [args.tool]
+    test_command.extend(args.args)
+
+    # Add additional arguments given in test case
+    if args.testargs is not None:
+        for testarg in args.testargs:
+            (test_case_name, prefix) = testarg.split('==')
+            if test_case_name in t:
+                test_command.extend([prefix, t[test_case_name]])
+
+    # Add prefixes if running on MacOSX so that boot2docker writes to /Users
+    with templock:
+        if 'darwin' in sys.platform and args.tool == 'cwltool':
+            outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
+            test_command.extend(["--tmp-outdir-prefix={}".format(outdir), "--tmpdir-prefix={}".format(outdir)])
+        else:
+            outdir = tempfile.mkdtemp()
+    test_command.extend(["--outdir={}".format(outdir),
+                         "--quiet",
+                         t["tool"]])
+    if t.get("job"):
+        test_command.append(t["job"])
+    return test_command
+
+
 def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, str]]) -> TestResult
     global templock
 
@@ -177,28 +204,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
     else:
         suffix = "\n"
     try:
-        test_command = [args.tool]
-        test_command.extend(args.args)
-
-        # Add additional arguments given in test case
-        if args.testargs is not None:
-            for testarg in args.testargs:
-                (test_case_name, prefix) = testarg.split('==')
-                if test_case_name in t:
-                    test_command.extend([prefix, t[test_case_name]])
-
-        # Add prefixes if running on MacOSX so that boot2docker writes to /Users
-        with templock:
-            if 'darwin' in sys.platform and args.tool == 'cwltool':
-                outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
-                test_command.extend(["--tmp-outdir-prefix={}".format(outdir), "--tmpdir-prefix={}".format(outdir)])
-            else:
-                outdir = tempfile.mkdtemp()
-        test_command.extend(["--outdir={}".format(outdir),
-                             "--quiet",
-                             t["tool"]])
-        if t.get("job"):
-            test_command.append(t["job"])
+        test_command=prepare_test_command(args, i, tests)
 
         sys.stderr.write("%sTest [%i/%i] %s\n" % (prefix, i + 1, len(tests), suffix))
         sys.stderr.flush()
@@ -250,8 +256,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
 
     return TestResult((1 if fail_message else 0), outstr, outerr, duration, args.classname, fail_message)
 
-
-def main():  # type: () -> int
+def arg_parser():  # type: () -> argparse.ArgumentParser
     parser = argparse.ArgumentParser(description='Compliance tests for cwltool')
     parser.add_argument("--test", type=str, help="YAML file describing test cases", required=True)
     parser.add_argument("--basedir", type=str, help="Basedir to use for tests", default=".")
@@ -269,8 +274,11 @@ def main():  # type: () -> int
                                                         "(defaults to one).")
     parser.add_argument("--verbose", action="store_true", help="More verbose output during test run.")
     parser.add_argument("--classname", type=str, default="", help="Specify classname for the Test Suite.")
+    return parser
 
-    args = parser.parse_args()
+def main():  # type: () -> int
+
+    args = arg_parser().parse_args(sys.argv[1:])
     if '--' in args.args:
         args.args.remove('--')
 
@@ -279,7 +287,7 @@ def main():  # type: () -> int
         args.testargs = [testarg for testarg in args.testargs if testarg.count('==') == 1]
 
     if not args.test:
-        parser.print_help()
+        arg_parser().print_help()
         return 1
 
     with open(args.test) as f:
