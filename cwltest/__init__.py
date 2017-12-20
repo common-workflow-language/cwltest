@@ -220,6 +220,8 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
     except subprocess.CalledProcessError as err:
         if err.returncode == UNSUPPORTED_FEATURE:
             return TestResult(UNSUPPORTED_FEATURE, outstr, outerr, duration, args.classname)
+        elif t.get("should_fail", False):
+            return TestResult(0, outstr, outerr, duration, args.classname)
         else:
             _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
             _logger.error(t.get("doc"))
@@ -236,6 +238,12 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         raise
 
     fail_message = ''
+
+    if t.get("should_fail", False):
+        _logger.warn(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
+        _logger.warn(t.get("doc"))
+        _logger.warn(u"Returned zero but it should be non-zero")
+        return TestResult(1, outstr, outerr, duration, args.classname)
 
     try:
         compare(t.get("output"), out)
