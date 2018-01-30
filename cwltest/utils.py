@@ -46,7 +46,7 @@ def check_keys(keys, expected, actual):
 def compare_file(expected, actual):
     # type: (Dict[str,Any], Dict[str,Any]) -> None
     compare_location(expected, actual)
-    other_keys = set(expected.keys()) - {'path', 'location'}
+    other_keys = set(expected.keys()) - {'path', 'location', 'listing'}
     check_keys(other_keys, expected, actual)
 
 
