@@ -159,7 +159,6 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
 
 
 def main():  # type: () -> int
-    _logger.handlers.pop()      # prints log messages twice without this line
 
     parser = argparse.ArgumentParser(description='Compliance tests for cwltool')
     parser.add_argument("--test", type=str, help="YAML file describing test cases", required=True)

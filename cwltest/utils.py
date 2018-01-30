@@ -23,8 +23,10 @@ def compare_location(expected, actual):
         comp = "path"
         if "path" not in actual:
             actual["path"] = actual["location"]
-    else:
+    elif "location" in expected:
         comp = "location"
+    else:
+        return
     if expected[comp] != "Any" and (not (actual[comp].endswith("/" + expected[comp]) or
                                     ("/" not in actual[comp] and expected[comp] == actual[comp]))):
         raise CompareFail.format(expected, actual, u"%s does not end with %s" % (actual[comp], expected[comp]))
@@ -44,7 +46,7 @@ def check_keys(keys, expected, actual):
 def compare_file(expected, actual):
     # type: (Dict[str,Any], Dict[str,Any]) -> None
     compare_location(expected, actual)
-    other_keys = set(expected.keys()) - {'path', 'location'}
+    other_keys = set(expected.keys()) - {'path', 'location', 'listing'}
     check_keys(other_keys, expected, actual)
 
 
