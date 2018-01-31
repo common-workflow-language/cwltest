@@ -24,24 +24,14 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Text
 
+from cwltest.utils import compare, CompareFail
+
 _logger = logging.getLogger("cwltest")
 _logger.addHandler(logging.StreamHandler())
 _logger.setLevel(logging.INFO)
 
 UNSUPPORTED_FEATURE = 33
 RUNTIME = sys.version_info.major
-
-class CompareFail(Exception):
-
-    @classmethod
-    def format(cls, expected, actual, cause=None):
-        # type: (Any, Any, Any) -> CompareFail
-        message = u"expected: %s\ngot: %s" % (
-            json.dumps(expected, indent=4, sort_keys=True),
-            json.dumps(actual, indent=4, sort_keys=True))
-        if cause:
-            message += u"\ncaused by: %s" % cause
-        return cls(message)
 
 
 class TestResult(object):
@@ -67,98 +57,6 @@ class TestResult(object):
         if self.return_code > 0:
             case.failure_message = self.message
         return case
-
-
-def compare_file(expected, actual):
-    # type: (Dict[str,Any], Dict[str,Any]) -> None
-    if "path" in expected:
-        comp = "path"
-        if "path" not in actual:
-            actual["path"] = actual["location"]
-    else:
-        comp = "location"
-    if expected[comp] != "Any" and (not (actual[comp].endswith("/" + expected[comp]) or
-                                    ("/" not in actual[comp] and expected[comp] == actual[comp]))):
-        raise CompareFail.format(expected, actual, u"%s does not end with %s" % (actual[comp], expected[comp]))
-
-    check_keys = set(expected.keys()) - {'path', 'location'}
-
-    for k in check_keys:
-        try:
-            compare(expected.get(k), actual.get(k))
-        except CompareFail as e:
-            raise CompareFail.format(expected, actual, u"field '%s' failed comparison: %s" %(
-                k, str(e)
-            ))
-
-
-def compare_directory(expected, actual):
-    # type: (Dict[str,Any], Dict[str,Any]) -> None
-    if actual.get("class") != 'Directory':
-        raise CompareFail.format(expected, actual, u"expected object with a class 'Directory'")
-    if "listing" not in actual:
-        raise CompareFail.format(expected, actual, u"'listing' is mandatory field in Directory object")
-    for i in expected["listing"]:
-        found = False
-        for j in actual["listing"]:
-            try:
-                compare(i, j)
-                found = True
-                break
-            except CompareFail:
-                pass
-        if not found:
-            raise CompareFail.format(expected, actual, u"%s not found" % json.dumps(i, indent=4, sort_keys=True))
-
-
-def compare_dict(expected, actual):
-    # type: (Dict[str,Any], Dict[str,Any]) -> None
-    for c in expected:
-        try:
-            compare(expected[c], actual.get(c))
-        except CompareFail as e:
-            raise CompareFail.format(expected, actual, u"failed comparison for key '%s': %s" % (c, e))
-    extra_keys = set(actual.keys()).difference(list(expected.keys()))
-    for k in extra_keys:
-        if actual[k] is not None:
-            raise CompareFail.format(expected, actual, u"unexpected key '%s'" % k)
-
-
-def compare(expected, actual):  # type: (Any, Any) -> None
-    if expected == "Any":
-        return
-    if expected is not None and actual is None:
-        raise CompareFail.format(expected, actual)
-
-    try:
-        if isinstance(expected, dict):
-            if not isinstance(actual, dict):
-                raise CompareFail.format(expected, actual)
-
-            if expected.get("class") == "File":
-                compare_file(expected, actual)
-            elif expected.get("class") == "Directory":
-                compare_directory(expected, actual)
-            else:
-                compare_dict(expected, actual)
-
-        elif isinstance(expected, list):
-            if not isinstance(actual, list):
-                raise CompareFail.format(expected, actual)
-
-            if len(expected) != len(actual):
-                raise CompareFail.format(expected, actual, u"lengths don't match")
-            for c in range(0, len(expected)):
-                try:
-                    compare(expected[c], actual[c])
-                except CompareFail as e:
-                    raise CompareFail.format(expected, actual, e)
-        else:
-            if expected != actual:
-                raise CompareFail.format(expected, actual)
-
-    except Exception as e:
-        raise CompareFail(str(e))
 
 
 templock = threading.Lock()
@@ -226,6 +124,8 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
     except subprocess.CalledProcessError as err:
         if err.returncode == UNSUPPORTED_FEATURE:
             return TestResult(UNSUPPORTED_FEATURE, outstr, outerr, duration, args.classname)
+        elif t.get("should_fail", False):
+            return TestResult(0, outstr, outerr, duration, args.classname)
         else:
             _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
             _logger.error(t.get("doc"))
@@ -243,12 +143,18 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
 
     fail_message = ''
 
+    if t.get("should_fail", False):
+        _logger.warning(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
+        _logger.warning(t.get("doc"))
+        _logger.warning(u"Returned zero but it should be non-zero")
+        return TestResult(1, outstr, outerr, duration, args.classname)
+
     try:
         compare(t.get("output"), out)
     except CompareFail as ex:
-        _logger.warn(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
-        _logger.warn(t.get("doc"))
-        _logger.warn(u"Compare failure %s", ex)
+        _logger.warning(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
+        _logger.warning(t.get("doc"))
+        _logger.warning(u"Compare failure %s", ex)
         fail_message = str(ex)
 
     if outdir:
@@ -358,10 +264,10 @@ def main():  # type: () -> int
         _logger.info("All tests passed")
         return 0
     elif failures == 0 and unsupported > 0:
-        _logger.warn("%i tests passed, %i unsupported features", total - unsupported, unsupported)
+        _logger.warning("%i tests passed, %i unsupported features", total - unsupported, unsupported)
         return 0
     else:
-        _logger.warn("%i tests passed, %i failures, %i unsupported features", total - (failures + unsupported), failures, unsupported)
+        _logger.warning("%i tests passed, %i failures, %i unsupported features", total - (failures + unsupported), failures, unsupported)
         return 1
 
 
