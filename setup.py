@@ -28,6 +28,8 @@ if sys.version_info.major == 2:
 if sys.version_info[:2] < (3, 5):
     install_requires.append('typing >= 3.5.2')
 
+if sys.version_info[:2] < (3, 3):
+    install_requires.append('timeout_decorator >= 0.4.0')
 
 setup(name='cwltest',
       version='1.0',
