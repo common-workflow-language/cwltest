@@ -29,7 +29,7 @@ def compare_location(expected, actual):
         return
     if actual.get("class") == "Directory":
         actual[comp] = actual[comp].rstrip("/")
-    
+
     if expected[comp] != "Any" and (not (actual[comp].endswith("/" + expected[comp]) or
                                     ("/" not in actual[comp] and expected[comp] == actual[comp]))):
         raise CompareFail.format(expected, actual, u"%s does not end with %s" % (actual[comp], expected[comp]))
