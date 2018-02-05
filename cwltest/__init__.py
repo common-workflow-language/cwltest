@@ -9,7 +9,6 @@ import logging
 import os
 import pipes
 import shutil
-import subprocess
 import sys
 import tempfile
 import threading
@@ -22,7 +21,7 @@ import schema_salad.ref_resolver
 from concurrent.futures import ThreadPoolExecutor
 from six.moves import range
 from six.moves import zip
-from typing import Any, Dict, List, Callable
+from typing import Any, Dict, List
 
 from cwltest.utils import compare, CompareFail, TestResult
 
@@ -33,21 +32,16 @@ _logger.setLevel(logging.INFO)
 UNSUPPORTED_FEATURE = 33
 DEFAULT_TIMEOUT = 900  # 15 minutes
 
-if sys.version_info >= (3, 3):
-    # use a much simpler solution with Python >= 3.3
-    timeout_exc = subprocess.TimeoutExpired
+if sys.version_info.major < 3:
+    import subprocess32 as subprocess
 else:
-    import timeout_decorator
-
-    class TimeoutException(Exception):
-        pass
-    timeout_exc = TimeoutException
+    import subprocess
 
 templock = threading.Lock()
 
 
-def run_test(args, i, tests, run_test_command, timeout):
-    # type: (argparse.Namespace, int, List[Dict[str, str]], Callable, int) -> TestResult
+def run_test(args, i, tests, timeout):
+    # type: (argparse.Namespace, int, List[Dict[str, str]], int) -> TestResult
 
     global templock
 
@@ -91,7 +85,7 @@ def run_test(args, i, tests, run_test_command, timeout):
         start_time = time.time()
         stderr = subprocess.PIPE if not args.verbose else None
         process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=stderr)
-        outstr, outerr = run_test_command(process)
+        outstr, outerr = [var.decode('utf-8') for var in process.communicate(timeout=timeout)]
         return_code = process.poll()
         duration = time.time() - start_time
         if return_code:
@@ -121,7 +115,7 @@ def run_test(args, i, tests, run_test_command, timeout):
     except KeyboardInterrupt:
         _logger.error(u"""Test interrupted: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         raise
-    except timeout_exc:
+    except subprocess.TimeoutExpired:
         _logger.error(u"""Test timed out: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         _logger.error(t.get("doc"))
         return TestResult(2, outstr, outerr, timeout, args.classname, "Test timed out")
@@ -220,23 +214,9 @@ def main():  # type: () -> int
     else:
         ntest = list(range(0, len(tests)))
 
-    if sys.version_info >= (3, 3):
-
-        def run_test_command_py3(process):
-            return [var.decode('utf-8') for var in process.communicate(timeout=args.timeout)]
-
-        run_test_command = run_test_command_py3
-    else:
-
-        @timeout_decorator.timeout(args.timeout, use_signals=False, timeout_exception=timeout_exc)
-        def run_test_command_py2(process):
-            return [var.decode('utf-8') for var in process.communicate()]
-
-        run_test_command = run_test_command_py2
-
     total = 0
     with ThreadPoolExecutor(max_workers=args.j) as executor:
-        jobs = [executor.submit(run_test, args, i, tests, run_test_command, args.timeout)
+        jobs = [executor.submit(run_test, args, i, tests, args.timeout)
                 for i in ntest]
         try:
             for i, job in zip(ntest, jobs):
