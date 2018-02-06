@@ -23,7 +23,7 @@ from six.moves import range
 from six.moves import zip
 from typing import Any, Dict, List, Text
 
-from cwltest.utils import compare, CompareFail, TestResult
+from cwltest.utils import compare, CompareFail, TestResult, MANDATORY
 
 _logger = logging.getLogger("cwltest")
 _logger.addHandler(logging.StreamHandler())
@@ -233,7 +233,8 @@ def main():  # type: () -> int
                 test_result = job.result()
                 test_case = test_result.create_test_case(tests[i])
                 total += 1
-                if test_result.return_code == 1:
+                if test_result.return_code == 1 or \
+                        (test_result.return_code == UNSUPPORTED_FEATURE and test_case.category == MANDATORY):
                     failures += 1
                     test_case.add_failure_info(output=test_result.message)
                 elif test_result.return_code == UNSUPPORTED_FEATURE:

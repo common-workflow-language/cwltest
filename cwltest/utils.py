@@ -5,6 +5,8 @@ from typing import Any, Dict, Set, Text
 
 from six.moves import range
 
+MANDATORY = "Mandatory"
+
 
 class TestResult(object):
 
@@ -22,9 +24,13 @@ class TestResult(object):
     def create_test_case(self, test):
         # type: (Dict[Text, Any]) -> junit_xml.TestCase
         doc = test.get(u'doc', 'N/A').strip()
+        if test.get("tags"):
+            category = ", ".join(test['tags'])
+        else:
+            category = MANDATORY
         case = junit_xml.TestCase(
             doc, elapsed_sec=self.duration, classname=self.classname,
-            stdout=self.standard_output, stderr=self.error_output,
+            category=category, stdout=self.standard_output, stderr=self.error_output,
         )
         if self.return_code > 0:
             case.failure_message = self.message
