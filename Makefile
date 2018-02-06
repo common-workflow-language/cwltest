@@ -169,4 +169,12 @@ mypy3: ${PYSOURCES}
 		 --warn-redundant-casts \
 		 ${MODULE}
 
+release: FORCE
+	./release-test.sh
+	. testenv2/bin/activate && \
+		testenv2/src/${MODULE}/setup.py sdist bdist_wheel && \
+		pip install twine && \
+		twine upload testenv2/src/${MODULE}/dist/* && \
+		git tag ${VERSION} && git push --tags
+
 FORCE:
