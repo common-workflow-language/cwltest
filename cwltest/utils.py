@@ -1,9 +1,9 @@
 import json
 
-import junit_xml
-from typing import Any, Dict, Set, Text
-
 from six.moves import range
+from typing import Any, Dict, Set, Text, List, Optional
+
+from cwltest import cwl_junit_xml
 
 REQUIRED = "required"
 
@@ -22,14 +22,15 @@ class TestResult(object):
         self.classname = classname
 
     def create_test_case(self, test):
-        # type: (Dict[Text, Any]) -> junit_xml.TestCase
+        # type: (Dict[Text, Any]) -> cwl_junit_xml.TestCase
         doc = test.get(u'doc', 'N/A').strip()
         if test.get("tags"):
             category = ", ".join(test['tags'])
         else:
             category = REQUIRED
-        case = junit_xml.TestCase(
-            doc, elapsed_sec=self.duration, classname=self.classname,
+        short_name = test.get(u'short_name')
+        case = cwl_junit_xml.TestCase(
+            doc, elapsed_sec=self.duration, short_name=short_name,
             category=category, stdout=self.standard_output, stderr=self.error_output,
         )
         if self.return_code > 0:
@@ -167,3 +168,11 @@ def compare(expected, actual):  # type: (Any, Any) -> None
 
     except Exception as e:
         raise CompareFail(str(e))
+
+
+def get_test_number_by_key(tests, key, value):
+    # type: (List[Dict[str, str]], str, str) -> Optional[int]
+    for i, test in enumerate(tests):
+        if key in test and test[key] == value:
+            return i
+    return None
