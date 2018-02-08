@@ -1,7 +1,34 @@
 import json
-from typing import Any, Dict, Set
+
+import junit_xml
+from typing import Any, Dict, Set, Text
 
 from six.moves import range
+
+
+class TestResult(object):
+
+    """Encapsulate relevant test result data."""
+
+    def __init__(self, return_code, standard_output, error_output, duration, classname, message=''):
+        # type: (int, Text, Text, float, Text, str) -> None
+        self.return_code = return_code
+        self.standard_output = standard_output
+        self.error_output = error_output
+        self.duration = duration
+        self.message = message
+        self.classname = classname
+
+    def create_test_case(self, test):
+        # type: (Dict[Text, Any]) -> junit_xml.TestCase
+        doc = test.get(u'doc', 'N/A').strip()
+        case = junit_xml.TestCase(
+            doc, elapsed_sec=self.duration, classname=self.classname,
+            stdout=self.standard_output, stderr=self.error_output,
+        )
+        if self.return_code > 0:
+            case.failure_message = self.message
+        return case
 
 
 class CompareFail(Exception):
