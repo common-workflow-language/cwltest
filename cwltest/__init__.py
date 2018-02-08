@@ -32,7 +32,7 @@ _logger.setLevel(logging.INFO)
 UNSUPPORTED_FEATURE = 33
 DEFAULT_TIMEOUT = 900  # 15 minutes
 
-if sys.version_info.major < 3:
+if sys.version_info < (3, 0):
     import subprocess32 as subprocess
 else:
     import subprocess
