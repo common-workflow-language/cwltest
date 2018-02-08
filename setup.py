@@ -39,6 +39,7 @@ setup(name='cwltest',
       license='Apache 2.0',
       packages=["cwltest"],
       install_requires=install_requires,
+      test_suite='tests',
       tests_require=[],
       entry_points={
           'console_scripts': ["cwltest=cwltest:main"]
