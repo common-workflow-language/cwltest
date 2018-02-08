@@ -21,7 +21,7 @@ import schema_salad.ref_resolver
 from concurrent.futures import ThreadPoolExecutor
 from six.moves import range
 from six.moves import zip
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Text
 
 from cwltest.utils import compare, CompareFail, TestResult
 
@@ -39,7 +39,9 @@ else:
 
 templock = threading.Lock()
 
+
 def prepare_test_command(args, i, tests):
+    # type: (argparse.Namespace, int, List[Dict[str, str]]) -> List[str]
     t = tests[i]
     test_command = [args.tool]
     test_command.extend(args.args)
@@ -82,7 +84,7 @@ def run_test(args, i, tests, timeout):
     else:
         suffix = "\n"
     try:
-        test_command=prepare_test_command(args, i, tests)
+        test_command = prepare_test_command(args, i, tests)
 
         sys.stderr.write("%sTest [%i/%i] %s\n" % (prefix, i + 1, len(tests), suffix))
         sys.stderr.flush()
@@ -146,6 +148,7 @@ def run_test(args, i, tests, timeout):
 
     return TestResult((1 if fail_message else 0), outstr, outerr, duration, args.classname, fail_message)
 
+
 def arg_parser():  # type: () -> argparse.ArgumentParser
     parser = argparse.ArgumentParser(description='Compliance tests for cwltool')
     parser.add_argument("--test", type=str, help="YAML file describing test cases", required=True)
@@ -168,6 +171,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                                                                              "which the test will be skipped."
                                                                              "Defaults to 900 sec (15 minutes)")
     return parser
+
 
 def main():  # type: () -> int
 
