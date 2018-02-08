@@ -3,66 +3,74 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-from six.moves import range
-from six.moves import zip
-
 import argparse
 import json
+import logging
 import os
-import subprocess
-import sys
+import pipes
 import shutil
+import sys
 import tempfile
+import threading
+import time
+
 import junit_xml
 import ruamel.yaml as yaml
 import ruamel.yaml.scanner as yamlscanner
-import pipes
-import logging
 import schema_salad.ref_resolver
-import time
-import threading
 from concurrent.futures import ThreadPoolExecutor
+from six.moves import range
+from six.moves import zip
 from typing import Any, Dict, List, Text
 
-from cwltest.utils import compare, CompareFail
+from cwltest.utils import compare, CompareFail, TestResult
 
 _logger = logging.getLogger("cwltest")
 _logger.addHandler(logging.StreamHandler())
 _logger.setLevel(logging.INFO)
 
 UNSUPPORTED_FEATURE = 33
-RUNTIME = sys.version_info.major
+DEFAULT_TIMEOUT = 900  # 15 minutes
 
-
-class TestResult(object):
-
-    """Encapsulate relevant test result data."""
-
-    def __init__(self, return_code, standard_output, error_output, duration, classname, message=''):
-        # type: (int, Text, Text, float, Text, str) -> None
-        self.return_code = return_code
-        self.standard_output = standard_output
-        self.error_output = error_output
-        self.duration = duration
-        self.message = message
-        self.classname = classname
-
-    def create_test_case(self, test):
-        # type: (Dict[Text, Any]) -> junit_xml.TestCase
-        doc = test.get(u'doc', 'N/A').strip()
-        case = junit_xml.TestCase(
-            doc, elapsed_sec=self.duration, classname=self.classname,
-            stdout=self.standard_output, stderr=self.error_output,
-        )
-        if self.return_code > 0:
-            case.failure_message = self.message
-        return case
-
+if sys.version_info < (3, 0):
+    import subprocess32 as subprocess
+else:
+    import subprocess
 
 templock = threading.Lock()
 
 
-def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, str]]) -> TestResult
+def prepare_test_command(args, i, tests):
+    # type: (argparse.Namespace, int, List[Dict[str, str]]) -> List[str]
+    t = tests[i]
+    test_command = [args.tool]
+    test_command.extend(args.args)
+
+    # Add additional arguments given in test case
+    if args.testargs is not None:
+        for testarg in args.testargs:
+            (test_case_name, prefix) = testarg.split('==')
+            if test_case_name in t:
+                test_command.extend([prefix, t[test_case_name]])
+
+    # Add prefixes if running on MacOSX so that boot2docker writes to /Users
+    with templock:
+        if 'darwin' in sys.platform and args.tool == 'cwltool':
+            outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
+            test_command.extend(["--tmp-outdir-prefix={}".format(outdir), "--tmpdir-prefix={}".format(outdir)])
+        else:
+            outdir = tempfile.mkdtemp()
+    test_command.extend(["--outdir={}".format(outdir),
+                         "--quiet",
+                         t["tool"]])
+    if t.get("job"):
+        test_command.append(t["job"])
+    return test_command
+
+
+def run_test(args, i, tests, timeout):
+    # type: (argparse.Namespace, int, List[Dict[str, str]], int) -> TestResult
+
     global templock
 
     out = {}  # type: Dict[str,Any]
@@ -76,28 +84,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
     else:
         suffix = "\n"
     try:
-        test_command = [args.tool]
-        test_command.extend(args.args)
-
-        # Add additional arguments given in test case
-        if args.testargs is not None:
-            for testarg in args.testargs:
-                (test_case_name, prefix) = testarg.split('==')
-                if test_case_name in t:
-                    test_command.extend([prefix, t[test_case_name]])
-
-        # Add prefixes if running on MacOSX so that boot2docker writes to /Users
-        with templock:
-            if 'darwin' in sys.platform and args.tool == 'cwltool':
-                outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
-                test_command.extend(["--tmp-outdir-prefix={}".format(outdir), "--tmpdir-prefix={}".format(outdir)])
-            else:
-                outdir = tempfile.mkdtemp()
-        test_command.extend(["--outdir={}".format(outdir),
-                             "--quiet",
-                             t["tool"]])
-        if t.get("job"):
-            test_command.append(t["job"])
+        test_command = prepare_test_command(args, i, tests)
 
         sys.stderr.write("%sTest [%i/%i] %s\n" % (prefix, i + 1, len(tests), suffix))
         sys.stderr.flush()
@@ -105,7 +92,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
         start_time = time.time()
         stderr = subprocess.PIPE if not args.verbose else None
         process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=stderr)
-        outstr, outerr = [var.decode('utf-8') for var in process.communicate()]
+        outstr, outerr = [var.decode('utf-8') for var in process.communicate(timeout=timeout)]
         return_code = process.poll()
         duration = time.time() - start_time
         if return_code:
@@ -135,6 +122,10 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
     except KeyboardInterrupt:
         _logger.error(u"""Test interrupted: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         raise
+    except subprocess.TimeoutExpired:
+        _logger.error(u"""Test timed out: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
+        _logger.error(t.get("doc"))
+        return TestResult(2, outstr, outerr, timeout, args.classname, "Test timed out")
 
     fail_message = ''
 
@@ -158,8 +149,7 @@ def run_test(args, i, tests):  # type: (argparse.Namespace, int, List[Dict[str, 
     return TestResult((1 if fail_message else 0), outstr, outerr, duration, args.classname, fail_message)
 
 
-def main():  # type: () -> int
-
+def arg_parser():  # type: () -> argparse.ArgumentParser
     parser = argparse.ArgumentParser(description='Compliance tests for cwltool')
     parser.add_argument("--test", type=str, help="YAML file describing test cases", required=True)
     parser.add_argument("--basedir", type=str, help="Basedir to use for tests", default=".")
@@ -177,8 +167,15 @@ def main():  # type: () -> int
                                                         "(defaults to one).")
     parser.add_argument("--verbose", action="store_true", help="More verbose output during test run.")
     parser.add_argument("--classname", type=str, default="", help="Specify classname for the Test Suite.")
+    parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help="Time of execution in seconds after "
+                                                                             "which the test will be skipped."
+                                                                             "Defaults to 900 sec (15 minutes)")
+    return parser
 
-    args = parser.parse_args()
+
+def main():  # type: () -> int
+
+    args = arg_parser().parse_args(sys.argv[1:])
     if '--' in args.args:
         args.args.remove('--')
 
@@ -187,7 +184,7 @@ def main():  # type: () -> int
         args.testargs = [testarg for testarg in args.testargs if testarg.count('==') == 1]
 
     if not args.test:
-        parser.print_help()
+        arg_parser().print_help()
         return 1
 
     with open(args.test) as f:
@@ -229,7 +226,7 @@ def main():  # type: () -> int
 
     total = 0
     with ThreadPoolExecutor(max_workers=args.j) as executor:
-        jobs = [executor.submit(run_test, args, i, tests)
+        jobs = [executor.submit(run_test, args, i, tests, args.timeout)
                 for i in ntest]
         try:
             for i, job in zip(ntest, jobs):

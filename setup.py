@@ -23,11 +23,10 @@ install_requires = [
 ]
 
 if sys.version_info.major == 2:
-    install_requires.append('futures >= 3.0.5')
+    install_requires.extend(['futures >= 3.0.5', 'subprocess32'])
 
 if sys.version_info[:2] < (3, 5):
     install_requires.append('typing >= 3.5.2')
-
 
 setup(name='cwltest',
       version='1.0',
@@ -40,6 +39,7 @@ setup(name='cwltest',
       license='Apache 2.0',
       packages=["cwltest"],
       install_requires=install_requires,
+      test_suite='tests',
       tests_require=[],
       entry_points={
           'console_scripts': ["cwltest=cwltest:main"]
