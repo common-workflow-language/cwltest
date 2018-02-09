@@ -1,3 +1,5 @@
 include Makefile
 global-exclude *~
 global-exclude *.pyc
+include tests/*
+include tests/test-data/*

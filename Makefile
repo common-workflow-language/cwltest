@@ -26,7 +26,7 @@ MODULE=cwltest
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
-DEVPKGS=pep8 diff_cover autopep8 pylint coverage pep257 flake8
+DEVPKGS=pep8 diff_cover autopep8 pylint coverage pep257 flake8 pytest
 DEBDEVPKGS=pep8 python-autopep8 pylint python-coverage pep257 sloccount python-flake8
 VERSION=1.0.$(shell date +%Y%m%d%H%M%S --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
@@ -34,7 +34,7 @@ mkfile_dir := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 ## all         : default task
 all:
-	./setup.py develop
+	pip install -e .
 
 ## help        : print this help message and exit
 help: Makefile
@@ -109,10 +109,7 @@ diff_pylint_report: pylint_report.txt
 	diff-quality --violations=pylint pylint_report.txt
 
 .coverage: $(PYSOURCES) all
-	export COVERAGE_PROCESS_START=${mkfile_dir}.coveragerc; \
-	       cd ${CWL}; ./run_test.sh RUNNER=cwltool
-	coverage run setup.py test
-	coverage combine ${CWL} ${CWL}/draft-3/ ./
+	coverage run ./setup.py test
 
 coverage.xml: .coverage
 	python-coverage xml
@@ -135,6 +132,7 @@ diff-cover.html: coverage-gcovr.xml coverage.xml
 
 ## test        : run the ${MODULE} test suite
 test: FORCE
+	./setup.py test
 
 sloccount.sc: ${PYSOURCES} Makefile
 	sloccount --duplicates --wide --details $^ > sloccount.sc
