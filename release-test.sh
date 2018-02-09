@@ -18,6 +18,7 @@ virtualenv testenv${PYVER}_1 -p python${PYVER}
 virtualenv testenv${PYVER}_2 -p python${PYVER}
 virtualenv testenv${PYVER}_3 -p python${PYVER}
 virtualenv testenv${PYVER}_4 -p python${PYVER}
+virtualenv testenv${PYVER}_5 -p python${PYVER}
 
 # First we test the head
 source testenv${PYVER}_1/bin/activate
@@ -35,25 +36,27 @@ pushd testenv${PYVER}_1/not-${module}; ../bin/${run_tests}; popd
 
 # Secondly we test via pip
 
-cd testenv${PYVER}_2
+pushd testenv${PYVER}_2
 source bin/activate
 rm lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setupver} wheel
 pip install -e git+${repo}@${HEAD}#egg=${package}
-cd src/${package}
+pushd src/${package}
 make install-dependencies
 make dist
 make test
 cp dist/${package}*tar.gz ../../../testenv${PYVER}_3/
+cp dist/${package}*whl ../../../testenv${PYVER}_4/
 pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
-cd ../.. # no subdir named ${proj} here, safe for py.testing the installed module
+popd # ../.. no subdir named ${proj} here, safe for py.testing the installed module
 bin/${run_tests}
+popd
 
-# Is the distribution in testenv${PYVER}_2 complete enough to build another
-# functional distribution?
+# Is the source distribution in testenv${PYVER}_2 complete enough to build
+# another functional distribution?
 
-cd ../testenv${PYVER}_3/
+pushd testenv${PYVER}_3/
 source bin/activate
 rm lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
@@ -62,9 +65,24 @@ pip install ${package}*tar.gz
 pip install pytest
 mkdir out
 tar --extract --directory=out -z -f ${package}*.tar.gz
-cd out/${package}*
+pushd out/${package}*
 make dist
 make test
 pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
 mkdir ../not-${module}
 pushd ../not-${module} ; ../../bin/${run_tests}; popd
+popd
+popd
+
+# Is the wheel in testenv${PYVER}_2 installable and will it pass the tests
+
+pushd testenv${PYVER}_4/
+source bin/activate
+rm lib/python-wheels/setuptools* \
+	&& pip install --force-reinstall -U pip==${pipver} \
+        && pip install setuptools==${setupver} wheel
+pip install ${package}*.whl
+pip install pytest
+mkdir ../not-${module}
+pushd ../not-${module} ; ../../bin/${run_tests}; popd
+popd
