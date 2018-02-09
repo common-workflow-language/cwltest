@@ -6,7 +6,7 @@ set -x
 package=cwltest
 module=cwltest
 repo=https://github.com/common-workflow-language/cwltest.git
-run_tests="cwltest --help"
+run_tests="py.test --pyarg ${module}"
 pipver=8.0.1 # minimum required version of pip
 setupver=20.10.1 # minimum required version of setuptools
 

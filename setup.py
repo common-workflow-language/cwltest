@@ -22,6 +22,9 @@ install_requires = [
     'six>=1.10.0'
 ]
 
+needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
+pytest_runner = ['pytest-runner'] if needs_pytest else []
+
 if sys.version_info.major == 2:
     install_requires.extend(['futures >= 3.0.5', 'subprocess32'])
 
@@ -37,10 +40,13 @@ setup(name='cwltest',
       url="https://github.com/common-workflow-language/cwltest",
       download_url="https://github.com/common-workflow-language/cwltest",
       license='Apache 2.0',
-      packages=["cwltest"],
+      packages=["cwltest", "cwltest.tests"],
+      package_dir={'cwltest.tests': 'tests'},
+      include_package_data=True,
       install_requires=install_requires,
       test_suite='tests',
-      tests_require=[],
+      setup_requires=[] + pytest_runner,
+      tests_require=['pytest'],
       entry_points={
           'console_scripts': ["cwltest=cwltest:main"]
       },
