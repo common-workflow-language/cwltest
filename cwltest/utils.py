@@ -62,6 +62,17 @@ def compare_location(expected, actual):
         raise CompareFail.format(expected, actual, u"%s does not end with %s" % (actual[comp], expected[comp]))
 
 
+def compare_contents(expected, actual):
+    # type: (Dict[str,Any], Dict[str,Any]) -> None
+    expected_contents = expected["contents"]
+    with open(actual["path"]) as f:
+        actual_contents = f.read()
+    if expected_contents != actual_contents:
+        raise CompareFail.format(expected, actual,
+                                 json.dumps(u"Output file contents do not match: actual '%s' is not equal to expected '%s'"
+                                 % (actual_contents, expected_contents)))
+
+
 def check_keys(keys, expected, actual):
     # type: (Set[str], Dict[str,Any], Dict[str,Any]) -> None
     for k in keys:
@@ -76,7 +87,9 @@ def check_keys(keys, expected, actual):
 def compare_file(expected, actual):
     # type: (Dict[str,Any], Dict[str,Any]) -> None
     compare_location(expected, actual)
-    other_keys = set(expected.keys()) - {'path', 'location', 'listing'}
+    if 'contents' in expected:
+        compare_contents(expected, actual)
+    other_keys = set(expected.keys()) - {'path', 'location', 'listing', 'contents'}
     check_keys(other_keys, expected, actual)
 
 
