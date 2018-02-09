@@ -58,7 +58,7 @@ install: FORCE
 dist: dist/${MODULE}-$(VERSION).tar.gz
 
 dist/${MODULE}-$(VERSION).tar.gz: $(SOURCES)
-	./setup.py sdist
+	./setup.py sdist bdist_wheel
 
 ## clean       : clean up all temporary / machine-generated files
 clean: FORCE
@@ -170,11 +170,12 @@ mypy3: ${PYSOURCES}
 release: FORCE
 	PYVER=2.7 ./release-test.sh
 	PYVER=3 ./release-test.sh
-	. testenv2/bin/activate && \
-		testenv2/src/${MODULE}/setup.py sdist bdist_wheel
-	. testenv2/bin/activate && \
+	. testenv2.7_2/bin/activate && \
+		testenv2.7_2/src/${MODULE}/setup.py sdist bdist_wheel
+	. testenv2.7_2/bin/activate && \
 		pip install twine && \
-		twine upload testenv2/src/${MODULE}/dist/* && \
+		twine upload testenv2.7_2/src/${MODULE}/dist/* \
+		             testenv3_2/src/${MODULE}/dist/*whl && \
 		git tag ${VERSION} && git push --tags
 
 FORCE:
