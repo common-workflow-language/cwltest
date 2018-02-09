@@ -9,32 +9,33 @@ repo=https://github.com/common-workflow-language/cwltest.git
 run_tests="py.test --pyarg ${module}"
 pipver=8.0.1 # minimum required version of pip
 setupver=20.10.1 # minimum required version of setuptools
+PYVER=${PYVER:=2.7}
 
-rm -Rf testenv? || /bin/true
+rm -Rf testenv${PYVER}_? || /bin/true
 
 export HEAD=`git rev-parse HEAD`
-virtualenv testenv1
-virtualenv testenv2
-virtualenv testenv3
-virtualenv testenv4
+virtualenv testenv${PYVER}_1 -p python${PYVER}
+virtualenv testenv${PYVER}_2 -p python${PYVER}
+virtualenv testenv${PYVER}_3 -p python${PYVER}
+virtualenv testenv${PYVER}_4 -p python${PYVER}
 
 # First we test the head
-source testenv1/bin/activate
-rm testenv1/lib/python-wheels/setuptools* \
+source testenv${PYVER}_1/bin/activate
+rm testenv${PYVER}_1/lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setupver} wheel
 make install-dependencies
 make test
 pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
-mkdir testenv1/not-${module}
+mkdir testenv${PYVER}_1/not-${module}
 # if there is a subdir named '${module}' py.test will execute tests
 # there instead of the installed module's tests
-pushd testenv1/not-${module}; ../bin/${run_tests}; popd
+pushd testenv${PYVER}_1/not-${module}; ../bin/${run_tests}; popd
 
 
 # Secondly we test via pip
 
-cd testenv2
+cd testenv${PYVER}_2
 source bin/activate
 rm lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
@@ -44,15 +45,15 @@ cd src/${package}
 make install-dependencies
 make dist
 make test
-cp dist/${package}*tar.gz ../../../testenv3/
+cp dist/${package}*tar.gz ../../../testenv${PYVER}_3/
 pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
 cd ../.. # no subdir named ${proj} here, safe for py.testing the installed module
 bin/${run_tests}
 
-# Is the distribution in testenv2 complete enough to build another
+# Is the distribution in testenv${PYVER}_2 complete enough to build another
 # functional distribution?
 
-cd ../testenv3/
+cd ../testenv${PYVER}_3/
 source bin/activate
 rm lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \

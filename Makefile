@@ -168,7 +168,8 @@ mypy3: ${PYSOURCES}
 		 ${MODULE}
 
 release: FORCE
-	./release-test.sh
+	PYVER=2.7 ./release-test.sh
+	PYVER=3 ./release-test.sh
 	. testenv2/bin/activate && \
 		testenv2/src/${MODULE}/setup.py sdist bdist_wheel
 	. testenv2/bin/activate && \
