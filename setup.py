@@ -25,12 +25,6 @@ install_requires = [
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
 pytest_runner = ['pytest-runner'] if needs_pytest else []
 
-if sys.version_info.major == 2:
-    install_requires.extend(['futures >= 3.0.5', 'subprocess32'])
-
-if sys.version_info[:2] < (3, 5):
-    install_requires.append('typing >= 3.5.2')
-
 setup(name='cwltest',
       version='1.0',
       description='Common workflow language testing framework',
@@ -52,4 +46,7 @@ setup(name='cwltest',
       },
       zip_safe=True,
       cmdclass={'egg_info': tagger},
+      extras_require={':python_version<"3"': [
+                      'futures >= 3.0.5', 'subprocess32'],
+                      ':python_version<"3.5"': ['typing >= 3.5.2'] }
 )
