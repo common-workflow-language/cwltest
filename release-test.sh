@@ -83,6 +83,6 @@ rm lib/python-wheels/setuptools* \
         && pip install setuptools==${setupver} wheel
 pip install ${package}*.whl
 pip install pytest
-mkdir ../not-${module}
-pushd ../not-${module} ; ../../bin/${run_tests}; popd
+mkdir not-${module}
+pushd not-${module} ; ../bin/${run_tests}; popd
 popd

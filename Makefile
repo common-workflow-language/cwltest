@@ -174,7 +174,8 @@ release: FORCE
 		testenv2.7_2/src/${MODULE}/setup.py sdist bdist_wheel
 	. testenv2.7_2/bin/activate && \
 		pip install twine && \
-		twine upload testenv2.7_2/src/${MODULE}/dist/* && \
+		twine upload testenv2.7_2/src/${MODULE}/dist/* \
+		             testenv3_2/src/${MODULE}/dist/*whl && \
 		git tag ${VERSION} && git push --tags
 
 FORCE:
