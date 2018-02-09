@@ -1,18 +1,10 @@
 import unittest
+from .util import get_data
 from cwltest import CompareFail
 from cwltest.utils import compare_file, compare
 
 
-class TestCompare(unittest.TestCase):
-
-    def compare_success(self, expected, actual):
-        try:
-            compare(expected, actual)
-        except CompareFail:
-            self.fail("Comparison failed unexpectedly")
-
-
-class TestCompareFile(TestCompare):
+class TestCompareFile(unittest.TestCase):
 
     def test_compare_file(self):
         expected = {
@@ -20,7 +12,7 @@ class TestCompareFile(TestCompare):
             "size": 2,
             "class": "File",
             "checksum": "sha1$7448d8798a4380162d4b56f9b452e2f6f9e24e7a"
-         }
+        }
 
         actual = {
             "basename": "cores.txt",
@@ -48,10 +40,10 @@ class TestCompareFile(TestCompare):
             "checksum": "sha1$7448d8798a4380162d4b56f9b452e2f6f9e24e7a",
             "class": "File",
             "location": "file:///var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/cores.txt",
-            "path": "tests/test-data/cores.txt",
+            "path": get_data("tests/test-data/cores.txt"),
             "size": 2
         }
-        self.compare_success(expected, actual)
+        compare(expected, actual)
 
     def test_compare_contents_failure(self):
         expected = {
@@ -66,7 +58,7 @@ class TestCompareFile(TestCompare):
             "checksum": "sha1$7448d8798a4380162d4b56f9b452e2f6f9e24e7a",
             "class": "File",
             "location": "file:///var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/cores.txt",
-            "path": "tests/test-data/cores.txt",
+            "path": get_data("tests/test-data/cores.txt"),
             "size": 2
         }
         with self.assertRaises(CompareFail):

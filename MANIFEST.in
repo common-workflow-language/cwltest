@@ -1,5 +1,6 @@
-include Makefile
-global-exclude *~
-global-exclude *.pyc
+include Makefile gittaggers.py
 include tests/*
 include tests/test-data/*
+global-exclude *~
+global-exclude *.pyc
+
