@@ -5,7 +5,7 @@ from typing import Any, Dict, Set, Text
 
 from six.moves import range
 
-MANDATORY = "required"
+REQUIRED = "required"
 
 
 class TestResult(object):
@@ -27,7 +27,7 @@ class TestResult(object):
         if test.get("tags"):
             category = ", ".join(test['tags'])
         else:
-            category = MANDATORY
+            category = REQUIRED
         case = junit_xml.TestCase(
             doc, elapsed_sec=self.duration, classname=self.classname,
             category=category, stdout=self.standard_output, stderr=self.error_output,

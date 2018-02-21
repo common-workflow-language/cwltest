@@ -21,9 +21,9 @@ import schema_salad.ref_resolver
 from concurrent.futures import ThreadPoolExecutor
 from six.moves import range
 from six.moves import zip
-from typing import Any, Dict, List, Text
+from typing import Any, Dict, List
 
-from cwltest.utils import compare, CompareFail, TestResult, MANDATORY
+from cwltest.utils import compare, CompareFail, TestResult, REQUIRED
 
 _logger = logging.getLogger("cwltest")
 _logger.addHandler(logging.StreamHandler())
@@ -234,7 +234,7 @@ def main():  # type: () -> int
                 test_case = test_result.create_test_case(tests[i])
                 total += 1
                 if test_result.return_code == 1 or \
-                        (test_result.return_code == UNSUPPORTED_FEATURE and test_case.category == MANDATORY):
+                        (test_result.return_code == UNSUPPORTED_FEATURE and test_case.category == REQUIRED):
                     failures += 1
                     test_case.add_failure_info(output=test_result.message)
                 elif test_result.return_code == UNSUPPORTED_FEATURE:
