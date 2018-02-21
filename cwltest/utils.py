@@ -5,7 +5,7 @@ from typing import Any, Dict, Set, Text
 
 from six.moves import range
 
-MANDATORY = "Mandatory"
+MANDATORY = "required"
 
 
 class TestResult(object):
