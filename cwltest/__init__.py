@@ -14,7 +14,6 @@ import tempfile
 import threading
 import time
 
-import junit_xml
 import ruamel.yaml as yaml
 import ruamel.yaml.scanner as yamlscanner
 import schema_salad.ref_resolver
@@ -23,7 +22,8 @@ from six.moves import range
 from six.moves import zip
 from typing import Any, Dict, List
 
-from cwltest.utils import compare, CompareFail, TestResult, REQUIRED
+import junit_xml
+from cwltest.utils import compare, CompareFail, TestResult, REQUIRED, get_test_number_by_key
 
 _logger = logging.getLogger("cwltest")
 _logger.addHandler(logging.StreamHandler())
@@ -86,7 +86,10 @@ def run_test(args, i, tests, timeout):
     try:
         test_command = prepare_test_command(args, i, tests)
 
-        sys.stderr.write("%sTest [%i/%i] %s\n" % (prefix, i + 1, len(tests), suffix))
+        if t.get("short_name"):
+            sys.stderr.write("%sTest [%i/%i] %s: %s%s\n" % (prefix, i + 1, len(tests), t.get("short_name"), t.get("doc"), suffix))
+        else:
+            sys.stderr.write("%sTest [%i/%i] %s%s\n" % (prefix, i + 1, len(tests), t.get("doc"), suffix))
         sys.stderr.flush()
 
         start_time = time.time()
@@ -154,7 +157,8 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--test", type=str, help="YAML file describing test cases", required=True)
     parser.add_argument("--basedir", type=str, help="Basedir to use for tests", default=".")
     parser.add_argument("-l", action="store_true", help="List tests then exit")
-    parser.add_argument("-n", type=str, default=None, help="Run a specific tests, format is 1,3-6,9")
+    parser.add_argument("-n", type=str, default=None, help="Run specific tests, format is 1,3-6,9")
+    parser.add_argument("-s", type=str, default=None, help="Run specific tests using their short names separated by comma")
     parser.add_argument("--tool", type=str, default="cwl-runner",
                         help="CWL runner executable to use (default 'cwl-runner'")
     parser.add_argument("--only-tools", action="store_true", help="Only test CommandLineTools")
@@ -210,17 +214,30 @@ def main():  # type: () -> int
 
     if args.l:
         for i, t in enumerate(tests):
-            print(u"[%i] %s" % (i + 1, t["doc"].strip()))
+            if t.get("short_name"):
+                print(u"[%i] %s: %s" % (i + 1, t["short_name"], t["doc"].strip()))
+            else:
+                print(u"[%i] %s" % (i + 1, t["doc"].strip()))
+
         return 0
 
-    if args.n is not None:
+    if args.n is not None or args.s is not None:
         ntest = []
-        for s in args.n.split(","):
-            sp = s.split("-")
-            if len(sp) == 2:
-                ntest.extend(list(range(int(sp[0]) - 1, int(sp[1]))))
-            else:
-                ntest.append(int(s) - 1)
+        if args.n is not None:
+            for s in args.n.split(","):
+                sp = s.split("-")
+                if len(sp) == 2:
+                    ntest.extend(list(range(int(sp[0]) - 1, int(sp[1]))))
+                else:
+                    ntest.append(int(s) - 1)
+        if args.s is not None:
+            for s in args.s.split(","):
+                test_number = get_test_number_by_key(tests, "short_name", s)
+                if test_number:
+                    ntest.append(test_number)
+                else:
+                    _logger.error('Test with short name "%s" not found ' % s)
+                    return 1
     else:
         ntest = list(range(0, len(tests)))
 
