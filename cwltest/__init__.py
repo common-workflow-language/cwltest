@@ -22,7 +22,7 @@ from six.moves import range
 from six.moves import zip
 from typing import Any, Dict, List
 
-import cwltest.cwl_junit_xml as cwl_junit_xml
+import junit_xml
 from cwltest.utils import compare, CompareFail, TestResult, REQUIRED, get_test_number_by_key
 
 _logger = logging.getLogger("cwltest")
@@ -198,7 +198,7 @@ def main():  # type: () -> int
     unsupported = 0
     passed = 0
     suite_name, _ = os.path.splitext(os.path.basename(args.test))
-    report = cwl_junit_xml.CWLTestSuite(suite_name, [])
+    report = junit_xml.TestSuite(suite_name, [])
 
     if args.only_tools:
         alltests = tests
@@ -267,7 +267,7 @@ def main():  # type: () -> int
 
     if args.junit_xml:
         with open(args.junit_xml, 'w') as fp:
-            cwl_junit_xml.CWLTestSuite.to_file(fp, [report])
+            junit_xml.TestSuite.to_file(fp, [report])
 
     if failures == 0 and unsupported == 0:
         _logger.info("All tests passed")

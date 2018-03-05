@@ -1,0 +1,9 @@
+- job: v1.0/cat1-job.json
+  output: {}
+  tool: return-0.cwl
+  doc: Test without a short name
+- job: v1.0/cat2-job.json
+  output: {}
+  tool: return-0.cwl
+  doc: Test with a short name
+  short_name: opt-error

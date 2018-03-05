@@ -3,8 +3,7 @@ import json
 from six.moves import range
 from typing import Any, Dict, Set, Text, List, Optional
 
-from cwltest import cwl_junit_xml
-
+import junit_xml
 REQUIRED = "required"
 
 
@@ -22,15 +21,15 @@ class TestResult(object):
         self.classname = classname
 
     def create_test_case(self, test):
-        # type: (Dict[Text, Any]) -> cwl_junit_xml.TestCase
+        # type: (Dict[Text, Any]) -> junit_xml.TestCase
         doc = test.get(u'doc', 'N/A').strip()
         if test.get("tags"):
             category = ", ".join(test['tags'])
         else:
             category = REQUIRED
         short_name = test.get(u'short_name')
-        case = cwl_junit_xml.TestCase(
-            doc, elapsed_sec=self.duration, short_name=short_name,
+        case = junit_xml.TestCase(
+            doc, elapsed_sec=self.duration, file=short_name,
             category=category, stdout=self.standard_output, stderr=self.error_output,
         )
         if self.return_code > 0:
