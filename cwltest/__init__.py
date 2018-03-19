@@ -250,15 +250,23 @@ def main():  # type: () -> int
                 test_result = job.result()
                 test_case = test_result.create_test_case(tests[i])
                 total += 1
-                if test_result.return_code == 1 or \
-                        (test_result.return_code == UNSUPPORTED_FEATURE and test_case.category == REQUIRED):
+                return_code = test_result.return_code
+                category = test_case.category
+                if return_code == 0:
+                    passed += 1
+                elif return_code != 0 and return_code != UNSUPPORTED_FEATURE:
                     failures += 1
                     test_case.add_failure_info(output=test_result.message)
-                elif test_result.return_code == UNSUPPORTED_FEATURE:
+                elif return_code == UNSUPPORTED_FEATURE and category == REQUIRED:
+                    failures += 1
+                    test_case.add_failure_info(output=test_result.message)
+                elif category != REQUIRED and return_code == UNSUPPORTED_FEATURE:
                     unsupported += 1
                     test_case.add_skipped_info("Unsupported")
                 else:
-                    passed += 1
+                    raise Exception(
+                        "This is impossible, return_code: {}, category: "
+                        "{}".format(return_code, category))
                 report.test_cases.append(test_case)
         except KeyboardInterrupt:
             for job in jobs:
