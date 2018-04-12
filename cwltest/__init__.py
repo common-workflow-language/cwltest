@@ -85,7 +85,7 @@ def run_test(args, i, tests, timeout):
     else:
         suffix = "\n"
     try:
-        process = None
+        process = None  # type: subprocess.Popen
         test_command = prepare_test_command(args, i, tests)
 
         if t.get("short_name"):
@@ -135,7 +135,7 @@ def run_test(args, i, tests, timeout):
         if process is not None and process.returncode is None:
             _logger.error(u"""Terminating lingering process""")
             process.terminate()
-            for a in xrange(0, 3):
+            for a in range(0, 3):
                 time.sleep(1)
                 if process.poll() is not None:
                     break
