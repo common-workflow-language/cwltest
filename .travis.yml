@@ -10,7 +10,10 @@ matrix:
     - os: osx
       language: generic
       python: 2.7
-
+jobs:
+  include:
+    - stage: release-test
+      script: RELEASE_SKIP=head PYVER=2.7 ./release-test.sh && RELEASE_SKIP=head PYVER=3 ./release-test.sh
 install:
   - pip2 install tox-travis || pip3 install tox-travis
 script: tox
