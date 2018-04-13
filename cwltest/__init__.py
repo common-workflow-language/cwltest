@@ -21,6 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 from six.moves import range
 from six.moves import zip
 from typing import Any, Dict, List
+import pkg_resources  # part of setuptools
 
 import junit_xml
 from cwltest.utils import compare, CompareFail, TestResult, REQUIRED, get_test_number_by_key
@@ -84,6 +85,7 @@ def run_test(args, i, tests, timeout):
     else:
         suffix = "\n"
     try:
+        process = None  # type: subprocess.Popen
         test_command = prepare_test_command(args, i, tests)
 
         if t.get("short_name"):
@@ -129,6 +131,16 @@ def run_test(args, i, tests, timeout):
         _logger.error(u"""Test timed out: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
         _logger.error(t.get("doc"))
         return TestResult(2, outstr, outerr, timeout, args.classname, "Test timed out")
+    finally:
+        if process is not None and process.returncode is None:
+            _logger.error(u"""Terminating lingering process""")
+            process.terminate()
+            for a in range(0, 3):
+                time.sleep(1)
+                if process.poll() is not None:
+                    break
+            if process.returncode is None:
+                process.kill()
 
     fail_message = ''
 
@@ -153,7 +165,7 @@ def run_test(args, i, tests, timeout):
 
 
 def arg_parser():  # type: () -> argparse.ArgumentParser
-    parser = argparse.ArgumentParser(description='Compliance tests for cwltool')
+    parser = argparse.ArgumentParser(description='Common Workflow Language testing framework')
     parser.add_argument("--test", type=str, help="YAML file describing test cases", required=True)
     parser.add_argument("--basedir", type=str, help="Basedir to use for tests", default=".")
     parser.add_argument("-l", action="store_true", help="List tests then exit")
@@ -172,8 +184,16 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--verbose", action="store_true", help="More verbose output during test run.")
     parser.add_argument("--classname", type=str, default="", help="Specify classname for the Test Suite.")
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help="Time of execution in seconds after "
-                                                                             "which the test will be skipped."
+                                                                             "which the test will be skipped. "
                                                                              "Defaults to 900 sec (15 minutes)")
+
+    pkg = pkg_resources.require("cwltest")
+    if pkg:
+        ver = u"%s %s" % (sys.argv[0], pkg[0].version)
+    else:
+        ver = u"%s %s" % (sys.argv[0], "unknown version")
+    parser.add_argument('--version', action='version', version=ver)
+
     return parser
 
 
