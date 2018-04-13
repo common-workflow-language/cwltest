@@ -5,7 +5,7 @@ UNSUPPORTED_FEATURE_TOOL = "return-unsupported.cwl"
 ERROR_TOOL = "return-1.cwl"
 
 
-def main():
+def main():  # type: ()->int
     parser = argparse.ArgumentParser()
     parser.add_argument("processfile")
     parser.add_argument("jobfile")
