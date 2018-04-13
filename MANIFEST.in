@@ -1,6 +1,6 @@
 include Makefile gittaggers.py
-include tests/*
-include tests/test-data/*
+include cwltest/tests/*
+include cwltest/tests/test-data/*
 global-exclude *~
 global-exclude *.pyc
 
