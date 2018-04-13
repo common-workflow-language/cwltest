@@ -33,7 +33,7 @@ VERSION=1.0.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 mkfile_dir := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 ## all         : default task
-all:
+all: FORCE
 	pip install -e .
 
 ## help        : print this help message and exit
@@ -131,7 +131,7 @@ diff-cover.html: coverage-gcovr.xml coverage.xml
 		--html-report diff-cover.html
 
 ## test        : run the ${MODULE} test suite
-test: FORCE
+test: all
 	./setup.py test
 
 sloccount.sc: ${PYSOURCES} Makefile
