@@ -18,7 +18,7 @@ except ImportError:
 
 install_requires = [
     'schema-salad >= 1.14',
-    'junit-xml >= 1.7',
+    'junit-xml >= 1.8',
     'six>=1.10.0'
 ]
 
