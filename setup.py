@@ -48,6 +48,6 @@ setup(name='cwltest',
       zip_safe=True,
       cmdclass={'egg_info': tagger},
       extras_require={':python_version<"3"': [
-                      'futures >= 3.0.5', 'subprocess32 == 3.5.0rc1'],
+                      'futures >= 3.0.5', 'subprocess32==3.5.0rc3'],
                       ':python_version<"3.5"': ['typing >= 3.5.2'] }
 )
