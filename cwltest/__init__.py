@@ -211,8 +211,11 @@ def main():  # type: () -> int
         arg_parser().print_help()
         return 1
 
-    with open(args.test) as f:
-        tests = yaml.load(f, Loader=yaml.SafeLoader)
+    loader = schema_salad.ref_resolver.Loader({
+        "job": {"@type": "@id"},
+        "tool": {"@type": "@id"},
+    })
+    tests, _ = loader.resolve_ref(args.test)
 
     failures = 0
     unsupported = 0
