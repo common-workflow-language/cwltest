@@ -40,11 +40,11 @@ install:
   - "%PYTHON%\\python.exe -m pip install -U wheel setuptools pip pytest"
 
 build_script:
-  - "%PYTHON%\\python.exe -m pip install ."
+  - "%PYTHON%\\python.exe setup.py build"
 
 
 test_script:
-  - "%PYTHON%\\python.exe -m pytest --verbose -p no:cacheprovider --junit-xml=tests.xml"
+  - "%PYTHON%\\python.exe setup.py test --addopts '--verbose -p no:cacheprovider --junit-xml=tests.xml'"
 
 after_test:
   - ps: |
