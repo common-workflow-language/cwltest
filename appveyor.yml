@@ -44,7 +44,7 @@ install:
 
 build_script:
   - |
-        %PYTHON%\\python.exe -m pip install -U pip wheel setuptools pytest pytest-xdist
+        %PYTHON%\\python.exe -m pip install -U wheel pytest pytest-xdist
         %PYTHON%\\python.exe -m pip install -e .
 
 test_script:
