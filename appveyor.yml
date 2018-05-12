@@ -2,6 +2,8 @@ version: .{build}-{branch}
 
 environment:
   SYSTEMROOT: "C:\\WINDOWS"
+  VENV_BUILD_DIR: "venv_build"
+  VENV_TEST_DIR: "venv_test"
 
   matrix:
     - PYTHON: "C:\\Python27"
@@ -37,12 +39,16 @@ environment:
       PYTHON_ARCH: "64"
 
 install:
-  - "%PYTHON%\\python.exe -m pip install -U wheel setuptools pip pytest"
+  - "%PYTHON%\\python.exe -m pip install -U pip virtualenv"
 
 build_script:
-  - "%PYTHON%\\python.exe setup.py install --user"  # Need to have mock-cwl-runner
+  - "virtualenv --clear %VENV_BUILD_DIR%"
+  - "%VENV_BUILD_DIR%\\Scripts\\activate.bat"
+  - "%PYTHON%\\python.exe -m pip install -U pip wheel setuptools pytest"
+  - "%PYTHON%\\python.exe -m pip install . "  # Needed for mock-cwl-runner
 
 test_script:
+  - "%VENV_BUILD_DIR%\\Scripts\\activate.bat"
   - |
     %PYTHON%\\python.exe setup.py test --addopts "--verbose -p no:cacheprovider --junit-xml=tests.xml"
 
