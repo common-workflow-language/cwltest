@@ -52,6 +52,7 @@ build_script:
 
 test_script:
   - "%VENV_BUILD_DIR%\\Scripts\\activate.bat"
+  - echo %PATH%
   - |
     %PYTHON%\\python.exe setup.py test --addopts "--verbose -p no:cacheprovider --junit-xml=tests.xml"
 
