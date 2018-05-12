@@ -47,6 +47,7 @@ build_script:
   - "virtualenv --clear %VENV_BUILD_DIR% -p %PYTHON%\\python.exe"
   - cmd: |
         "%VENV_BUILD_DIR%\\Scripts\\activate.bat"
+        SET PATH="%PYTHON%;%PYTHON%\\Scripts;%PATH%"
         "%PYTHON%\\python.exe" -m pip install -U pip wheel setuptools pytest
         "%PYTHON%\\python.exe" -m pip install -e .
 
