@@ -41,11 +41,10 @@ environment:
       PYTHON_VERSION: "3.6.x"
       PYTHON_ARCH: "64"
 
-install:
-  - "%PYTHON%\\python.exe -m pip install -U pip virtualenv"
+# install:
 
 build_script:
-  - "virtualenv --clear %VENV_BUILD_DIR%"
+  - "virtualenv --clear %VENV_BUILD_DIR% -p %PYTHON%\\python.exe"
   - cmd: |
         "%VENV_BUILD_DIR%\\Scripts\\activate.bat"
         "%PYTHON%\\python.exe" -m pip install -U pip wheel setuptools pytest
