@@ -25,8 +25,8 @@ class TestShortNames(unittest.TestCase):
     def test_list_tests(self):
         args = ["--test", get_data("tests/test-data/with-and-without-short-names.yml"), "-l"]
         error_code, stdout, stderr = run_with_mock_cwl_runner(args)
-        self.assertEquals("[1] Test without a short name{}"
-                          "[2] opt-error: Test with a short name{}".format(n=n),
+        self.assertEquals("[1] Test without a short name{n}"
+                          "[2] opt-error: Test with a short name{n}".format(n=n),
                           stdout)
 
     def test_short_name_in_junit_xml(self):
