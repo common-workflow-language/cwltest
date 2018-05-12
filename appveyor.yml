@@ -1,5 +1,8 @@
 version: .{build}-{branch}
 
+cache:
+  - '%LOCALAPPDATA%\pip\Cache'
+
 environment:
   SYSTEMROOT: "C:\\WINDOWS"
   VENV_BUILD_DIR: "venv_build"
