@@ -46,14 +46,13 @@ environment:
 build_script:
   - "virtualenv --clear %VENV_BUILD_DIR% -p %PYTHON%\\python.exe"
   - cmd: |
-        "%VENV_BUILD_DIR%\\Scripts\\activate.bat"
-        SET PATH="%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-        "%PYTHON%\\python.exe" -m pip install -U pip wheel setuptools pytest
-        "%PYTHON%\\python.exe" -m pip install -e .
+        %VENV_BUILD_DIR%\\Scripts\\activate.bat
+        %PYTHON%\\python.exe -m pip install -U pip wheel setuptools pytest
+        %PYTHON%\\python.exe -m pip install -e .
 
 test_script:
   - cmd: |
-        "%VENV_BUILD_DIR%\\Scripts\\activate.bat"
+        %VENV_BUILD_DIR%\\Scripts\\activate.bat
         %PYTHON%\\python.exe setup.py test --addopts "--verbose -p no:cacheprovider --junit-xml=tests.xml"
 
 on_finish:
