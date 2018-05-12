@@ -69,9 +69,9 @@ def prepare_test_command(tool,      # type: str
             outdir = tempfile.mkdtemp()
     test_command.extend(["--outdir={}".format(outdir),
                          "--quiet",
-                         test["tool"]])
+                         os.path.normcase(test["tool"])])
     if test.get("job"):
-        test_command.append(test["job"])
+        test_command.append(os.path.normcase(test["job"]))
     return test_command
 
 
