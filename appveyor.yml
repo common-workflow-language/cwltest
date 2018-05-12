@@ -45,7 +45,8 @@ build_script:
 
 
 test_script:
-  - "%PYTHON%\\python.exe setup.py test --addopts '--verbose -p no:cacheprovider --junit-xml=tests.xml'"
+  - |
+    %PYTHON%\\python.exe setup.py test --addopts "--verbose -p no:cacheprovider --junit-xml=tests.xml"
 
 after_test:
   - ps: |
