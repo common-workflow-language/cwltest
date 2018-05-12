@@ -7,24 +7,24 @@ import argparse
 import json
 import logging
 import os
-import pipes
 import shutil
 import sys
 import tempfile
 import threading
 import time
+from typing import Any, Dict, List, Optional, Text
+from concurrent.futures import ThreadPoolExecutor
 
 import ruamel.yaml as yaml
 import ruamel.yaml.scanner as yamlscanner
 import schema_salad.ref_resolver
-from concurrent.futures import ThreadPoolExecutor
 from six.moves import range
 from six.moves import zip
-from typing import Any, Dict, List
 import pkg_resources  # part of setuptools
 
 import junit_xml
-from cwltest.utils import compare, CompareFail, TestResult, REQUIRED, get_test_number_by_key
+from cwltest.utils import (compare, CompareFail, TestResult, REQUIRED,
+                           get_test_number_by_key)
 
 _logger = logging.getLogger("cwltest")
 _logger.addHandler(logging.StreamHandler())
@@ -35,14 +35,20 @@ DEFAULT_TIMEOUT = 600  # 10 minutes
 
 if sys.version_info < (3, 0):
     import subprocess32 as subprocess
+    from pipes import quote
 else:
     import subprocess
+    from shlex import quote
 
 templock = threading.Lock()
 
 
-def prepare_test_command(tool, args, testargs, test):
-    # type: (Text, List[Text], Optional[List[Text]], Dict[str, str]) -> List[str]
+def prepare_test_command(tool,      # type: str
+                         args,      # type: List[str]
+                         testargs,  # type: Optional[List[str]]
+                         test       # type: Dict[str, str]
+                        ):  # type: (...) -> List[str]
+    """ Turn the test into a command line. """
     test_command = [tool]
     test_command.extend(args)
 
@@ -69,15 +75,19 @@ def prepare_test_command(tool, args, testargs, test):
     return test_command
 
 
-def run_test(args, i, tests, timeout):
-    # type: (argparse.Namespace, int, List[Dict[str, str]], int) -> TestResult
+def run_test(args,         # type: argparse.Namespace
+             test,         # type: Dict[str, str]
+             test_number,  # type: int
+             total_tests,  # type: int
+             timeout       # type: int
+            ):  # type: (...) -> TestResult
 
     global templock
 
     out = {}  # type: Dict[str,Any]
-    outdir = outstr = outerr = test_command = None
+    outdir = outstr = outerr = None
+    test_command = []  # type: List[str]
     duration = 0.0
-    t = tests[i]
     prefix = ""
     suffix = ""
     if sys.stderr.isatty():
@@ -87,12 +97,17 @@ def run_test(args, i, tests, timeout):
     try:
         process = None  # type: subprocess.Popen
         test_command = prepare_test_command(
-            args.tool, args.args, args.testargs, tests[i])
+            args.tool, args.args, args.testargs, test)
 
-        if t.get("short_name"):
-            sys.stderr.write("%sTest [%i/%i] %s: %s%s\n" % (prefix, i + 1, len(tests), t.get("short_name"), t.get("doc"), suffix))
+        if test.get("short_name"):
+            sys.stderr.write(
+                "%sTest [%i/%i] %s: %s%s\n"
+                % (prefix, test_number, total_tests, test.get("short_name"),
+                   test.get("doc"), suffix))
         else:
-            sys.stderr.write("%sTest [%i/%i] %s%s\n" % (prefix, i + 1, len(tests), t.get("doc"), suffix))
+            sys.stderr.write(
+                "%sTest [%i/%i] %s%s\n"
+                % (prefix, test_number, total_tests, test.get("doc"), suffix))
         sys.stderr.flush()
 
         start_time = time.time()
@@ -105,38 +120,40 @@ def run_test(args, i, tests, timeout):
             raise subprocess.CalledProcessError(return_code, " ".join(test_command))
 
         out = json.loads(outstr)
-    except ValueError as v:
-        _logger.error(str(v))
+    except ValueError as err:
+        _logger.error(str(err))
         _logger.error(outstr)
         _logger.error(outerr)
     except subprocess.CalledProcessError as err:
         if err.returncode == UNSUPPORTED_FEATURE:
             return TestResult(UNSUPPORTED_FEATURE, outstr, outerr, duration, args.classname)
-        elif t.get("should_fail", False):
+        if test.get("should_fail", False):
             return TestResult(0, outstr, outerr, duration, args.classname)
-        else:
-            _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
-            _logger.error(t.get("doc"))
-            _logger.error("Returned non-zero")
-            _logger.error(outerr)
-            return TestResult(1, outstr, outerr, duration, args.classname, str(err))
-    except (yamlscanner.ScannerError, TypeError) as e:
-        _logger.error(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
+        _logger.error(u"""Test failed: %s""", " ".join([quote(tc) for tc in test_command]))
+        _logger.error(test.get("doc"))
+        _logger.error(u"Returned non-zero")
+        _logger.error(outerr)
+        return TestResult(1, outstr, outerr, duration, args.classname, str(err))
+    except (yamlscanner.ScannerError, TypeError) as err:
+        _logger.error(u"""Test failed: %s""",
+                      u" ".join([quote(tc) for tc in test_command]))
         _logger.error(outstr)
-        _logger.error(u"Parse error %s", str(e))
+        _logger.error(u"Parse error %s", str(err))
         _logger.error(outerr)
     except KeyboardInterrupt:
-        _logger.error(u"""Test interrupted: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
+        _logger.error(u"""Test interrupted: %s""",
+                      u" ".join([quote(tc) for tc in test_command]))
         raise
     except subprocess.TimeoutExpired:
-        _logger.error(u"""Test timed out: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
-        _logger.error(t.get("doc"))
+        _logger.error(u"""Test timed out: %s""",
+                      u" ".join([quote(tc) for tc in test_command]))
+        _logger.error(test.get("doc"))
         return TestResult(2, outstr, outerr, timeout, args.classname, "Test timed out")
     finally:
         if process is not None and process.returncode is None:
             _logger.error(u"""Terminating lingering process""")
             process.terminate()
-            for a in range(0, 3):
+            for _ in range(0, 3):
                 time.sleep(1)
                 if process.poll() is not None:
                     break
@@ -145,24 +162,25 @@ def run_test(args, i, tests, timeout):
 
     fail_message = ''
 
-    if t.get("should_fail", False):
-        _logger.warning(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
-        _logger.warning(t.get("doc"))
+    if test.get("should_fail", False):
+        _logger.warning(u"""Test failed: %s""", u" ".join([quote(tc) for tc in test_command]))
+        _logger.warning(test.get("doc"))
         _logger.warning(u"Returned zero but it should be non-zero")
         return TestResult(1, outstr, outerr, duration, args.classname)
 
     try:
-        compare(t.get("output"), out)
+        compare(test.get("output"), out)
     except CompareFail as ex:
-        _logger.warning(u"""Test failed: %s""", " ".join([pipes.quote(tc) for tc in test_command]))
-        _logger.warning(t.get("doc"))
+        _logger.warning(u"""Test failed: %s""", u" ".join([quote(tc) for tc in test_command]))
+        _logger.warning(test.get("doc"))
         _logger.warning(u"Compare failure %s", ex)
         fail_message = str(ex)
 
     if outdir:
         shutil.rmtree(outdir, True)
 
-    return TestResult((1 if fail_message else 0), outstr, outerr, duration, args.classname, fail_message)
+    return TestResult((1 if fail_message else 0), outstr, outerr, duration,
+                      args.classname, fail_message)
 
 
 def arg_parser():  # type: () -> argparse.ArgumentParser
@@ -258,14 +276,14 @@ def main():  # type: () -> int
                 if test_number:
                     ntest.append(test_number)
                 else:
-                    _logger.error('Test with short name "%s" not found ' % s)
+                    _logger.error('Test with short name "%s" not found ', s)
                     return 1
     else:
         ntest = list(range(0, len(tests)))
 
     total = 0
     with ThreadPoolExecutor(max_workers=args.j) as executor:
-        jobs = [executor.submit(run_test, args, i, tests, args.timeout)
+        jobs = [executor.submit(run_test, args, tests[i], i+1, len(tests), args.timeout)
                 for i in ntest]
         try:
             for i, job in zip(ntest, jobs):
@@ -296,18 +314,19 @@ def main():  # type: () -> int
             _logger.error("Tests interrupted")
 
     if args.junit_xml:
-        with open(args.junit_xml, 'w') as fp:
-            junit_xml.TestSuite.to_file(fp, [report])
+        with open(args.junit_xml, 'w') as xml:
+            junit_xml.TestSuite.to_file(xml, [report])
 
     if failures == 0 and unsupported == 0:
         _logger.info("All tests passed")
         return 0
-    elif failures == 0 and unsupported > 0:
-        _logger.warning("%i tests passed, %i unsupported features", total - unsupported, unsupported)
+    if failures == 0 and unsupported > 0:
+        _logger.warning("%i tests passed, %i unsupported features",
+                        total - unsupported, unsupported)
         return 0
-    else:
-        _logger.warning("%i tests passed, %i failures, %i unsupported features", total - (failures + unsupported), failures, unsupported)
-        return 1
+    _logger.warning("%i tests passed, %i failures, %i unsupported features",
+                    total - (failures + unsupported), failures, unsupported)
+    return 1
 
 
 if __name__ == "__main__":
