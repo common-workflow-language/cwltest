@@ -46,15 +46,15 @@ install:
 
 build_script:
   - "virtualenv --clear %VENV_BUILD_DIR%"
-  - "%VENV_BUILD_DIR%\\Scripts\\activate.bat"
-  - "%PYTHON%\\python.exe -m pip install -U pip wheel setuptools pytest"
-  - "%PYTHON%\\python.exe -m pip install -e . "  # Needed for mock-cwl-runner
+  - cmd: |
+        "%VENV_BUILD_DIR%\\Scripts\\activate.bat"
+        "%PYTHON%\\python.exe -m pip install -U pip wheel setuptools pytest"
+        "%PYTHON%\\python.exe -m pip install -e . "  # Needed for mock-cwl-runner
 
 test_script:
-  - "%VENV_BUILD_DIR%\\Scripts\\activate.bat"
-  - echo %PATH%
-  - |
-    %PYTHON%\\python.exe setup.py test --addopts "--verbose -p no:cacheprovider --junit-xml=tests.xml"
+  - cmd: |
+        "%VENV_BUILD_DIR%\\Scripts\\activate.bat"
+        %PYTHON%\\python.exe setup.py test --addopts "--verbose -p no:cacheprovider --junit-xml=tests.xml"
 
 on_finish:
   - ps: |
