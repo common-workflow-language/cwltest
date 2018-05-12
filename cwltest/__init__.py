@@ -41,31 +41,31 @@ else:
 templock = threading.Lock()
 
 
-def prepare_test_command(args, i, tests):
-    # type: (argparse.Namespace, int, List[Dict[str, str]]) -> List[str]
-    t = tests[i]
-    test_command = [args.tool]
-    test_command.extend(args.args)
+def prepare_test_command(tool, args, testargs, test):
+    # type: (Text, List[Text], Optional[List[Text]], Dict[str, str]) -> List[str]
+    test_command = [tool]
+    test_command.extend(args)
 
     # Add additional arguments given in test case
-    if args.testargs is not None:
-        for testarg in args.testargs:
+    if testargs is not None:
+        for testarg in testargs:
             (test_case_name, prefix) = testarg.split('==')
-            if test_case_name in t:
-                test_command.extend([prefix, t[test_case_name]])
+            if test_case_name in test:
+                test_command.extend([prefix, test[test_case_name]])
 
     # Add prefixes if running on MacOSX so that boot2docker writes to /Users
     with templock:
-        if 'darwin' in sys.platform and args.tool == 'cwltool':
+        if 'darwin' in sys.platform and tool == 'cwltool':
             outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
-            test_command.extend(["--tmp-outdir-prefix={}".format(outdir), "--tmpdir-prefix={}".format(outdir)])
+            test_command.extend(["--tmp-outdir-prefix={}".format(outdir),
+                                 "--tmpdir-prefix={}".format(outdir)])
         else:
             outdir = tempfile.mkdtemp()
     test_command.extend(["--outdir={}".format(outdir),
                          "--quiet",
-                         t["tool"]])
-    if t.get("job"):
-        test_command.append(t["job"])
+                         test["tool"]])
+    if test.get("job"):
+        test_command.append(test["job"])
     return test_command
 
 
@@ -86,7 +86,8 @@ def run_test(args, i, tests, timeout):
         suffix = "\n"
     try:
         process = None  # type: subprocess.Popen
-        test_command = prepare_test_command(args, i, tests)
+        test_command = prepare_test_command(
+            args.tool, args.args, args.testargs, tests[i])
 
         if t.get("short_name"):
             sys.stderr.write("%sTest [%i/%i] %s: %s%s\n" % (prefix, i + 1, len(tests), t.get("short_name"), t.get("doc"), suffix))
@@ -175,9 +176,9 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         help="CWL runner executable to use (default 'cwl-runner'")
     parser.add_argument("--only-tools", action="store_true", help="Only test CommandLineTools")
     parser.add_argument("--junit-xml", type=str, default=None, help="Path to JUnit xml file")
-    parser.add_argument("--test-arg", type=str, help="Additional argument given in test cases and "
-                                                     "required prefix for tool runner.",
-                        metavar="cache==--cache-dir", action="append", dest="testargs")
+    parser.add_argument("--test-arg", type=str, help="Additional argument "
+        "given in test cases and required prefix for tool runner.",
+        default=None, metavar="cache==--cache-dir", action="append", dest="testargs")
     parser.add_argument("args", help="arguments to pass first to tool runner", nargs=argparse.REMAINDER)
     parser.add_argument("-j", type=int, default=1, help="Specifies the number of tests to run simultaneously "
                                                         "(defaults to one).")
