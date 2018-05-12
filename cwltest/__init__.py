@@ -31,7 +31,7 @@ _logger.addHandler(logging.StreamHandler())
 _logger.setLevel(logging.INFO)
 
 UNSUPPORTED_FEATURE = 33
-DEFAULT_TIMEOUT = 900  # 15 minutes
+DEFAULT_TIMEOUT = 600  # 10 minutes
 
 if sys.version_info < (3, 0):
     import subprocess32 as subprocess
@@ -183,9 +183,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                                                         "(defaults to one).")
     parser.add_argument("--verbose", action="store_true", help="More verbose output during test run.")
     parser.add_argument("--classname", type=str, default="", help="Specify classname for the Test Suite.")
-    parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help="Time of execution in seconds after "
-                                                                             "which the test will be skipped. "
-                                                                             "Defaults to 900 sec (15 minutes)")
+    parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT,
+            help="Time of execution in seconds after which the test will be "
+            "skipped. Defaults to {} seconds ({} minutes).".format(
+                DEFAULT_TIMEOUT, DEFAULT_TIMEOUT/60))
 
     pkg = pkg_resources.require("cwltest")
     if pkg:
