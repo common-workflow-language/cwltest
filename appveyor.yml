@@ -39,8 +39,8 @@ environment:
 install:
   - "%PYTHON%\\python.exe -m pip install -U wheel setuptools pip pytest"
 
-build_script:
-  - "%PYTHON%\\python.exe setup.py build"
+#build_script:
+#  - "%PYTHON%\\python.exe setup.py build"
 
 
 test_script:
