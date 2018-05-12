@@ -26,7 +26,7 @@ MODULE=cwltest
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
-DEVPKGS=pep8 diff_cover autopep8 pylint coverage pep257 flake8 pytest
+DEVPKGS=pep8 diff_cover autopep8 pylint coverage pep257 flake8 pytest pytest-xdist
 DEBDEVPKGS=pep8 python-autopep8 pylint python-coverage pep257 sloccount python-flake8
 VERSION=1.0.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
@@ -132,7 +132,7 @@ diff-cover.html: coverage-gcovr.xml coverage.xml
 
 ## test        : run the ${MODULE} test suite
 test: all
-	./setup.py test
+	./setup.py test --addopts -n$(shell nproc)
 
 sloccount.sc: ${PYSOURCES} Makefile
 	sloccount --duplicates --wide --details $^ > sloccount.sc
