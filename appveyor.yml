@@ -48,8 +48,8 @@ build_script:
   - "virtualenv --clear %VENV_BUILD_DIR%"
   - cmd: |
         "%VENV_BUILD_DIR%\\Scripts\\activate.bat"
-        "%PYTHON%\\python.exe -m pip install -U pip wheel setuptools pytest"
-        "%PYTHON%\\python.exe -m pip install -e . "  # Needed for mock-cwl-runner
+        "%PYTHON%\\python.exe" -m pip install -U pip wheel setuptools pytest
+        "%PYTHON%\\python.exe" -m pip install -e .  # Needed for mock-cwl-runner
 
 test_script:
   - cmd: |
