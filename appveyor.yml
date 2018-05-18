@@ -24,7 +24,7 @@ environment:
       PYTHON_ARCH: "64"
 
 install:
-  - "%PYTHON%\\python.exe -m pip install setuptools^>=20.3"
+  - "%PYTHON%\\python.exe -m pip install -U setuptools^>=20.3"
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
   # Note the use of a `^` to escape the `>`
 
