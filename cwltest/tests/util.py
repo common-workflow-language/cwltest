@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import os
+import sys
 
 if sys.version_info < (3, 0):
     import subprocess32 as subprocess
