@@ -1,27 +1,32 @@
 import json
 import os
 import re
+import shlex
+import shutil
+import subprocess
 import sys
 import tempfile
+import time
 from typing import Any, Dict, List, Optional, Set, Text
 
 import junit_xml
+import ruamel.yaml.scanner
 import schema_salad.ref_resolver
 
-from cwltest import REQUIRED, templock
+from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
 
 
 class TestResult:
     """Encapsulate relevant test result data."""
 
     def __init__(
-        self,
-        return_code,
-        standard_output,
-        error_output,
-        duration,
-        classname,
-        message="",
+            self,
+            return_code,
+            standard_output,
+            error_output,
+            duration,
+            classname,
+            message="",
     ):
         # type: (int, Text, Text, float, Text, str) -> None
         """Initialize a TestResult object."""
@@ -80,10 +85,10 @@ def compare_location(expected, actual):
         actual[comp] = actual[comp].rstrip("/")
 
     if expected[comp] != "Any" and (
-        not (
-            actual[comp].endswith("/" + expected[comp])
-            or ("/" not in actual[comp] and expected[comp] == actual[comp])
-        )
+            not (
+                    actual[comp].endswith("/" + expected[comp])
+                    or ("/" not in actual[comp] and expected[comp] == actual[comp])
+            )
     ):
         raise CompareFail.format(
             expected,
@@ -217,12 +222,12 @@ def get_test_number_by_key(tests, key, value):
 
 
 def prepare_test_command(
-    tool,  # type: str
-    args,  # type: List[str]
-    testargs,  # type: Optional[List[str]]
-    test,  # type: Dict[str, Any]
-    cwd,  # type: str
-    verbose=False,  # type: bool
+        tool,  # type: str
+        args,  # type: List[str]
+        testargs,  # type: Optional[List[str]]
+        test,  # type: Dict[str, Any]
+        cwd,  # type: str
+        verbose=False,  # type: bool
 ):  # type: (...) -> List[str]
     """Turn the test into a command line."""
     test_command = [tool]
@@ -254,19 +259,156 @@ def prepare_test_command(
     cwd = schema_salad.ref_resolver.file_uri(cwd)
     toolpath = test["tool"]
     if toolpath.startswith(cwd):
-        toolpath = toolpath[len(cwd) + 1 :]
+        toolpath = toolpath[len(cwd) + 1:]
     test_command.extend([os.path.normcase(toolpath)])
 
     jobpath = test.get("job")
     if jobpath:
         if jobpath.startswith(cwd):
-            jobpath = jobpath[len(cwd) + 1 :]
+            jobpath = jobpath[len(cwd) + 1:]
         test_command.append(os.path.normcase(jobpath))
     return test_command
 
 
+def run_test_plain(
+        args,  # type: argparse.Namespace
+        test,  # type: Dict[str, str]
+        test_number,  # type: int
+        timeout,  # type: int
+        junit_verbose=False,  # type: bool
+        verbose=False,  # type: bool
+):  # type: (...) -> TestResult
+    out = {}  # type: Dict[str,Any]
+    outdir = outstr = outerr = ""
+    test_command = []  # type: List[str]
+    duration = 0.0
+    process = None  # type: Optional[subprocess.Popen[str]]
+    try:
+        cwd = os.getcwd()
+        test_command = prepare_test_command(
+            args['tool'], args['args'], args['testargs'], test, cwd, junit_verbose
+        )
+        if verbose:
+            sys.stderr.write(f"Running: {' '.join(test_command)}\n")
+        sys.stderr.flush()
+        start_time = time.time()
+        stderr = subprocess.PIPE if not args['verbose'] else None
+        process = subprocess.Popen(  # nosec
+            test_command,
+            stdout=subprocess.PIPE,
+            stderr=stderr,
+            universal_newlines=True,
+            cwd=cwd,
+        )
+        outstr, outerr = process.communicate(timeout=timeout)
+        return_code = process.poll()
+        duration = time.time() - start_time
+        if return_code:
+            raise subprocess.CalledProcessError(return_code, " ".join(test_command))
+
+        out = json.loads(outstr)
+    except subprocess.CalledProcessError as err:
+        if err.returncode == UNSUPPORTED_FEATURE and REQUIRED not in test.get(
+                "tags", ["required"]
+        ):
+            return TestResult(
+                UNSUPPORTED_FEATURE, outstr, outerr, duration, args['classname']
+            )
+        if test.get("should_fail", False):
+            return TestResult(0, outstr, outerr, duration, args['classname'])
+        logger.error(
+            """Test %i failed: %s""",
+            test_number,
+            " ".join([shlex.quote(tc) for tc in test_command]),
+        )
+        logger.error(test.get("doc", "").replace("\n", " ").strip())
+        if err.returncode == UNSUPPORTED_FEATURE:
+            logger.error("Does not support required feature")
+        else:
+            logger.error("Returned non-zero")
+        logger.error(outerr)
+        return TestResult(1, outstr, outerr, duration, args['classname'], str(err))
+    except (ruamel.yaml.scanner.ScannerError, TypeError) as err:
+        logger.error(
+            """Test %i failed: %s""",
+            test_number,
+            " ".join([shlex.quote(tc) for tc in test_command]),
+        )
+        logger.error(outstr)
+        logger.error("Parse error %s", str(err))
+        logger.error(outerr)
+    except KeyboardInterrupt:
+        logger.error(
+            """Test %i interrupted: %s""",
+            test_number,
+            " ".join([shlex.quote(tc) for tc in test_command]),
+        )
+        raise
+    except subprocess.TimeoutExpired:
+        logger.error(
+            """Test %i timed out: %s""",
+            test_number,
+            " ".join([shlex.quote(tc) for tc in test_command]),
+        )
+        logger.error(test.get("doc", "").replace("\n", " ").strip())
+        # Kill and re-communicate to get the logs and reap the child, as
+        # instructed in the subprocess docs.
+        if process:
+            process.kill()
+            outstr, outerr = process.communicate()
+        return TestResult(
+            2, outstr, outerr, timeout, args['classname'], "Test timed out"
+        )
+    finally:
+        if process is not None and process.returncode is None:
+            logger.error("""Terminating lingering process""")
+            process.terminate()
+            for _ in range(0, 3):
+                time.sleep(1)
+                if process.poll() is not None:
+                    break
+            if process.returncode is None:
+                process.kill()
+
+    fail_message = ""
+
+    if test.get("should_fail", False):
+        logger.warning(
+            """Test %i failed: %s""",
+            test_number,
+            " ".join([shlex.quote(tc) for tc in test_command]),
+        )
+        logger.warning(test.get("doc", "").replace("\n", " ").strip())
+        logger.warning("Returned zero but it should be non-zero")
+        return TestResult(1, outstr, outerr, duration, args['classname'])
+
+    try:
+        compare(test.get("output"), out)
+    except CompareFail as ex:
+        logger.warning(
+            """Test %i failed: %s""",
+            test_number,
+            " ".join([shlex.quote(tc) for tc in test_command]),
+        )
+        logger.warning(test.get("doc", "").replace("\n", " ").strip())
+        logger.warning("Compare failure %s", ex)
+        fail_message = str(ex)
+
+    if outdir:
+        shutil.rmtree(outdir, True)
+
+    return TestResult(
+        (1 if fail_message else 0),
+        outstr,
+        outerr,
+        duration,
+        args['classname'],
+        fail_message,
+    )
+
+
 def shortname(
-    name,  # type: str
+        name,  # type: str
 ):  # type: (...) -> str
     """
     Return the short name of a given name.

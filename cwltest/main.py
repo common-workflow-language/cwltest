@@ -4,18 +4,13 @@
 import argparse
 import json
 import os
-import shlex
-import shutil
-import subprocess  # nosec
 import sys
-import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Union
 
 import junit_xml
 import pkg_resources
-import ruamel.yaml.scanner
 import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
@@ -25,178 +20,48 @@ from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, utils
 from cwltest.argparser import arg_parser
 from cwltest.utils import TestResult
 
+if sys.stderr.isatty():
+    PREFIX = "\r"
+    SUFFIX = ""
+else:
+    PREFIX = ""
+    SUFFIX = "\n"
+
 
 def _run_test(
-    args,  # type: argparse.Namespace
-    test,  # type: Dict[str, str]
-    test_number,  # type: int
-    total_tests,  # type: int
-    timeout,  # type: int
-    junit_verbose=False,  # type: bool
-    verbose=False,  # type: bool
+        args,  # type: argparse.Namespace
+        test,  # type: Dict[str, str]
+        test_number,  # type: int
+        total_tests,  # type: int
+        timeout,  # type: int
+        junit_verbose=False,  # type: bool
+        verbose=False,  # type: bool
 ):  # type: (...) -> TestResult
-    out = {}  # type: Dict[str,Any]
-    outdir = outstr = outerr = ""
-    test_command = []  # type: List[str]
-    duration = 0.0
-    process = None  # type: Optional[subprocess.Popen[str]]
-    prefix = ""
-    suffix = ""
-    if sys.stderr.isatty():
-        prefix = "\r"
+    if test.get("short_name"):
+        sys.stderr.write(
+            "%sTest [%i/%i] %s: %s%s\n"
+            % (
+                PREFIX,
+                test_number,
+                total_tests,
+                test.get("short_name"),
+                test.get("doc", "").replace("\n", " ").strip(),
+                SUFFIX,
+            )
+        )
     else:
-        suffix = "\n"
-    try:
-        cwd = os.getcwd()
-        test_command = utils.prepare_test_command(
-            args.tool, args.args, args.testargs, test, cwd, junit_verbose
-        )
-
-        if test.get("short_name"):
-            sys.stderr.write(
-                "%sTest [%i/%i] %s: %s%s\n"
-                % (
-                    prefix,
-                    test_number,
-                    total_tests,
-                    test.get("short_name"),
-                    test.get("doc", "").replace("\n", " ").strip(),
-                    suffix,
-                )
+        sys.stderr.write(
+            "%sTest [%i/%i] %s%s\n"
+            % (
+                PREFIX,
+                test_number,
+                total_tests,
+                test.get("doc", "").replace("\n", " ").strip(),
+                SUFFIX,
             )
-        else:
-            sys.stderr.write(
-                "%sTest [%i/%i] %s%s\n"
-                % (
-                    prefix,
-                    test_number,
-                    total_tests,
-                    test.get("doc", "").replace("\n", " ").strip(),
-                    suffix,
-                )
-            )
-        if verbose:
-            sys.stderr.write(f"Running: {' '.join(test_command)}\n")
-        sys.stderr.flush()
-
-        start_time = time.time()
-        stderr = subprocess.PIPE if not args.verbose else None
-        process = subprocess.Popen(  # nosec
-            test_command,
-            stdout=subprocess.PIPE,
-            stderr=stderr,
-            universal_newlines=True,
-            cwd=cwd,
         )
-        outstr, outerr = process.communicate(timeout=timeout)
-        return_code = process.poll()
-        duration = time.time() - start_time
-        if return_code:
-            raise subprocess.CalledProcessError(return_code, " ".join(test_command))
-
-        out = json.loads(outstr)
-    except ValueError as err:
-        logger.error(str(err))
-        logger.error(outstr)
-        logger.error(outerr)
-    except subprocess.CalledProcessError as err:
-        if err.returncode == UNSUPPORTED_FEATURE and REQUIRED not in test.get(
-            "tags", ["required"]
-        ):
-            return utils.TestResult(
-                UNSUPPORTED_FEATURE, outstr, outerr, duration, args.classname
-            )
-        if test.get("should_fail", False):
-            return utils.TestResult(0, outstr, outerr, duration, args.classname)
-        logger.error(
-            """Test %i failed: %s""",
-            test_number,
-            " ".join([shlex.quote(tc) for tc in test_command]),
-        )
-        logger.error(test.get("doc", "").replace("\n", " ").strip())
-        if err.returncode == UNSUPPORTED_FEATURE:
-            logger.error("Does not support required feature")
-        else:
-            logger.error("Returned non-zero")
-        logger.error(outerr)
-        return utils.TestResult(1, outstr, outerr, duration, args.classname, str(err))
-    except (ruamel.yaml.scanner.ScannerError, TypeError) as err:
-        logger.error(
-            """Test %i failed: %s""",
-            test_number,
-            " ".join([shlex.quote(tc) for tc in test_command]),
-        )
-        logger.error(outstr)
-        logger.error("Parse error %s", str(err))
-        logger.error(outerr)
-    except KeyboardInterrupt:
-        logger.error(
-            """Test %i interrupted: %s""",
-            test_number,
-            " ".join([shlex.quote(tc) for tc in test_command]),
-        )
-        raise
-    except subprocess.TimeoutExpired:
-        logger.error(
-            """Test %i timed out: %s""",
-            test_number,
-            " ".join([shlex.quote(tc) for tc in test_command]),
-        )
-        logger.error(test.get("doc", "").replace("\n", " ").strip())
-        # Kill and re-communicate to get the logs and reap the child, as
-        # instructed in the subprocess docs.
-        if process:
-            process.kill()
-            outstr, outerr = process.communicate()
-        return utils.TestResult(
-            2, outstr, outerr, timeout, args.classname, "Test timed out"
-        )
-    finally:
-        if process is not None and process.returncode is None:
-            logger.error("""Terminating lingering process""")
-            process.terminate()
-            for _ in range(0, 3):
-                time.sleep(1)
-                if process.poll() is not None:
-                    break
-            if process.returncode is None:
-                process.kill()
-
-    fail_message = ""
-
-    if test.get("should_fail", False):
-        logger.warning(
-            """Test %i failed: %s""",
-            test_number,
-            " ".join([shlex.quote(tc) for tc in test_command]),
-        )
-        logger.warning(test.get("doc", "").replace("\n", " ").strip())
-        logger.warning("Returned zero but it should be non-zero")
-        return utils.TestResult(1, outstr, outerr, duration, args.classname)
-
-    try:
-        utils.compare(test.get("output"), out)
-    except utils.CompareFail as ex:
-        logger.warning(
-            """Test %i failed: %s""",
-            test_number,
-            " ".join([shlex.quote(tc) for tc in test_command]),
-        )
-        logger.warning(test.get("doc", "").replace("\n", " ").strip())
-        logger.warning("Compare failure %s", ex)
-        fail_message = str(ex)
-
-    if outdir:
-        shutil.rmtree(outdir, True)
-
-    return utils.TestResult(
-        (1 if fail_message else 0),
-        outstr,
-        outerr,
-        duration,
-        args.classname,
-        fail_message,
-    )
+    sys.stderr.flush()
+    return utils.run_test_plain(args, test, test_number, timeout, junit_verbose, verbose)
 
 
 def _expand_number_range(nr: str) -> List[int]:
