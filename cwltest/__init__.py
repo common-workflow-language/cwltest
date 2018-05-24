@@ -39,6 +39,12 @@ if sys.version_info < (3, 0):
 else:
     import subprocess
     from shlex import quote
+if sys.stderr.isatty():
+    PREFIX = "\r"
+    SUFFIX=''
+else:
+    PREFIX=''
+    SUFFIX= "\n"
 
 templock = threading.Lock()
 
@@ -75,6 +81,7 @@ def prepare_test_command(tool,      # type: str
     return test_command
 
 
+
 def run_test(args,         # type: argparse.Namespace
              test,         # type: Dict[str, str]
              test_number,  # type: int
@@ -82,58 +89,60 @@ def run_test(args,         # type: argparse.Namespace
              timeout       # type: int
             ):  # type: (...) -> TestResult
 
+    if test.get("short_name"):
+        sys.stderr.write(
+            "%sTest [%i/%i] %s: %s%s\n"
+            % (PREFIX, test_number, total_tests, test.get("short_name"),
+               test.get("doc"), SUFFIX))
+    else:
+        sys.stderr.write(
+            "%sTest [%i/%i] %s%s\n"
+            % (PREFIX, test_number, total_tests, test.get("doc"), SUFFIX))
+    sys.stderr.flush()
+    return run_test_plain(args, test, timeout)
+
+
+def run_test_plain(args,         # type: argparse.Namespace
+                   test,         # type: Dict[str, str]
+                   timeout       # type: int
+                  ):  # type: (...) -> TestResult
+
+
     global templock
 
     out = {}  # type: Dict[str,Any]
     outdir = outstr = outerr = None
     test_command = []  # type: List[str]
     duration = 0.0
-    prefix = ""
-    suffix = ""
-    if sys.stderr.isatty():
-        prefix = "\r"
-    else:
-        suffix = "\n"
     try:
         process = None  # type: subprocess.Popen
         test_command = prepare_test_command(
-            args.tool, args.args, args.testargs, test)
-
-        if test.get("short_name"):
-            sys.stderr.write(
-                "%sTest [%i/%i] %s: %s%s\n"
-                % (prefix, test_number, total_tests, test.get("short_name"),
-                   test.get("doc"), suffix))
-        else:
-            sys.stderr.write(
-                "%sTest [%i/%i] %s%s\n"
-                % (prefix, test_number, total_tests, test.get("doc"), suffix))
-        sys.stderr.flush()
+            args['tool'], args['args'], args['testargs'], test)
 
         start_time = time.time()
-        stderr = subprocess.PIPE if not args.verbose else None
+        stderr = subprocess.PIPE if not args['verbose'] else None
         process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=stderr)
-        outstr, outerr = [var.decode('utf-8') for var in process.communicate(timeout=timeout)]
+        outstr, outerr = process.communicate(timeout=timeout)
+        for out in outstr, outerr:
+            if out:
+                out = out.decode('utf-8')
         return_code = process.poll()
         duration = time.time() - start_time
         if return_code:
             raise subprocess.CalledProcessError(return_code, " ".join(test_command))
 
         out = json.loads(outstr)
-    except ValueError as err:
-        _logger.error(str(err))
-        _logger.error(outstr)
-        _logger.error(outerr)
     except subprocess.CalledProcessError as err:
         if err.returncode == UNSUPPORTED_FEATURE:
-            return TestResult(UNSUPPORTED_FEATURE, outstr, outerr, duration, args.classname)
+            return TestResult(UNSUPPORTED_FEATURE, outstr, outerr, duration,
+                    args['classname'])
         if test.get("should_fail", False):
-            return TestResult(0, outstr, outerr, duration, args.classname)
+            return TestResult(0, outstr, outerr, duration, args['classname'])
         _logger.error(u"""Test failed: %s""", " ".join([quote(tc) for tc in test_command]))
         _logger.error(test.get("doc"))
         _logger.error(u"Returned non-zero")
         _logger.error(outerr)
-        return TestResult(1, outstr, outerr, duration, args.classname, str(err))
+        return TestResult(1, outstr, outerr, duration, args['classname'], str(err))
     except (yamlscanner.ScannerError, TypeError) as err:
         _logger.error(u"""Test failed: %s""",
                       u" ".join([quote(tc) for tc in test_command]))
@@ -148,7 +157,7 @@ def run_test(args,         # type: argparse.Namespace
         _logger.error(u"""Test timed out: %s""",
                       u" ".join([quote(tc) for tc in test_command]))
         _logger.error(test.get("doc"))
-        return TestResult(2, outstr, outerr, timeout, args.classname, "Test timed out")
+        return TestResult(2, outstr, outerr, timeout, args['classname'], "Test timed out")
     finally:
         if process is not None and process.returncode is None:
             _logger.error(u"""Terminating lingering process""")
@@ -166,7 +175,7 @@ def run_test(args,         # type: argparse.Namespace
         _logger.warning(u"""Test failed: %s""", u" ".join([quote(tc) for tc in test_command]))
         _logger.warning(test.get("doc"))
         _logger.warning(u"Returned zero but it should be non-zero")
-        return TestResult(1, outstr, outerr, duration, args.classname)
+        return TestResult(1, outstr, outerr, duration, args['classname'])
 
     try:
         compare(test.get("output"), out)
@@ -180,7 +189,7 @@ def run_test(args,         # type: argparse.Namespace
         shutil.rmtree(outdir, True)
 
     return TestResult((1 if fail_message else 0), outstr, outerr, duration,
-                      args.classname, fail_message)
+                      args['classname'], fail_message)
 
 
 def arg_parser():  # type: () -> argparse.ArgumentParser
