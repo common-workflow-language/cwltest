@@ -1,7 +1,12 @@
 from __future__ import absolute_import
 import os
+import sys
 
-import subprocess
+if sys.version_info < (3, 0):
+    import subprocess32 as subprocess
+else:
+    import subprocess
+
 from pkg_resources import (Requirement, ResolutionError,  # type: ignore
                            resource_filename)
 
