@@ -14,6 +14,7 @@ import threading
 import time
 from typing import Any, Dict, List, Optional, Text
 from concurrent.futures import ThreadPoolExecutor
+from collections import defaultdict
 
 import ruamel.yaml as yaml
 import ruamel.yaml.scanner as yamlscanner
@@ -206,6 +207,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
             help="Time of execution in seconds after which the test will be "
             "skipped. Defaults to {} seconds ({} minutes).".format(
                 DEFAULT_TIMEOUT, DEFAULT_TIMEOUT/60))
+    parser.add_argument("--badgedir", type=str, help="Directory that stores JSON files for badges.")
 
     pkg = pkg_resources.require("cwltest")
     if pkg:
@@ -239,6 +241,12 @@ def main():  # type: () -> int
     passed = 0
     suite_name, _ = os.path.splitext(os.path.basename(args.test))
     report = junit_xml.TestSuite(suite_name, [])
+
+    # the number of total tests, failured tests, unsupported tests and passed tests for each tag
+    ntotal = defaultdict(int)        # type: Dict[str, int]
+    nfailures = defaultdict(int)     # type: Dict[str, int]
+    nunsupported = defaultdict(int)  # type: Dict[str, int]
+    npassed = defaultdict(int)       # type: Dict[str, int]
 
     if args.only_tools:
         alltests = tests
@@ -290,18 +298,30 @@ def main():  # type: () -> int
                 test_result = job.result()
                 test_case = test_result.create_test_case(tests[i])
                 total += 1
+                tags = tests[i].get("tags", [])
+                for t in tags:
+                    ntotal[t] += 1
+
                 return_code = test_result.return_code
                 category = test_case.category
                 if return_code == 0:
                     passed += 1
+                    for t in tags:
+                        npassed[t] += 1
                 elif return_code != 0 and return_code != UNSUPPORTED_FEATURE:
                     failures += 1
+                    for t in tags:
+                        nfailures[t] += 1
                     test_case.add_failure_info(output=test_result.message)
                 elif return_code == UNSUPPORTED_FEATURE and category == REQUIRED:
                     failures += 1
+                    for t in tags:
+                        nfailures[t] += 1
                     test_case.add_failure_info(output=test_result.message)
                 elif category != REQUIRED and return_code == UNSUPPORTED_FEATURE:
                     unsupported += 1
+                    for t in tags:
+                        nunsupported[t] += 1
                     test_case.add_skipped_info("Unsupported")
                 else:
                     raise Exception(
@@ -316,6 +336,21 @@ def main():  # type: () -> int
     if args.junit_xml:
         with open(args.junit_xml, 'w') as xml:
             junit_xml.TestSuite.to_file(xml, [report])
+
+    if args.badgedir:
+        os.mkdir(args.badgedir)
+        for t, v in ntotal.items():
+            percent = int((npassed[t]/float(v))*100)
+            if npassed[t] == v:
+                color = "green"
+            else:
+                color = "red"
+            with open("{}/{}.json".format(args.badgedir, t), 'w') as out:
+                out.write(json.dumps({
+                    "subject": "[CWL] {}".format(t),
+                    "status": "{}%".format(percent),
+                    "color": color,
+                }))
 
     if failures == 0 and unsupported == 0:
         _logger.info("All tests passed")

@@ -26,3 +26,26 @@ Run on the command line
 Simple command::
 
   cwltest --test test-descriptions.yml --tool cwl-runner
+
+Generate conformance badges using cwltest
+-----------------------------------------
+
+To make badges that show the results of the conformance test,
+you can generate JSON files for https://badgen.net by using --badgedir option
+
+To generate JSON files::
+
+  cwltest --test test-descriptions.yml --tool cwl-runner --badgedir badges
+  ...
+  $ cat badges/command_line_tool.json | jq .
+  {
+    "subject": "[CWL] command_line_tool",
+    "status": "100%",
+    "color": "green"
+  }
+
+Once you upload JSON file to a server, you make a badge by using a link like https://flat.badgen.net/https/path/to/generated/json.
+
+Here is an example of markdown to add a badge::
+
+  ![test result](https://flat.badgen.net/https/path/to/generated/json)
