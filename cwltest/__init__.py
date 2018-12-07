@@ -62,7 +62,7 @@ def prepare_test_command(tool,      # type: str
 
     # Add prefixes if running on MacOSX so that boot2docker writes to /Users
     with templock:
-        if 'darwin' in sys.platform and tool == 'cwltool':
+        if 'darwin' in sys.platform and tool.endswith('cwltool'):
             outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
             test_command.extend(["--tmp-outdir-prefix={}".format(outdir),
                                  "--tmpdir-prefix={}".format(outdir)])
