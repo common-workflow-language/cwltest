@@ -12,8 +12,8 @@ class TestCategories(unittest.TestCase):
     def test_unsupported_with_required_tests(self):
         args = ["--test", get_data("tests/test-data/required-unsupported.yml")]
         error_code, stdout, stderr = run_with_mock_cwl_runner(args)
-        self.assertEquals(error_code, 1)
-        self.assertEquals(
+        self.assertEqual(error_code, 1)
+        self.assertEqual(
             "Test [1/2] Required test that is unsupported (without tags){n}{n}"
             "Test [2/2] Required test that is unsupported (with tags){n}{n}"
             "0 tests passed, 2 failures, 0 unsupported "
@@ -22,15 +22,15 @@ class TestCategories(unittest.TestCase):
     def test_unsupported_with_optional_tests(self):
         args = ["--test", get_data("tests/test-data/optional-unsupported.yml")]
         error_code, stdout, stderr = run_with_mock_cwl_runner(args)
-        self.assertEquals(error_code, 0)
-        self.assertEquals("Test [1/1] Optional test that is unsupported{n}{n}"
-                          "0 tests passed, 1 unsupported "
-                          "features{n}".format(n=n), stderr)
+        self.assertEqual(error_code, 0)
+        self.assertEqual("Test [1/1] Optional test that is unsupported{n}{n}"
+                         "0 tests passed, 1 unsupported "
+                         "features{n}".format(n=n), stderr)
 
     def test_error_with_optional_tests(self):
         args = ["--test", get_data("tests/test-data/optional-error.yml")]
         error_code, stdout, stderr = run_with_mock_cwl_runner(args)
-        self.assertEquals(error_code, 1)
+        self.assertEqual(error_code, 1)
         self.assertIn("1 failures", stderr)
 
     def test_category_in_junit_xml(self):
@@ -40,5 +40,5 @@ class TestCategories(unittest.TestCase):
         tree = ET.parse(junit_xml_report)
         root = tree.getroot()
         category = root.find("testsuite").find("testcase").attrib['class']
-        self.assertEquals(category, "js, init_work_dir")
+        self.assertEqual(category, "js, init_work_dir")
         os.remove(junit_xml_report)
