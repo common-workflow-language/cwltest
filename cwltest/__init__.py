@@ -85,7 +85,7 @@ def run_test(args,         # type: argparse.Namespace
     global templock
 
     out = {}  # type: Dict[str,Any]
-    outdir = outstr = outerr = None
+    outdir = outstr = outerr = u""
     test_command = []  # type: List[str]
     duration = 0.0
     prefix = ""
@@ -95,7 +95,7 @@ def run_test(args,         # type: argparse.Namespace
     else:
         suffix = "\n"
     try:
-        process = None  # type: subprocess.Popen
+        process = None  # type: Optional[subprocess.Popen]
         test_command = prepare_test_command(
             args.tool, args.args, args.testargs, test)
 
