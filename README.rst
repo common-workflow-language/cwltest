@@ -1,6 +1,8 @@
 ==========================================
 Common workflow language testing framework
 ==========================================
+.. image:: https://travis-ci.org/common-workflow-language/cwltest.svg?branch=master
+    :target: https://travis-ci.org/common-workflow-language/cwltest
 
 This is a testing tool for checking the output of Tools and Workflows described
 with the Common Workflow Language.  Among other uses, it is used to run the CWL
