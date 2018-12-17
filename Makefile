@@ -15,7 +15,7 @@
 #
 # Contact: common-workflow-language@googlegroups.com
 
-# make pep8 to check for basic Python code compliance
+# make pycodestyle to check for basic Python code compliance
 # make autopep8 to fix most pep8 errors
 # make pylint to check Python code for enhanced compliance including naming
 #  and documentation
@@ -26,8 +26,10 @@ MODULE=cwltest
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
-DEVPKGS=pep8 diff_cover autopep8 pylint coverage pep257 flake8 pytest
-DEBDEVPKGS=pep8 python-autopep8 pylint python-coverage pep257 sloccount python-flake8
+DEVPKGS=pycodestyle diff_cover autopep8 pylint coverage pydocstyle flake8 \
+	pytest pytest-xdist isort
+DEBDEVPKGS=pep8 python-autopep8 pylint python-coverage pydocstyle sloccount \
+	   python-flake8 python-mock shellcheck
 VERSION=1.0.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
 	--max-count=1 --format=format:%cI`)
 mkfile_dir := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -67,25 +69,34 @@ clean: FORCE
 	rm -Rf .coverage
 	rm -f diff-cover.html
 
-## pep8        : check Python code style
-pep8: $(PYSOURCES)
-	pep8 --exclude=_version.py  --show-source --show-pep8 $^ || true
+# Linting and code style related targets
+## sorting imports using isort: https://github.com/timothycrosley/isort
+sort_imports:
+	isort ${MODULE}/*.py tests/*.py setup.py
 
-pep8_report.txt: $(PYSOURCES)
-	pep8 --exclude=_version.py $^ > pep8_report.txt || true
+pep8: pycodestyle
+## pycodestyle        : check Python code style
+pycodestyle: $(PYSOURCES)
+	pycodestyle --exclude=_version.py  --show-source --show-pep8 $^ || true
 
-diff_pep8_report: pep8_report.txt
-	diff-quality --violations=pep8 pep8_report.txt
+pep8_report.txt: pycodestyle_report.txt
+pycodestyle_report.txt: $(PYSOURCES)
+	pycodestyle --exclude=_version.py $^ > $@ || true
 
-## pep257      : check Python code style
-pep257: $(PYSOURCES)
-	pep257 --ignore=D100,D101,D102,D103 $^ || true
+diff_pep8_report: diff_pycodestyle_report
+diff_pycodestyle_report: pycodestyle_report.txt
+	diff-quality --violations=pycodestyle $^
 
-pep257_report.txt: $(PYSOURCES)
-	pep257 setup.py $^ > pep257_report.txt 2>&1 || true
+pep257: pydocstyle
+## pydocstyle      : check Python code style
+pydocstyle: $(PYSOURCES)
+	pydocstyle --ignore=D100,D101,D102,D103 $^ || true
 
-diff_pep257_report: pep257_report.txt
-	diff-quality --violations=pep8 pep257_report.txt
+pydocstyle_report.txt: $(PYSOURCES)
+	pydocstyle setup.py $^ > $@ 2>&1 || true
+
+diff_pydocstyle_report: pydocstyle_report.txt
+	diff-quality --violations=pycodestyle $^
 
 ## autopep8    : fix most Python code indentation and formatting
 autopep8: $(PYSOURCES)
@@ -135,7 +146,7 @@ test: all
 	./setup.py test
 
 sloccount.sc: ${PYSOURCES} Makefile
-	sloccount --duplicates --wide --details $^ > sloccount.sc
+	sloccount --duplicates --wide --details $^ > $@
 
 ## sloccount   : count lines of code
 sloccount: ${PYSOURCES} Makefile
@@ -179,3 +190,8 @@ release: FORCE
 		git tag ${VERSION} && git push --tags
 
 FORCE:
+
+# Use this to print the value of a Makefile variable
+# Example `make print-VERSION`
+# From https://www.cmcrossroads.com/article/printing-value-makefile-variable
+print-%  : ; @echo $* = $($*)
