@@ -5,7 +5,7 @@ set -x
 
 package=cwltest
 module=cwltest
-slug=${TRAVIS_PULL_REQUEST_SLUG:=common-workflow-language/cwltool}
+slug=${TRAVIS_PULL_REQUEST_SLUG:=common-workflow-language/cwltest}
 repo=https://github.com/${slug}.git
 run_tests="py.test --pyarg ${module}"
 pipver=8.0.1 # minimum required version of pip

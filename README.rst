@@ -8,7 +8,7 @@ This is a testing tool for checking the output of Tools and Workflows described
 with the Common Workflow Language.  Among other uses, it is used to run the CWL
 conformance tests.
 
-This is written and tested for Python 2.7.
+This is written and tested for Python 2.7, 3.4, 3.5, 3.6, and 3.7
 
 Install
 -------
