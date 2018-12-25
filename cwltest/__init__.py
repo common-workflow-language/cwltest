@@ -130,24 +130,24 @@ def run_test(args,         # type: argparse.Namespace
             return TestResult(UNSUPPORTED_FEATURE, outstr, outerr, duration, args.classname)
         if test.get("should_fail", False):
             return TestResult(0, outstr, outerr, duration, args.classname)
-        _logger.error(u"""Test failed: %s""", " ".join([quote(tc) for tc in test_command]))
+        _logger.error(u"""Test %i failed: %s""", test_number, " ".join([quote(tc) for tc in test_command]))
         _logger.error(test.get("doc"))
         _logger.error(u"Returned non-zero")
         _logger.error(outerr)
         return TestResult(1, outstr, outerr, duration, args.classname, str(err))
     except (yamlscanner.ScannerError, TypeError) as err:
-        _logger.error(u"""Test failed: %s""",
-                      u" ".join([quote(tc) for tc in test_command]))
+        _logger.error(u"""Test %i failed: %s""",
+                      test_number, u" ".join([quote(tc) for tc in test_command]))
         _logger.error(outstr)
         _logger.error(u"Parse error %s", str(err))
         _logger.error(outerr)
     except KeyboardInterrupt:
-        _logger.error(u"""Test interrupted: %s""",
-                      u" ".join([quote(tc) for tc in test_command]))
+        _logger.error(u"""Test %i interrupted: %s""",
+                      test_number, u" ".join([quote(tc) for tc in test_command]))
         raise
     except subprocess.TimeoutExpired:
-        _logger.error(u"""Test timed out: %s""",
-                      u" ".join([quote(tc) for tc in test_command]))
+        _logger.error(u"""Test %i timed out: %s""",
+                      test_number, u" ".join([quote(tc) for tc in test_command]))
         _logger.error(test.get("doc"))
         return TestResult(2, outstr, outerr, timeout, args.classname, "Test timed out")
     finally:
@@ -164,7 +164,7 @@ def run_test(args,         # type: argparse.Namespace
     fail_message = ''
 
     if test.get("should_fail", False):
-        _logger.warning(u"""Test failed: %s""", u" ".join([quote(tc) for tc in test_command]))
+        _logger.warning(u"""Test %i failed: %s""", test_number, u" ".join([quote(tc) for tc in test_command]))
         _logger.warning(test.get("doc"))
         _logger.warning(u"Returned zero but it should be non-zero")
         return TestResult(1, outstr, outerr, duration, args.classname)
@@ -172,7 +172,7 @@ def run_test(args,         # type: argparse.Namespace
     try:
         compare(test.get("output"), out)
     except CompareFail as ex:
-        _logger.warning(u"""Test failed: %s""", u" ".join([quote(tc) for tc in test_command]))
+        _logger.warning(u"""Test %i failed: %s""", test_number, u" ".join([quote(tc) for tc in test_command]))
         _logger.warning(test.get("doc"))
         _logger.warning(u"Compare failure %s", ex)
         fail_message = str(ex)
