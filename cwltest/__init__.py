@@ -194,6 +194,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--tool", type=str, default="cwl-runner",
                         help="CWL runner executable to use (default 'cwl-runner'")
     parser.add_argument("--only-tools", action="store_true", help="Only test CommandLineTools")
+    parser.add_argument("--tags", type=str, default=None, help="Tags to be tested")
     parser.add_argument("--junit-xml", type=str, default=None, help="Path to JUnit xml file")
     parser.add_argument("--test-arg", type=str, help="Additional argument "
         "given in test cases and required prefix for tool runner.",
@@ -259,6 +260,15 @@ def main():  # type: () -> int
                     tests.append(t)
             else:
                 raise Exception("Unexpected code path.")
+
+    if args.tags:
+        alltests = tests
+        tests = []
+        tags = args.tags.split(",")
+        for t in alltests:
+            ts = t.get("tags", [])
+            if any((tag in ts for tag in tags)):
+                tests.append(t)
 
     if args.l:
         for i, t in enumerate(tests):
