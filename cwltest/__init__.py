@@ -18,7 +18,6 @@ from collections import defaultdict
 
 import ruamel.yaml as yaml
 import ruamel.yaml.scanner as yamlscanner
-import schema_salad.ref_resolver
 from six.moves import range
 from six.moves import zip
 import pkg_resources  # part of setuptools
@@ -253,13 +252,8 @@ def main():  # type: () -> int
         alltests = tests
         tests = []
         for t in alltests:
-            loader = schema_salad.ref_resolver.Loader({"id": "@id"})
-            cwl = loader.resolve_ref(t["tool"])[0]
-            if isinstance(cwl, dict):
-                if cwl["class"] == "CommandLineTool":
-                    tests.append(t)
-            else:
-                raise Exception("Unexpected code path.")
+            if any(('command_line_tool' in t.get("tags", []))):
+                tests.append(t)
 
     if args.tags:
         alltests = tests
