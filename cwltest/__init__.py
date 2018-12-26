@@ -272,7 +272,7 @@ def main():  # type: () -> int
                 tests.append(t)
 
     if args.show_tags:
-        alltags = set()
+        alltags = set() # type: set
         for t in tests:
             ts = t.get("tags", [])
             alltags |= set(ts)
