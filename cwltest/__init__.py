@@ -195,6 +195,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         help="CWL runner executable to use (default 'cwl-runner'")
     parser.add_argument("--only-tools", action="store_true", help="Only test CommandLineTools")
     parser.add_argument("--tags", type=str, default=None, help="Tags to be tested")
+    parser.add_argument("--show-tags", action="store_true", help="Show all Tags.")
     parser.add_argument("--junit-xml", type=str, default=None, help="Path to JUnit xml file")
     parser.add_argument("--test-arg", type=str, help="Additional argument "
         "given in test cases and required prefix for tool runner.",
@@ -269,6 +270,15 @@ def main():  # type: () -> int
             ts = t.get("tags", [])
             if any((tag in ts for tag in tags)):
                 tests.append(t)
+
+    if args.show_tags:
+        alltags = set()
+        for t in tests:
+            ts = t.get("tags", [])
+            alltags |= set(ts)
+        for tag in alltags:
+            print(tag)
+        return 0
 
     if args.l:
         for i, t in enumerate(tests):
