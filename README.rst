@@ -1,8 +1,15 @@
+|Linux Build Status| |Windows Build status| |Code coverage|
+
+.. |Linux Build Status| image:: https://img.shields.io/travis/common-workflow-language/cwltest/master.svg?label=unix%20build
+   :target: https://travis-ci.org/common-workflow-language/cwltest
+.. |Windows Build status| image:: https://img.shields.io/appveyor/ci/mr-c/cwltest/master.svg?label=windows%20build
+   :target: https://ci.appveyor.com/project/mr-c/cwltest/branch/master
+.. |Code coverage| image:: https://codecov.io/gh/common-workflow-language/cwltest/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/common-workflow-language/cwltest
+
 ==========================================
 Common workflow language testing framework
 ==========================================
-.. image:: https://travis-ci.org/common-workflow-language/cwltest.svg?branch=master
-    :target: https://travis-ci.org/common-workflow-language/cwltest
 
 This is a testing tool for checking the output of Tools and Workflows described
 with the Common Workflow Language.  Among other uses, it is used to run the CWL
