@@ -2,16 +2,18 @@ import json
 
 from six import PY2
 from six.moves import range
-from typing import Any, AnyStr, Dict, Set, Text, List, Optional
+from typing import Any, Dict, Set, Text, List, Optional
 
 import junit_xml
+if PY2:
+    from emoji.core import demojize
+
 REQUIRED = "required"
 
 
 def clean_output(output):  # type: (Text) -> Text
     if PY2:
-        # TODO: find a better and more general fix
-        return output.replace(u'\U0001f57a', '_')
+        return demojize(output)
     else:
         return output
 
