@@ -1,11 +1,19 @@
 import json
 
+from six import PY2
 from six.moves import range
-from typing import Any, Dict, Set, Text, List, Optional
+from typing import Any, AnyStr, Dict, Set, Text, List, Optional
 
 import junit_xml
 REQUIRED = "required"
 
+
+def clean_output(output):  # type: (Text) -> Text
+    if PY2:
+        # TODO: find a better and more general fix
+        return output.replace(u'\U0001f57a', '_')
+    else:
+        return output
 
 class TestResult(object):
 
@@ -30,7 +38,8 @@ class TestResult(object):
         short_name = test.get(u'short_name')
         case = junit_xml.TestCase(
             doc, elapsed_sec=self.duration, file=short_name,
-            category=category, stdout=self.standard_output, stderr=self.error_output,
+            category=category, stdout=clean_output(self.standard_output),
+            stderr=self.error_output,
         )
         if self.return_code > 0:
             case.failure_message = self.message
