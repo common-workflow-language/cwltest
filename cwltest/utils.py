@@ -1,11 +1,21 @@
 import json
 
+from six import PY2
 from six.moves import range
 from typing import Any, Dict, Set, Text, List, Optional
 
 import junit_xml
+if PY2:
+    from emoji.core import demojize
+
 REQUIRED = "required"
 
+
+def clean_output(output):  # type: (Text) -> Text
+    if PY2:
+        return demojize(output)
+    else:
+        return output
 
 class TestResult(object):
 
@@ -30,7 +40,8 @@ class TestResult(object):
         short_name = test.get(u'short_name')
         case = junit_xml.TestCase(
             doc, elapsed_sec=self.duration, file=short_name,
-            category=category, stdout=self.standard_output, stderr=self.error_output,
+            category=category, stdout=clean_output(self.standard_output),
+            stderr=self.error_output,
         )
         if self.return_code > 0:
             case.failure_message = self.message
