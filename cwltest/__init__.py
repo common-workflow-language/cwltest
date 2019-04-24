@@ -307,6 +307,7 @@ def main():  # type: () -> int
             for i, job in zip(ntest, jobs):
                 test_result = job.result()
                 test_case = test_result.create_test_case(tests[i])
+                test_case.url = "cwltest:{}#{}".format(suite_name, i + 1)
                 total += 1
                 tags = tests[i].get("tags", [])
                 for t in tags:
