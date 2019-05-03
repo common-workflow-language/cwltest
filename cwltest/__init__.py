@@ -126,7 +126,7 @@ def run_test(args,         # type: argparse.Namespace
         _logger.error(outstr)
         _logger.error(outerr)
     except subprocess.CalledProcessError as err:
-        if err.returncode == UNSUPPORTED_FEATURE and REQUIRED not in test.get("tags", []):
+        if err.returncode == UNSUPPORTED_FEATURE and REQUIRED not in test.get("tags", ["required"]):
             return TestResult(UNSUPPORTED_FEATURE, outstr, outerr, duration, args.classname)
         if test.get("should_fail", False):
             return TestResult(0, outstr, outerr, duration, args.classname)
