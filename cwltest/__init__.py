@@ -126,13 +126,16 @@ def run_test(args,         # type: argparse.Namespace
         _logger.error(outstr)
         _logger.error(outerr)
     except subprocess.CalledProcessError as err:
-        if err.returncode == UNSUPPORTED_FEATURE:
+        if err.returncode == UNSUPPORTED_FEATURE and REQUIRED not in test.get("tags", ["required"]):
             return TestResult(UNSUPPORTED_FEATURE, outstr, outerr, duration, args.classname)
         if test.get("should_fail", False):
             return TestResult(0, outstr, outerr, duration, args.classname)
         _logger.error(u"""Test %i failed: %s""", test_number, " ".join([quote(tc) for tc in test_command]))
         _logger.error(test.get("doc"))
-        _logger.error(u"Returned non-zero")
+        if err.returncode == UNSUPPORTED_FEATURE:
+            _logger.error(u"Does not support required feature")
+        else:
+            _logger.error(u"Returned non-zero")
         _logger.error(outerr)
         return TestResult(1, outstr, outerr, duration, args.classname, str(err))
     except (yamlscanner.ScannerError, TypeError) as err:
@@ -273,9 +276,9 @@ def main():  # type: () -> int
     if args.l:
         for i, t in enumerate(tests):
             if t.get("short_name"):
-                print(u"[%i] %s: %s" % (i + 1, t["short_name"], t["doc"].strip()))
+                print(u"[%i] %s: %s" % (i + 1, t["short_name"], t.get("doc", "").strip()))
             else:
-                print(u"[%i] %s" % (i + 1, t["doc"].strip()))
+                print(u"[%i] %s" % (i + 1, t.get("doc", "").strip()))
 
         return 0
 
