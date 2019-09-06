@@ -66,7 +66,7 @@ rm lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setupver} wheel
 pip install ${package}*tar.gz
-pip install pytest
+pip install 'pytest<5'
 mkdir out
 tar --extract --directory=out -z -f ${package}*.tar.gz
 pushd out/${package}*
@@ -86,7 +86,7 @@ rm lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setupver} wheel
 pip install ${package}*.whl
-pip install pytest
+pip install 'pytest<5'
 mkdir not-${module}
 pushd not-${module} ; ../bin/${run_tests}; popd
 popd
