@@ -23,7 +23,7 @@ install_requires = [
 ]
 
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
-pytest_runner = ['pytest-runner'] if needs_pytest else []
+pytest_runner = ['pytest < 5', 'pytest-runner < 5'] if needs_pytest else []
 
 setup(name='cwltest',
       version='1.0',
@@ -41,7 +41,7 @@ setup(name='cwltest',
       install_requires=install_requires,
       test_suite='tests',
       setup_requires=[] + pytest_runner,
-      tests_require=['pytest'],
+      tests_require=['pytest<5'],
       entry_points={
           'console_scripts': ["cwltest=cwltest:main",
                               "mock-cwl-runner=cwltest.tests.mock_cwl_runner:main"]
