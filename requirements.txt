@@ -1,5 +1,6 @@
 schema-salad >= 1.14
-typing>=3.7,<3.8; python_version < '3.5'
+typing==3.7.4.1 ; python_version < '3.5'
 futures >= 3.0.5; python_version == '2.7'
 subprocess32 >= 3.5.0; python_version < '3'
 junit-xml >= 1.8
+pytest < 5
