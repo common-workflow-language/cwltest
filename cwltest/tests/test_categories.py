@@ -1,7 +1,8 @@
 import unittest
-
+import re
 import os
 from os import linesep as n
+from os import sep as p
 
 from .util import run_with_mock_cwl_runner, get_data
 import xml.etree.ElementTree as ET
@@ -13,11 +14,26 @@ class TestCategories(unittest.TestCase):
         args = ["--test", get_data("tests/test-data/required-unsupported.yml")]
         error_code, stdout, stderr = run_with_mock_cwl_runner(args)
         self.assertEqual(error_code, 1)
+        print(stderr)
+        stderr = re.sub(r" '?--outdir=[^ ]*", '', stderr)
+        if os.name == 'nt':
+            q = "'"
+        else:
+            q = ""
         self.assertEqual(
-            "Test [1/2] Required test that is unsupported (without tags){n}{n}"
-            "Test [2/2] Required test that is unsupported (with tags){n}{n}"
-            "0 tests passed, 2 failures, 0 unsupported "
-            "features{n}".format(n=n), stderr)
+            "Test [1/2] Required test that is unsupported (without tags){n}"
+            "{n}"
+            "Test 1 failed: mock-cwl-runner --quiet return-unsupported.cwl {q}v1.0{p}cat-job.json{q}{n}"
+            "Required test that is unsupported (without tags){n}"
+            "Does not support required feature{n}"
+            "{n}"
+            "Test [2/2] Required test that is unsupported (with tags){n}"
+            "{n}"
+            "Test 2 failed: mock-cwl-runner --quiet return-unsupported.cwl {q}v1.0{p}cat-job.json{q}{n}"
+            "Required test that is unsupported (with tags){n}"
+            "Does not support required feature{n}"
+            "{n}"
+            "0 tests passed, 2 failures, 0 unsupported features{n}".format(n=n, p=p, q=q), stderr)
 
     def test_unsupported_with_optional_tests(self):
         args = ["--test", get_data("tests/test-data/optional-unsupported.yml")]
