@@ -47,7 +47,8 @@ templock = threading.Lock()
 def prepare_test_command(tool,      # type: str
                          args,      # type: List[str]
                          testargs,  # type: Optional[List[str]]
-                         test       # type: Dict[str, str]
+                         test,      # type: Dict[str, str]
+                         verbose    # type: bool
                         ):  # type: (...) -> List[str]
     """ Turn the test into a command line. """
     test_command = [tool]
@@ -68,9 +69,10 @@ def prepare_test_command(tool,      # type: str
                                  "--tmpdir-prefix={}".format(outdir)])
         else:
             outdir = tempfile.mkdtemp()
-    test_command.extend(["--outdir={}".format(outdir),
-                         "--quiet",
-                         os.path.normcase(test["tool"])])
+    test_command.extend(["--outdir={}".format(outdir)])
+    if not verbose:
+        test_command.extend(["--quiet"])
+    test_command.extend([os.path.normcase(test["tool"])])
     if test.get("job"):
         test_command.append(os.path.normcase(test["job"]))
     return test_command
@@ -80,7 +82,8 @@ def run_test(args,         # type: argparse.Namespace
              test,         # type: Dict[str, str]
              test_number,  # type: int
              total_tests,  # type: int
-             timeout       # type: int
+             timeout,      # type: int
+             verbose       # type: bool
             ):  # type: (...) -> TestResult
 
     global templock
@@ -98,7 +101,7 @@ def run_test(args,         # type: argparse.Namespace
     try:
         process = None  # type: Optional[subprocess.Popen]
         test_command = prepare_test_command(
-            args.tool, args.args, args.testargs, test)
+            args.tool, args.args, args.testargs, test, verbose)
 
         if test.get("short_name"):
             sys.stderr.write(
@@ -199,6 +202,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--only-tools", action="store_true", help="Only test CommandLineTools")
     parser.add_argument("--tags", type=str, default=None, help="Tags to be tested")
     parser.add_argument("--junit-xml", type=str, default=None, help="Path to JUnit xml file")
+    parser.add_argument("--junit-verbose", action="store_true", help="Store more verbose output to JUnit xml file")
     parser.add_argument("--test-arg", type=str, help="Additional argument "
         "given in test cases and required prefix for tool runner.",
         default=None, metavar="cache==--cache-dir", action="append", dest="testargs")
@@ -304,7 +308,7 @@ def main():  # type: () -> int
 
     total = 0
     with ThreadPoolExecutor(max_workers=args.j) as executor:
-        jobs = [executor.submit(run_test, args, tests[i], i+1, len(tests), args.timeout)
+        jobs = [executor.submit(run_test, args, tests[i], i+1, len(tests), args.timeout, args.junit_verbose)
                 for i in ntest]
         try:
             for i, job in zip(ntest, jobs):
