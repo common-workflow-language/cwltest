@@ -44,11 +44,11 @@ else:
 templock = threading.Lock()
 
 
-def prepare_test_command(tool,      # type: str
-                         args,      # type: List[str]
-                         testargs,  # type: Optional[List[str]]
-                         test,      # type: Dict[str, str]
-                         verbose    # type: bool
+def prepare_test_command(tool,            # type: str
+                         args,            # type: List[str]
+                         testargs,        # type: Optional[List[str]]
+                         test,            # type: Dict[str, str]
+                         verbose = False  # type: bool
                         ):  # type: (...) -> List[str]
     """ Turn the test into a command line. """
     test_command = [tool]
@@ -78,12 +78,12 @@ def prepare_test_command(tool,      # type: str
     return test_command
 
 
-def run_test(args,         # type: argparse.Namespace
-             test,         # type: Dict[str, str]
-             test_number,  # type: int
-             total_tests,  # type: int
-             timeout,      # type: int
-             verbose       # type: bool
+def run_test(args,            # type: argparse.Namespace
+             test,            # type: Dict[str, str]
+             test_number,     # type: int
+             total_tests,     # type: int
+             timeout,         # type: int
+             verbose = False  # type: bool
             ):  # type: (...) -> TestResult
 
     global templock
