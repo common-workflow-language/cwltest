@@ -23,7 +23,7 @@ install_requires = [
 ]
 
 needs_pytest = {'pytest', 'test', 'ptr'}.intersection(sys.argv)
-pytest_runner = ['pytest < 5', 'pytest-runner < 5'] if needs_pytest else []
+pytest_runner = ['pytest < 6', 'pytest-runner < 5'] if needs_pytest else []
 
 setup(name='cwltest',
       version='1.0',

@@ -3,4 +3,4 @@ typing==3.7.4 ; python_version < '3.5'
 futures >= 3.0.5; python_version == '2.7'
 subprocess32 >= 3.5.0; python_version < '3'
 junit-xml >= 1.8
-pytest < 5
+pytest < 6
