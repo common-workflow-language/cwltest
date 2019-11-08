@@ -47,7 +47,7 @@ matrix:
       env: TRAVIS_PYTHON_VERSION=3.7 PYENV_VERSION=3.7.5
     - os: osx
       language: generic
-      env: TRAVIS_PYTHON_VERSION=3.7 PYENV_VERSION=3.8.0
+      env: TRAVIS_PYTHON_VERSION=3.8 PYENV_VERSION=3.8.0
 
 install:
   - source $TRAVIS_BUILD_DIR/travis/os_install.sh
