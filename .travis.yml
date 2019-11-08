@@ -22,10 +22,14 @@ matrix:
         - tox
         - RELEASE_SKIP=head PYVER=3 ${TRAVIS_BUILD_DIR}/release-test.sh
     - os: linux
-      dist: xenial
       language: python
-      python: 3.7 # Sudo is required with xenial and python 3.7, see
-      sudo: true # https://github.com/travis-ci/travis-ci/issues/9831#issuecomment-401757065
+      python: 3.7
+      script:
+        - tox
+        - RELEASE_SKIP=head PYVER=3 ${TRAVIS_BUILD_DIR}/release-test.sh
+    - os: linux
+      language: python
+      python: 3.8
       script:
         - tox
         - RELEASE_SKIP=head PYVER=3 ${TRAVIS_BUILD_DIR}/release-test.sh
@@ -40,7 +44,10 @@ matrix:
       env: TRAVIS_PYTHON_VERSION=3.6 PYENV_VERSION=3.6.3
     - os: osx
       language: generic
-      env: TRAVIS_PYTHON_VERSION=3.7 PYENV_VERSION=3.7-dev
+      env: TRAVIS_PYTHON_VERSION=3.7 PYENV_VERSION=3.7.5
+    - os: osx
+      language: generic
+      env: TRAVIS_PYTHON_VERSION=3.7 PYENV_VERSION=3.8.0
 
 install:
   - source $TRAVIS_BUILD_DIR/travis/os_install.sh
