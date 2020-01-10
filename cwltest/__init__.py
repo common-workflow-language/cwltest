@@ -477,11 +477,12 @@ def main():  # type: () -> int
                 color = "green"
             else:
                 color = "red"
+
             with open("{}/{}.json".format(args.badgedir, t), "w") as out:
                 out.write(
                     json.dumps(
                         {
-                            "subject": "[CWL] {}".format(t),
+                            "subject": "{}".format(t),
                             "status": "{}%".format(percent),
                             "color": color,
                         }
