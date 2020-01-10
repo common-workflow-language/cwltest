@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import absolute_import
-from __future__ import print_function
-
 import argparse
 import json
 import logging
@@ -19,13 +16,16 @@ from collections import defaultdict
 import ruamel.yaml as yaml
 import ruamel.yaml.scanner as yamlscanner
 import schema_salad.ref_resolver
-from six.moves import range
-from six.moves import zip
 import pkg_resources  # part of setuptools
 
 import junit_xml
-from cwltest.utils import (compare, CompareFail, TestResult, REQUIRED,
-                           get_test_number_by_key)
+from cwltest.utils import (
+    compare,
+    CompareFail,
+    TestResult,
+    REQUIRED,
+    get_test_number_by_key,
+)
 
 _logger = logging.getLogger("cwltest")
 _logger.addHandler(logging.StreamHandler())
@@ -44,12 +44,13 @@ else:
 templock = threading.Lock()
 
 
-def prepare_test_command(tool,          # type: str
-                         args,          # type: List[str]
-                         testargs,      # type: Optional[List[str]]
-                         test,          # type: Dict[str, str]
-                         verbose=False  # type: bool
-                        ):  # type: (...) -> List[str]
+def prepare_test_command(
+    tool,  # type: str
+    args,  # type: List[str]
+    testargs,  # type: Optional[List[str]]
+    test,  # type: Dict[str, str]
+    verbose=False,  # type: bool
+):  # type: (...) -> List[str]
     """ Turn the test into a command line. """
     test_command = [tool]
     test_command.extend(args)
@@ -57,16 +58,20 @@ def prepare_test_command(tool,          # type: str
     # Add additional arguments given in test case
     if testargs is not None:
         for testarg in testargs:
-            (test_case_name, prefix) = testarg.split('==')
+            (test_case_name, prefix) = testarg.split("==")
             if test_case_name in test:
                 test_command.extend([prefix, test[test_case_name]])
 
     # Add prefixes if running on MacOSX so that boot2docker writes to /Users
     with templock:
-        if 'darwin' in sys.platform and tool.endswith('cwltool'):
+        if "darwin" in sys.platform and tool.endswith("cwltool"):
             outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
-            test_command.extend(["--tmp-outdir-prefix={}".format(outdir),
-                                 "--tmpdir-prefix={}".format(outdir)])
+            test_command.extend(
+                [
+                    "--tmp-outdir-prefix={}".format(outdir),
+                    "--tmpdir-prefix={}".format(outdir),
+                ]
+            )
         else:
             outdir = tempfile.mkdtemp()
     test_command.extend(["--outdir={}".format(outdir)])
@@ -78,13 +83,14 @@ def prepare_test_command(tool,          # type: str
     return test_command
 
 
-def run_test(args,          # type: argparse.Namespace
-             test,          # type: Dict[str, str]
-             test_number,   # type: int
-             total_tests,   # type: int
-             timeout,       # type: int
-             verbose=False  # type: bool
-            ):  # type: (...) -> TestResult
+def run_test(
+    args,  # type: argparse.Namespace
+    test,  # type: Dict[str, str]
+    test_number,  # type: int
+    total_tests,  # type: int
+    timeout,  # type: int
+    verbose=False,  # type: bool
+):  # type: (...) -> TestResult
 
     global templock
 
@@ -99,25 +105,34 @@ def run_test(args,          # type: argparse.Namespace
     else:
         suffix = "\n"
     try:
-        process = None  # type: Optional[subprocess.Popen]
+        process = None  # type: Optional[subprocess.Popen[str]]
         test_command = prepare_test_command(
-            args.tool, args.args, args.testargs, test, verbose)
+            args.tool, args.args, args.testargs, test, verbose
+        )
 
         if test.get("short_name"):
             sys.stderr.write(
                 "%sTest [%i/%i] %s: %s%s\n"
-                % (prefix, test_number, total_tests, test.get("short_name"),
-                   test.get("doc"), suffix))
+                % (
+                    prefix,
+                    test_number,
+                    total_tests,
+                    test.get("short_name"),
+                    test.get("doc"),
+                    suffix,
+                )
+            )
         else:
             sys.stderr.write(
                 "%sTest [%i/%i] %s%s\n"
-                % (prefix, test_number, total_tests, test.get("doc"), suffix))
+                % (prefix, test_number, total_tests, test.get("doc"), suffix)
+            )
         sys.stderr.flush()
 
         start_time = time.time()
         stderr = subprocess.PIPE if not args.verbose else None
-        process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=stderr)
-        outstr, outerr = [(var or b'').decode('utf-8') for var in process.communicate(timeout=timeout)]
+        process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=stderr, universal_newlines=True)
+        outstr, outerr = process.communicate(timeout=timeout)
         return_code = process.poll()
         duration = time.time() - start_time
         if return_code:
@@ -129,11 +144,19 @@ def run_test(args,          # type: argparse.Namespace
         _logger.error(outstr)
         _logger.error(outerr)
     except subprocess.CalledProcessError as err:
-        if err.returncode == UNSUPPORTED_FEATURE and REQUIRED not in test.get("tags", ["required"]):
-            return TestResult(UNSUPPORTED_FEATURE, outstr, outerr, duration, args.classname)
+        if err.returncode == UNSUPPORTED_FEATURE and REQUIRED not in test.get(
+            "tags", ["required"]
+        ):
+            return TestResult(
+                UNSUPPORTED_FEATURE, outstr, outerr, duration, args.classname
+            )
         if test.get("should_fail", False):
             return TestResult(0, outstr, outerr, duration, args.classname)
-        _logger.error(u"""Test %i failed: %s""", test_number, " ".join([quote(tc) for tc in test_command]))
+        _logger.error(
+            u"""Test %i failed: %s""",
+            test_number,
+            " ".join([quote(tc) for tc in test_command]),
+        )
         _logger.error(test.get("doc"))
         if err.returncode == UNSUPPORTED_FEATURE:
             _logger.error(u"Does not support required feature")
@@ -142,18 +165,27 @@ def run_test(args,          # type: argparse.Namespace
         _logger.error(outerr)
         return TestResult(1, outstr, outerr, duration, args.classname, str(err))
     except (yamlscanner.ScannerError, TypeError) as err:
-        _logger.error(u"""Test %i failed: %s""",
-                      test_number, u" ".join([quote(tc) for tc in test_command]))
+        _logger.error(
+            u"""Test %i failed: %s""",
+            test_number,
+            u" ".join([quote(tc) for tc in test_command]),
+        )
         _logger.error(outstr)
         _logger.error(u"Parse error %s", str(err))
         _logger.error(outerr)
     except KeyboardInterrupt:
-        _logger.error(u"""Test %i interrupted: %s""",
-                      test_number, u" ".join([quote(tc) for tc in test_command]))
+        _logger.error(
+            u"""Test %i interrupted: %s""",
+            test_number,
+            u" ".join([quote(tc) for tc in test_command]),
+        )
         raise
     except subprocess.TimeoutExpired:
-        _logger.error(u"""Test %i timed out: %s""",
-                      test_number, u" ".join([quote(tc) for tc in test_command]))
+        _logger.error(
+            u"""Test %i timed out: %s""",
+            test_number,
+            u" ".join([quote(tc) for tc in test_command]),
+        )
         _logger.error(test.get("doc"))
         return TestResult(2, outstr, outerr, timeout, args.classname, "Test timed out")
     finally:
@@ -167,10 +199,14 @@ def run_test(args,          # type: argparse.Namespace
             if process.returncode is None:
                 process.kill()
 
-    fail_message = ''
+    fail_message = ""
 
     if test.get("should_fail", False):
-        _logger.warning(u"""Test %i failed: %s""", test_number, u" ".join([quote(tc) for tc in test_command]))
+        _logger.warning(
+            u"""Test %i failed: %s""",
+            test_number,
+            u" ".join([quote(tc) for tc in test_command]),
+        )
         _logger.warning(test.get("doc"))
         _logger.warning(u"Returned zero but it should be non-zero")
         return TestResult(1, outstr, outerr, duration, args.classname)
@@ -178,7 +214,11 @@ def run_test(args,          # type: argparse.Namespace
     try:
         compare(test.get("output"), out)
     except CompareFail as ex:
-        _logger.warning(u"""Test %i failed: %s""", test_number, u" ".join([quote(tc) for tc in test_command]))
+        _logger.warning(
+            u"""Test %i failed: %s""",
+            test_number,
+            u" ".join([quote(tc) for tc in test_command]),
+        )
         _logger.warning(test.get("doc"))
         _logger.warning(u"Compare failure %s", ex)
         fail_message = str(ex)
@@ -186,43 +226,102 @@ def run_test(args,          # type: argparse.Namespace
     if outdir:
         shutil.rmtree(outdir, True)
 
-    return TestResult((1 if fail_message else 0), outstr, outerr, duration,
-                      args.classname, fail_message)
+    return TestResult(
+        (1 if fail_message else 0),
+        outstr,
+        outerr,
+        duration,
+        args.classname,
+        fail_message,
+    )
 
 
 def arg_parser():  # type: () -> argparse.ArgumentParser
-    parser = argparse.ArgumentParser(description='Common Workflow Language testing framework')
-    parser.add_argument("--test", type=str, help="YAML file describing test cases", required=True)
-    parser.add_argument("--basedir", type=str, help="Basedir to use for tests", default=".")
+    parser = argparse.ArgumentParser(
+        description="Common Workflow Language testing framework"
+    )
+    parser.add_argument(
+        "--test", type=str, help="YAML file describing test cases", required=True
+    )
+    parser.add_argument(
+        "--basedir", type=str, help="Basedir to use for tests", default="."
+    )
     parser.add_argument("-l", action="store_true", help="List tests then exit")
-    parser.add_argument("-n", type=str, default=None, help="Run specific tests, format is 1,3-6,9")
-    parser.add_argument("-s", type=str, default=None, help="Run specific tests using their short names separated by comma")
-    parser.add_argument("--tool", type=str, default="cwl-runner",
-                        help="CWL runner executable to use (default 'cwl-runner'")
-    parser.add_argument("--only-tools", action="store_true", help="Only test CommandLineTools")
+    parser.add_argument(
+        "-n", type=str, default=None, help="Run specific tests, format is 1,3-6,9"
+    )
+    parser.add_argument(
+        "-s",
+        type=str,
+        default=None,
+        help="Run specific tests using their short names separated by comma",
+    )
+    parser.add_argument(
+        "--tool",
+        type=str,
+        default="cwl-runner",
+        help="CWL runner executable to use (default 'cwl-runner'",
+    )
+    parser.add_argument(
+        "--only-tools", action="store_true", help="Only test CommandLineTools"
+    )
     parser.add_argument("--tags", type=str, default=None, help="Tags to be tested")
-    parser.add_argument("--junit-xml", type=str, default=None, help="Path to JUnit xml file")
-    parser.add_argument("--junit-verbose", action="store_true", help="Store more verbose output to JUnit xml file")
-    parser.add_argument("--test-arg", type=str, help="Additional argument "
+    parser.add_argument(
+        "--junit-xml", type=str, default=None, help="Path to JUnit xml file"
+    )
+    parser.add_argument(
+        "--junit-verbose",
+        action="store_true",
+        help="Store more verbose output to JUnit xml file",
+    )
+    parser.add_argument(
+        "--test-arg",
+        type=str,
+        help="Additional argument "
         "given in test cases and required prefix for tool runner.",
-        default=None, metavar="cache==--cache-dir", action="append", dest="testargs")
-    parser.add_argument("args", help="arguments to pass first to tool runner", nargs=argparse.REMAINDER)
-    parser.add_argument("-j", type=int, default=1, help="Specifies the number of tests to run simultaneously "
-                                                        "(defaults to one).")
-    parser.add_argument("--verbose", action="store_true", help="More verbose output during test run.")
-    parser.add_argument("--classname", type=str, default="", help="Specify classname for the Test Suite.")
-    parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT,
-            help="Time of execution in seconds after which the test will be "
-            "skipped. Defaults to {} seconds ({} minutes).".format(
-                DEFAULT_TIMEOUT, DEFAULT_TIMEOUT/60))
-    parser.add_argument("--badgedir", type=str, help="Directory that stores JSON files for badges.")
+        default=None,
+        metavar="cache==--cache-dir",
+        action="append",
+        dest="testargs",
+    )
+    parser.add_argument(
+        "args", help="arguments to pass first to tool runner", nargs=argparse.REMAINDER
+    )
+    parser.add_argument(
+        "-j",
+        type=int,
+        default=1,
+        help="Specifies the number of tests to run simultaneously "
+        "(defaults to one).",
+    )
+    parser.add_argument(
+        "--verbose", action="store_true", help="More verbose output during test run."
+    )
+    parser.add_argument(
+        "--classname",
+        type=str,
+        default="",
+        help="Specify classname for the Test Suite.",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=DEFAULT_TIMEOUT,
+        help="Time of execution in seconds after which the test will be "
+        "skipped. Defaults to {} seconds ({} minutes).".format(
+            DEFAULT_TIMEOUT, DEFAULT_TIMEOUT / 60
+        ),
+    )
+    parser.add_argument(
+        "--badgedir", type=str, help="Directory that stores JSON files for badges."
+    )
 
     pkg = pkg_resources.require("cwltest")
     if pkg:
         ver = u"%s %s" % (sys.argv[0], pkg[0].version)
     else:
         ver = u"%s %s" % (sys.argv[0], "unknown version")
-    parser.add_argument('--version', action='version', version=ver)
+    parser.add_argument("--version", action="version", version=ver)
 
     return parser
 
@@ -230,12 +329,14 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 def main():  # type: () -> int
 
     args = arg_parser().parse_args(sys.argv[1:])
-    if '--' in args.args:
-        args.args.remove('--')
+    if "--" in args.args:
+        args.args.remove("--")
 
     # Remove test arguments with wrong syntax
     if args.testargs is not None:
-        args.testargs = [testarg for testarg in args.testargs if testarg.count('==') == 1]
+        args.testargs = [
+            testarg for testarg in args.testargs if testarg.count("==") == 1
+        ]
 
     if not args.test:
         arg_parser().print_help()
@@ -251,10 +352,10 @@ def main():  # type: () -> int
     report = junit_xml.TestSuite(suite_name, [])
 
     # the number of total tests, failured tests, unsupported tests and passed tests for each tag
-    ntotal = defaultdict(int)        # type: Dict[str, int]
-    nfailures = defaultdict(int)     # type: Dict[str, int]
+    ntotal = defaultdict(int)  # type: Dict[str, int]
+    nfailures = defaultdict(int)  # type: Dict[str, int]
     nunsupported = defaultdict(int)  # type: Dict[str, int]
-    npassed = defaultdict(int)       # type: Dict[str, int]
+    npassed = defaultdict(int)  # type: Dict[str, int]
 
     if args.only_tools:
         alltests = tests
@@ -280,7 +381,9 @@ def main():  # type: () -> int
     if args.l:
         for i, t in enumerate(tests):
             if t.get("short_name"):
-                print(u"[%i] %s: %s" % (i + 1, t["short_name"], t.get("doc", "").strip()))
+                print(
+                    u"[%i] %s: %s" % (i + 1, t["short_name"], t.get("doc", "").strip())
+                )
             else:
                 print(u"[%i] %s" % (i + 1, t.get("doc", "").strip()))
 
@@ -308,8 +411,18 @@ def main():  # type: () -> int
 
     total = 0
     with ThreadPoolExecutor(max_workers=args.j) as executor:
-        jobs = [executor.submit(run_test, args, tests[i], i+1, len(tests), args.timeout, args.junit_verbose)
-                for i in ntest]
+        jobs = [
+            executor.submit(
+                run_test,
+                args,
+                tests[i],
+                i + 1,
+                len(tests),
+                args.timeout,
+                args.junit_verbose,
+            )
+            for i in ntest
+        ]
         try:
             for i, job in zip(ntest, jobs):
                 test_result = job.result()
@@ -344,7 +457,8 @@ def main():  # type: () -> int
                 else:
                     raise Exception(
                         "This is impossible, return_code: {}, category: "
-                        "{}".format(return_code, category))
+                        "{}".format(return_code, category)
+                    )
                 report.test_cases.append(test_case)
         except KeyboardInterrupt:
             for job in jobs:
@@ -352,33 +466,42 @@ def main():  # type: () -> int
             _logger.error("Tests interrupted")
 
     if args.junit_xml:
-        with open(args.junit_xml, 'w') as xml:
+        with open(args.junit_xml, "w") as xml:
             junit_xml.TestSuite.to_file(xml, [report])
 
     if args.badgedir:
         os.mkdir(args.badgedir)
         for t, v in ntotal.items():
-            percent = int((npassed[t]/float(v))*100)
+            percent = int((npassed[t] / float(v)) * 100)
             if npassed[t] == v:
                 color = "green"
             else:
                 color = "red"
-            with open("{}/{}.json".format(args.badgedir, t), 'w') as out:
-                out.write(json.dumps({
-                    "subject": "[CWL] {}".format(t),
-                    "status": "{}%".format(percent),
-                    "color": color,
-                }))
+            with open("{}/{}.json".format(args.badgedir, t), "w") as out:
+                out.write(
+                    json.dumps(
+                        {
+                            "subject": "[CWL] {}".format(t),
+                            "status": "{}%".format(percent),
+                            "color": color,
+                        }
+                    )
+                )
 
     if failures == 0 and unsupported == 0:
         _logger.info("All tests passed")
         return 0
     if failures == 0 and unsupported > 0:
-        _logger.warning("%i tests passed, %i unsupported features",
-                        total - unsupported, unsupported)
+        _logger.warning(
+            "%i tests passed, %i unsupported features", total - unsupported, unsupported
+        )
         return 0
-    _logger.warning("%i tests passed, %i failures, %i unsupported features",
-                    total - (failures + unsupported), failures, unsupported)
+    _logger.warning(
+        "%i tests passed, %i failures, %i unsupported features",
+        total - (failures + unsupported),
+        failures,
+        unsupported,
+    )
     return 1
 
 

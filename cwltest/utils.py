@@ -1,27 +1,25 @@
 import json
 
-from six import PY2
-from six.moves import range
 from typing import Any, Dict, Set, Text, List, Optional
 
 import junit_xml
-if PY2:
-    from emoji.core import demojize
 
 REQUIRED = "required"
 
-
-def clean_output(output):  # type: (Text) -> Text
-    if PY2:
-        return demojize(output)
-    else:
-        return output
 
 class TestResult(object):
 
     """Encapsulate relevant test result data."""
 
-    def __init__(self, return_code, standard_output, error_output, duration, classname, message=''):
+    def __init__(
+        self,
+        return_code,
+        standard_output,
+        error_output,
+        duration,
+        classname,
+        message="",
+    ):
         # type: (int, Text, Text, float, Text, str) -> None
         self.return_code = return_code
         self.standard_output = standard_output
@@ -32,15 +30,18 @@ class TestResult(object):
 
     def create_test_case(self, test):
         # type: (Dict[Text, Any]) -> junit_xml.TestCase
-        doc = test.get(u'doc', 'N/A').strip()
+        doc = test.get(u"doc", "N/A").strip()
         if test.get("tags"):
-            category = ", ".join(test['tags'])
+            category = ", ".join(test["tags"])
         else:
             category = REQUIRED
-        short_name = test.get(u'short_name')
+        short_name = test.get(u"short_name")
         case = junit_xml.TestCase(
-            doc, elapsed_sec=self.duration, file=short_name,
-            category=category, stdout=clean_output(self.standard_output),
+            doc,
+            elapsed_sec=self.duration,
+            file=short_name,
+            category=category,
+            stdout=self.standard_output,
             stderr=self.error_output,
         )
         if self.return_code > 0:
@@ -49,13 +50,13 @@ class TestResult(object):
 
 
 class CompareFail(Exception):
-
     @classmethod
     def format(cls, expected, actual, cause=None):
         # type: (Any, Any, Any) -> CompareFail
         message = u"expected: %s\ngot: %s" % (
             json.dumps(expected, indent=4, sort_keys=True),
-            json.dumps(actual, indent=4, sort_keys=True))
+            json.dumps(actual, indent=4, sort_keys=True),
+        )
         if cause:
             message += u"\ncaused by: %s" % cause
         return cls(message)
@@ -75,9 +76,16 @@ def compare_location(expected, actual):
         actual[comp] = actual[comp].rstrip("/")
 
     if expected[comp] != "Any" and (
-            not (actual[comp].endswith("/" + expected[comp]) or (
-                "/" not in actual[comp] and expected[comp] == actual[comp]))):
-        raise CompareFail.format(expected, actual, u"%s does not end with %s" % (actual[comp], expected[comp]))
+        not (
+            actual[comp].endswith("/" + expected[comp])
+            or ("/" not in actual[comp] and expected[comp] == actual[comp])
+        )
+    ):
+        raise CompareFail.format(
+            expected,
+            actual,
+            u"%s does not end with %s" % (actual[comp], expected[comp]),
+        )
 
 
 def compare_contents(expected, actual):
@@ -86,9 +94,14 @@ def compare_contents(expected, actual):
     with open(actual["path"]) as f:
         actual_contents = f.read()
     if expected_contents != actual_contents:
-        raise CompareFail.format(expected, actual,
-                                 json.dumps(u"Output file contents do not match: actual '%s' is not equal to expected '%s'"
-                                 % (actual_contents, expected_contents)))
+        raise CompareFail.format(
+            expected,
+            actual,
+            json.dumps(
+                u"Output file contents do not match: actual '%s' is not equal to expected '%s'"
+                % (actual_contents, expected_contents)
+            ),
+        )
 
 
 def check_keys(keys, expected, actual):
@@ -97,26 +110,30 @@ def check_keys(keys, expected, actual):
         try:
             compare(expected.get(k), actual.get(k))
         except CompareFail as e:
-            raise CompareFail.format(expected, actual, u"field '%s' failed comparison: %s" %(
-                k, str(e)
-            ))
+            raise CompareFail.format(
+                expected, actual, u"field '%s' failed comparison: %s" % (k, str(e))
+            )
 
 
 def compare_file(expected, actual):
     # type: (Dict[str,Any], Dict[str,Any]) -> None
     compare_location(expected, actual)
-    if 'contents' in expected:
+    if "contents" in expected:
         compare_contents(expected, actual)
-    other_keys = set(expected.keys()) - {'path', 'location', 'listing', 'contents'}
+    other_keys = set(expected.keys()) - {"path", "location", "listing", "contents"}
     check_keys(other_keys, expected, actual)
 
 
 def compare_directory(expected, actual):
     # type: (Dict[str,Any], Dict[str,Any]) -> None
-    if actual.get("class") != 'Directory':
-        raise CompareFail.format(expected, actual, u"expected object with a class 'Directory'")
+    if actual.get("class") != "Directory":
+        raise CompareFail.format(
+            expected, actual, u"expected object with a class 'Directory'"
+        )
     if "listing" not in actual:
-        raise CompareFail.format(expected, actual, u"'listing' is mandatory field in Directory object")
+        raise CompareFail.format(
+            expected, actual, u"'listing' is mandatory field in Directory object"
+        )
     for i in expected["listing"]:
         found = False
         for j in actual["listing"]:
@@ -127,7 +144,11 @@ def compare_directory(expected, actual):
             except CompareFail:
                 pass
         if not found:
-            raise CompareFail.format(expected, actual, u"%s not found" % json.dumps(i, indent=4, sort_keys=True))
+            raise CompareFail.format(
+                expected,
+                actual,
+                u"%s not found" % json.dumps(i, indent=4, sort_keys=True),
+            )
     compare_file(expected, actual)
 
 
@@ -137,7 +158,9 @@ def compare_dict(expected, actual):
         try:
             compare(expected[c], actual.get(c))
         except CompareFail as e:
-            raise CompareFail.format(expected, actual, u"failed comparison for key '%s': %s" % (c, e))
+            raise CompareFail.format(
+                expected, actual, u"failed comparison for key '%s': %s" % (c, e)
+            )
     extra_keys = set(actual.keys()).difference(list(expected.keys()))
     for k in extra_keys:
         if actual[k] is not None:

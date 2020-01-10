@@ -5,13 +5,12 @@ from cwltest.utils import compare_file, compare
 
 
 class TestCompareFile(unittest.TestCase):
-
     def test_compare_file(self):
         expected = {
             "location": "cores.txt",
             "size": 2,
             "class": "File",
-            "checksum": "sha1$7448d8798a4380162d4b56f9b452e2f6f9e24e7a"
+            "checksum": "sha1$7448d8798a4380162d4b56f9b452e2f6f9e24e7a",
         }
 
         actual = {
@@ -20,7 +19,7 @@ class TestCompareFile(unittest.TestCase):
             "class": "File",
             "location": "file:///var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/cores.txt",
             "path": "/var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/cores.txt",
-            "size": 2
+            "size": 2,
         }
         try:
             compare_file(expected, actual)
@@ -32,7 +31,7 @@ class TestCompareFile(unittest.TestCase):
             "location": "cores.txt",
             "size": 2,
             "class": "File",
-            "contents": "2\n"
+            "contents": "2\n",
         }
 
         actual = {
@@ -41,7 +40,7 @@ class TestCompareFile(unittest.TestCase):
             "class": "File",
             "location": "file:///var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/cores.txt",
             "path": get_data("tests/test-data/cores.txt"),
-            "size": 2
+            "size": 2,
         }
         compare(expected, actual)
 
@@ -50,7 +49,7 @@ class TestCompareFile(unittest.TestCase):
             "location": "cores.txt",
             "size": 2,
             "class": "File",
-            "contents": "2"
+            "contents": "2",
         }
 
         actual = {
@@ -59,7 +58,7 @@ class TestCompareFile(unittest.TestCase):
             "class": "File",
             "location": "file:///var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/cores.txt",
             "path": get_data("tests/test-data/cores.txt"),
-            "size": 2
+            "size": 2,
         }
         with self.assertRaises(CompareFail):
             compare_file(expected, actual)

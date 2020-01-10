@@ -5,12 +5,6 @@ matrix:
   include:
     - os: linux
       language: python
-      python: 2.7
-      script:
-        - tox
-        - RELEASE_SKIP=head PYVER=2.7 ${TRAVIS_BUILD_DIR}/release-test.sh
-    - os: linux
-      language: python
       python: 3.5
       script:
         - tox
@@ -33,9 +27,6 @@ matrix:
       script:
         - tox
         - RELEASE_SKIP=head PYVER=3 ${TRAVIS_BUILD_DIR}/release-test.sh
-    - os: osx
-      language: generic
-      env: TRAVIS_PYTHON_VERSION=2.7 PYENV_VERSION=2.7.15
     - os: osx
       language: generic
       env: TRAVIS_PYTHON_VERSION=3.5 PYENV_VERSION=3.5.4
