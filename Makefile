@@ -26,12 +26,12 @@ MODULE=cwltest
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
-DEVPKGS=pycodestyle diff_cover autopep8 pylint coverage pydocstyle flake8 \
+DEVPKGS=pycodestyle diff_cover pylint coverage pydocstyle flake8 \
 	pytest pytest-xdist isort
 DEBDEVPKGS=pep8 python-autopep8 pylint python-coverage pydocstyle sloccount \
 	   python-flake8 python-mock shellcheck
-VERSION=1.0.$(shell date +%Y%m%d%H%M%S --utc --date=`git log --first-parent \
-	--max-count=1 --format=format:%cI`)
+VERSION=2.0.$(shell TZ=UTC git log --first-parent --max-count=1 \
+	--format=format:%cd --date=format-local:%Y%m%d%H%M%S)
 mkfile_dir := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 ## all         : default task
@@ -74,47 +74,29 @@ clean: FORCE
 sort_imports:
 	isort ${MODULE}/*.py tests/*.py setup.py
 
-pep8: pycodestyle
-## pycodestyle        : check Python code style
-pycodestyle: $(PYSOURCES)
-	pycodestyle --exclude=_version.py  --show-source --show-pep8 $^ || true
-
-pep8_report.txt: pycodestyle_report.txt
-pycodestyle_report.txt: $(PYSOURCES)
-	pycodestyle --exclude=_version.py $^ > $@ || true
-
-diff_pep8_report: diff_pycodestyle_report
-diff_pycodestyle_report: pycodestyle_report.txt
-	diff-quality --violations=pycodestyle $^
-
 pep257: pydocstyle
 ## pydocstyle      : check Python code style
 pydocstyle: $(PYSOURCES)
-	pydocstyle --ignore=D100,D101,D102,D103 $^ || true
+	pydocstyle --add-ignore=D100,D101,D102,D103 $^ || true
 
 pydocstyle_report.txt: $(PYSOURCES)
 	pydocstyle setup.py $^ > $@ 2>&1 || true
 
 diff_pydocstyle_report: pydocstyle_report.txt
-	diff-quality --violations=pycodestyle $^
+	diff-quality --violations=pycodestyle --fail-under=100 $^
 
-## autopep8    : fix most Python code indentation and formatting
-autopep8: $(PYSOURCES)
-	autopep8 --recursive --in-place --ignore E309 $^
-
-# A command to automatically run astyle and autopep8 on appropriate files
-## format      : check/fix all code indentation and formatting (runs autopep8)
-format: autopep8
-	# Do nothing
+## format      : check/fix all code indentation and formatting (runs black)
+format:
+	black --exclude cwltool/schemas setup.py cwltest
 
 ## pylint      : run static code analysis on Python code
 pylint: $(PYSOURCES)
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
-                $^ || true
+                $^ -j0|| true
 
 pylint_report.txt: ${PYSOURCES}
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
-		$^ > pylint_report.txt || true
+		$^ -j0> $@ || true
 
 diff_pylint_report: pylint_report.txt
 	diff-quality --violations=pylint pylint_report.txt
@@ -156,37 +138,29 @@ list-author-emails:
 	@echo 'name, E-Mail Address'
 	@git log --format='%aN,%aE' | sort -u | grep -v 'root'
 
-mypy2: ${PYSOURCES}
-	rm -Rf typeshed/2.7/ruamel/yaml
-	ln -s $(shell python -c 'from __future__ import print_function; import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
-		typeshed/2.7/ruamel/yaml
-	rm -Rf typeshed/2.7/schema_salad
-	ln -s $(shell python -c 'from __future__ import print_function; import schema_salad; import os.path; print(os.path.dirname(schema_salad.__file__))') \
-		typeshed/2.7/schema_salad
-	MYPYPATH=typeshed/2.7:typeshed/2and3 mypy --py2 --disallow-untyped-calls \
-		 --warn-redundant-casts --warn-unused-ignores \
-		 ${MODULE}
-
-mypy3: ${PYSOURCES}
-	rm -Rf typeshed/2and3/ruamel/yaml
-	ln -s $(shell python3 -c 'from __future__ import print_function; import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
-		typeshed/2and3/ruamel/yaml
-	rm -Rf typeshed/2and3/schema_salad
-	ln -s $(shell python3 -c 'from __future__ import print_function; import schema_salad; import os.path; print(os.path.dirname(schema_salad.__file__))') \
-		typeshed/2and3/schema_salad
+mypy3: mypy
+mypy: ${PYSOURCES}
+	if ! test -f $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))')/py.typed ; \
+	then \
+		rm -Rf typeshed/2and3/ruamel/yaml ; \
+		ln -s $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
+			typeshed/2and3/ruamel/ ; \
+	fi  # if minimally required ruamel.yaml version is 0.15.99 or greater, than the above can be removed
 	MYPYPATH=$$MYPYPATH:typeshed/3:typeshed/2and3 mypy --disallow-untyped-calls \
 		 --warn-redundant-casts \
 		 ${MODULE}
 
+release-test: FORCE
+	git diff-index --quiet HEAD -- || ( echo You have uncommited changes, please commit them and try again; false )
+	./release-test.sh
+
 release: FORCE
-	PYVER=2.7 ./release-test.sh
 	PYVER=3 ./release-test.sh
-	. testenv2.7_2/bin/activate && \
-		testenv2.7_2/src/${MODULE}/setup.py sdist bdist_wheel
-	. testenv2.7_2/bin/activate && \
+	. testenv3_2/bin/activate && \
+		testenv3_2/src/${MODULE}/setup.py sdist bdist_wheel
+	. testenv3_2/bin/activate && \
 		pip install twine && \
-		twine upload testenv2.7_2/src/${MODULE}/dist/* \
-		             testenv3_2/src/${MODULE}/dist/*whl && \
+		twine upload testenv3_2/src/${MODULE}/dist/*whl && \
 		git tag ${VERSION} && git push --tags
 
 FORCE:
