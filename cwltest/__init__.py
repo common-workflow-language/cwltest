@@ -475,8 +475,10 @@ def main():  # type: () -> int
             percent = int((npassed[t] / float(v)) * 100)
             if npassed[t] == v:
                 color = "green"
-            else:
+            elif t == "required":
                 color = "red"
+            else:
+                color = "yellow"
 
             with open("{}/{}.json".format(args.badgedir, t), "w") as out:
                 out.write(
