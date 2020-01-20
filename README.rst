@@ -48,13 +48,13 @@ To generate JSON files::
   ...
   $ cat badges/command_line_tool.json | jq .
   {
-    "subject": "[CWL] command_line_tool",
+    "subject": "command_line_tool",
     "status": "100%",
     "color": "green"
   }
 
-Once you upload JSON file to a server, you make a badge by using a link like https://flat.badgen.net/https/path/to/generated/json.
+Once you upload JSON file to a server, you make a badge by using a link like https://badgen.net/https/path/to/generated/json or https://flat.badgen.net/https/path/to/generated/json (for flat badges).
 
 Here is an example of markdown to add a badge::
 
-  ![test result](https://flat.badgen.net/https/path/to/generated/json)
+  ![test result](https://flat.badgen.net/https/path/to/generated/json?icon=commonwl)
