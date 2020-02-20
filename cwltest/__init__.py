@@ -17,6 +17,7 @@ import ruamel.yaml as yaml
 import ruamel.yaml.scanner as yamlscanner
 import schema_salad.ref_resolver
 import schema_salad.schema
+import schema_salad.avro.schema
 import pkg_resources  # part of setuptools
 
 import junit_xml
@@ -355,11 +356,15 @@ def main():  # type: () -> int
         return 1
 
     schema_resource = pkg_resources.resource_stream(__name__, "cwltest-schema.yml")
-    cache = {"https://w3id.org/cwl/cwltest/cwltest-schema.yml": schema_resource.read()}
+    cache = {"https://w3id.org/cwl/cwltest/cwltest-schema.yml": schema_resource.read().decode("utf-8")}
     (document_loader,
      avsc_names,
      schema_metadata,
      metaschema_loader) = schema_salad.schema.load_schema("https://w3id.org/cwl/cwltest/cwltest-schema.yml", cache=cache)
+
+    if not isinstance(avsc_names, schema_salad.avro.schema.Names):
+        print(avsc_names)
+        return 1
 
     tests, metadata = schema_salad.schema.load_and_validate(document_loader, avsc_names, args.test, True)
 
