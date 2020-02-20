@@ -15,7 +15,7 @@ class TestCategories(unittest.TestCase):
         args = ["--test", get_data("tests/test-data/required-unsupported.yml")]
         try:
             cwd = os.getcwd()
-            os.chdir("cwltest/tests/test-data/")
+            os.chdir(get_data("tests/test-data/"))
             error_code, stdout, stderr = run_with_mock_cwl_runner(args)
         finally:
             os.chdir(cwd)

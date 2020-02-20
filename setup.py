@@ -32,7 +32,7 @@ setup(
     download_url="https://github.com/common-workflow-language/cwltest",
     license="Apache 2.0",
     packages=["cwltest", "cwltest.tests"],
-    package_data={"cwltest": ["cwltest/cwltest-schema.yml"], "cwltest.tests": ["test-data/*"]},
+    package_data={"cwltest": ["cwltest-schema.yml"], "cwltest.tests": ["test-data/*"]},
     include_package_data=True,
     install_requires=install_requires,
     test_suite="tests",
