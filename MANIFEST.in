@@ -1,4 +1,5 @@
 include Makefile gittaggers.py
+include cwltest/cwltest-schema.yml
 include cwltest/tests/*
 include cwltest/tests/test-data/*
 include cwltest/tests/test-data/v1.0/*
