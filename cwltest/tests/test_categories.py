@@ -9,9 +9,17 @@ import xml.etree.ElementTree as ET
 
 
 class TestCategories(unittest.TestCase):
+    maxDiff = None
+
     def test_unsupported_with_required_tests(self):
         args = ["--test", get_data("tests/test-data/required-unsupported.yml")]
-        error_code, stdout, stderr = run_with_mock_cwl_runner(args)
+        try:
+            cwd = os.getcwd()
+            os.chdir("cwltest/tests/test-data/")
+            error_code, stdout, stderr = run_with_mock_cwl_runner(args)
+        finally:
+            os.chdir(cwd)
+
         self.assertEqual(error_code, 1)
         print(stderr)
         stderr = re.sub(r" '?--outdir=[^ ]*", "", stderr)

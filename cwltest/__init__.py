@@ -16,6 +16,7 @@ from collections import defaultdict
 import ruamel.yaml as yaml
 import ruamel.yaml.scanner as yamlscanner
 import schema_salad.ref_resolver
+import schema_salad.schema
 import pkg_resources  # part of setuptools
 
 import junit_xml
@@ -49,6 +50,7 @@ def prepare_test_command(
     args,  # type: List[str]
     testargs,  # type: Optional[List[str]]
     test,  # type: Dict[str, str]
+    cwd,  # type: str
     verbose=False,  # type: bool
 ):  # type: (...) -> List[str]
     """ Turn the test into a command line. """
@@ -77,9 +79,18 @@ def prepare_test_command(
     test_command.extend(["--outdir={}".format(outdir)])
     if not verbose:
         test_command.extend(["--quiet"])
-    test_command.extend([os.path.normcase(test["tool"])])
-    if test.get("job"):
-        test_command.append(os.path.normcase(test["job"]))
+
+    cwd = schema_salad.ref_resolver.file_uri(cwd)
+    toolpath = test["tool"]
+    if toolpath.startswith(cwd):
+        toolpath = toolpath[len(cwd)+1:]
+    test_command.extend([os.path.normcase(toolpath)])
+
+    jobpath = test.get("job")
+    if jobpath:
+        if jobpath.startswith(cwd):
+            jobpath = jobpath[len(cwd)+1:]
+        test_command.append(os.path.normcase(jobpath))
     return test_command
 
 
@@ -106,8 +117,9 @@ def run_test(
         suffix = "\n"
     try:
         process = None  # type: Optional[subprocess.Popen[str]]
+        cwd = os.getcwd()
         test_command = prepare_test_command(
-            args.tool, args.args, args.testargs, test, verbose
+            args.tool, args.args, args.testargs, test, cwd, verbose
         )
 
         if test.get("short_name"):
@@ -131,7 +143,7 @@ def run_test(
 
         start_time = time.time()
         stderr = subprocess.PIPE if not args.verbose else None
-        process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=stderr, universal_newlines=True)
+        process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=stderr, universal_newlines=True, cwd=cwd)
         outstr, outerr = process.communicate(timeout=timeout)
         return_code = process.poll()
         duration = time.time() - start_time
@@ -342,8 +354,14 @@ def main():  # type: () -> int
         arg_parser().print_help()
         return 1
 
-    with open(args.test) as f:
-        tests = yaml.load(f, Loader=yaml.SafeLoader)
+    schema_resource = pkg_resources.resource_stream(__name__, "cwltest-schema.yml")
+    cache = {"https://w3id.org/cwl/cwltest/cwltest-schema.yml": schema_resource.read()}
+    (document_loader,
+     avsc_names,
+     schema_metadata,
+     metaschema_loader) = schema_salad.schema.load_schema("https://w3id.org/cwl/cwltest/cwltest-schema.yml", cache=cache)
+
+    tests, metadata = schema_salad.schema.load_and_validate(document_loader, avsc_names, args.test, True)
 
     failures = 0
     unsupported = 0
@@ -377,6 +395,10 @@ def main():  # type: () -> int
             ts = t.get("tags", [])
             if any((tag in ts for tag in tags)):
                 tests.append(t)
+
+    for t in tests:
+        if t.get("label"):
+            t["short_name"] = t["label"]
 
     if args.l:
         for i, t in enumerate(tests):
