@@ -2,6 +2,5 @@
   output: {}
   tool: return-0.cwl
   doc: Test with a short name
-  short_name: opt-error
+  label: opt-error
   tags: [ js, init_work_dir ]
-

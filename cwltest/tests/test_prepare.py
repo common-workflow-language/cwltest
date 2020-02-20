@@ -19,6 +19,7 @@ class TestPrepareCommand(unittest.TestCase):
                 "job": "v1.0/bwa-mem-job.json",
                 "tags": ["required"],
             },
+            cwd=os.getcwd()
         )
         if os.name == "nt":
             self.assertEqual(command[3], "v1.0\\bwa-mem-tool.cwl")

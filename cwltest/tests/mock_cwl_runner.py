@@ -16,9 +16,9 @@ def main():  # type: ()->int
 
     args = parser.parse_args()
 
-    if args.processfile == UNSUPPORTED_FEATURE_TOOL:
+    if args.processfile.endswith(UNSUPPORTED_FEATURE_TOOL):
         exit(UNSUPPORTED_FEATURE)
-    elif args.processfile == ERROR_TOOL:
+    elif args.processfile.endswith(ERROR_TOOL):
         exit(1)
 
     exit(0)
