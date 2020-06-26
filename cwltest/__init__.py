@@ -402,20 +402,20 @@ def main():  # type: () -> int
             ts = t.get("tags", [])
             if any((tag in ts for tag in tags)):
                 tests.append(t)
-    
+
     for t in tests:
         if t.get("label"):
             t["short_name"] = t["label"]
 
     if args.show_tags:
-        alltags = set() # type: Set[str]
+        alltags = set()  # type: Set[str]
         for t in tests:
             ts = t.get("tags", [])
             alltags |= set(ts)
         for tag in alltags:
             print(tag)
         return 0
-      
+
     if args.l:
         for i, t in enumerate(tests):
             if t.get("short_name"):
