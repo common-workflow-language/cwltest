@@ -9,7 +9,7 @@ import sys
 import tempfile
 import threading
 import time
-from typing import Any, Dict, List, Optional, Text, Union
+from typing import Any, Dict, List, Optional, Set, Text, Union
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 from rdflib import Graph
@@ -280,6 +280,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
         "--only-tools", action="store_true", help="Only test CommandLineTools"
     )
     parser.add_argument("--tags", type=str, default=None, help="Tags to be tested")
+    parser.add_argument("--show-tags", action="store_true", help="Show all Tags.")
     parser.add_argument(
         "--junit-xml", type=str, default=None, help="Path to JUnit xml file"
     )
@@ -405,6 +406,15 @@ def main():  # type: () -> int
     for t in tests:
         if t.get("label"):
             t["short_name"] = t["label"]
+
+    if args.show_tags:
+        alltags = set()  # type: Set[str]
+        for t in tests:
+            ts = t.get("tags", [])
+            alltags |= set(ts)
+        for tag in alltags:
+            print(tag)
+        return 0
 
     if args.l:
         for i, t in enumerate(tests):
