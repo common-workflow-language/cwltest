@@ -9,9 +9,10 @@ import sys
 import tempfile
 import threading
 import time
-from typing import Any, Dict, List, Optional, Text
+from typing import Any, Dict, List, Optional, Text, Union
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
+from rdflib import Graph
 
 import ruamel.yaml as yaml
 import ruamel.yaml.scanner as yamlscanner
@@ -356,7 +357,7 @@ def main():  # type: () -> int
         return 1
 
     schema_resource = pkg_resources.resource_stream(__name__, "cwltest-schema.yml")
-    cache = {"https://w3id.org/cwl/cwltest/cwltest-schema.yml": schema_resource.read().decode("utf-8")}
+    cache = {"https://w3id.org/cwl/cwltest/cwltest-schema.yml": schema_resource.read().decode("utf-8")}  # type: Optional[Dict[str, Union[str, Graph, bool]]]
     (document_loader,
      avsc_names,
      schema_metadata,
