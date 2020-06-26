@@ -408,7 +408,7 @@ def main():  # type: () -> int
             t["short_name"] = t["label"]
 
     if args.show_tags:
-        alltags = set() # type: set
+        alltags = set() # type: set[str]
         for t in tests:
             ts = t.get("tags", [])
             alltags |= set(ts)
