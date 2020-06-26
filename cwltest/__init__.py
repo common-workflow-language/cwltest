@@ -9,7 +9,7 @@ import sys
 import tempfile
 import threading
 import time
-from typing import Any, Dict, List, Optional, Text, Union
+from typing import Any, Dict, List, Optional, Set, Text, Union
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 from rdflib import Graph
@@ -408,7 +408,7 @@ def main():  # type: () -> int
             t["short_name"] = t["label"]
 
     if args.show_tags:
-        alltags = set() # type: set[str]
+        alltags = set() # type: Set[str]
         for t in tests:
             ts = t.get("tags", [])
             alltags |= set(ts)
