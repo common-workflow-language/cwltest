@@ -1,8 +1,15 @@
+|Linux Build Status| |Windows Build status| |Code coverage|
+
+.. |Linux Build Status| image:: https://img.shields.io/travis/common-workflow-language/cwltest/master.svg?label=unix%20build
+   :target: https://travis-ci.org/common-workflow-language/cwltest
+.. |Windows Build status| image:: https://img.shields.io/appveyor/ci/mr-c/cwltest/master.svg?label=windows%20build
+   :target: https://ci.appveyor.com/project/mr-c/cwltest/branch/master
+.. |Code coverage| image:: https://codecov.io/gh/common-workflow-language/cwltest/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/common-workflow-language/cwltest
+
 ==========================================
 Common workflow language testing framework
 ==========================================
-.. image:: https://travis-ci.org/common-workflow-language/cwltest.svg?branch=master
-    :target: https://travis-ci.org/common-workflow-language/cwltest
 
 This is a testing tool for checking the output of Tools and Workflows described
 with the Common Workflow Language.  Among other uses, it is used to run the CWL
@@ -41,13 +48,13 @@ To generate JSON files::
   ...
   $ cat badges/command_line_tool.json | jq .
   {
-    "subject": "[CWL] command_line_tool",
+    "subject": "command_line_tool",
     "status": "100%",
     "color": "green"
   }
 
-Once you upload JSON file to a server, you make a badge by using a link like https://flat.badgen.net/https/path/to/generated/json.
+Once you upload JSON file to a server, you make a badge by using a link like https://badgen.net/https/path/to/generated/json or https://flat.badgen.net/https/path/to/generated/json (for flat badges).
 
 Here is an example of markdown to add a badge::
 
-  ![test result](https://flat.badgen.net/https/path/to/generated/json)
+  ![test result](https://flat.badgen.net/https/path/to/generated/json?icon=commonwl)
