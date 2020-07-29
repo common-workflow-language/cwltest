@@ -37,7 +37,7 @@ setup(
     install_requires=install_requires,
     test_suite="tests",
     setup_requires=[] + pytest_runner,
-    tests_require=["pytest<5"],
+    tests_require=["pytest<7"],
     entry_points={
         "console_scripts": [
             "cwltest=cwltest:main",
