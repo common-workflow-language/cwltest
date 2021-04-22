@@ -251,6 +251,7 @@ def run_test(
 
 
 def arg_parser():  # type: () -> argparse.ArgumentParser
+    breakpoint()
     parser = argparse.ArgumentParser(
         description="Common Workflow Language testing framework"
     )
@@ -269,6 +270,18 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
         type=str,
         default=None,
         help="Run specific tests using their short names separated by comma",
+    )
+    parser.add_argument(
+        "-N",
+        type=str,
+        default=None,
+        help="Exclude specific tests by number, format is 1,3-6,9",
+    )
+    parser.add_argument(
+        "-S",
+        type=str,
+        default=None,
+        help="Exclude specific tests by short names separated by comma",
     )
     parser.add_argument(
         "--tool",
@@ -340,6 +353,15 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     return parser
 
+def expand_number_range(nr: str) -> List[int]:
+    ans: List[int] = []
+    for s in nr.split(","):
+        sp = s.split("-")
+        if len(sp) == 2:
+            ans.extend(range(int(sp[0]) - 1, int(sp[1])))
+        else:
+            ans.append(int(s) - 1)
+    return ans
 
 def main():  # type: () -> int
 
@@ -430,12 +452,7 @@ def main():  # type: () -> int
     if args.n is not None or args.s is not None:
         ntest = []
         if args.n is not None:
-            for s in args.n.split(","):
-                sp = s.split("-")
-                if len(sp) == 2:
-                    ntest.extend(list(range(int(sp[0]) - 1, int(sp[1]))))
-                else:
-                    ntest.append(int(s) - 1)
+            ntest = expand_number_range(args.n)
         if args.s is not None:
             for s in args.s.split(","):
                 test_number = get_test_number_by_key(tests, "short_name", s)
@@ -446,6 +463,20 @@ def main():  # type: () -> int
                     return 1
     else:
         ntest = list(range(0, len(tests)))
+
+    exclude_n = []
+    if args.N is not None:
+        exclude_n = expand_number_range(args.N)
+    if args.S is not None:
+        for s in args.S.split(","):
+            test_number = get_test_number_by_key(tests, "short_name", s)
+            if test_number:
+                exclude_n.append(test_number)
+            else:
+                _logger.error('Test with short name "%s" not found ', s)
+                return 1
+
+    ntest = list(filter(lambda x: x not in exclude_n, ntest))
 
     total = 0
     with ThreadPoolExecutor(max_workers=args.j) as executor:
