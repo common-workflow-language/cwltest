@@ -251,7 +251,6 @@ def run_test(
 
 
 def arg_parser():  # type: () -> argparse.ArgumentParser
-    breakpoint()
     parser = argparse.ArgumentParser(
         description="Common Workflow Language testing framework"
     )
