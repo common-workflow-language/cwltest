@@ -22,7 +22,7 @@ pytest_runner = ["pytest < 6", "pytest-runner < 5"] if needs_pytest else []
 
 setup(
     name="cwltest",
-    version="2.0",
+    version="2.1",
     description="Common workflow language testing framework",
     long_description=open(README).read(),
     long_description_content_type="text/x-rst",
