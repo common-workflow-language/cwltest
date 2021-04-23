@@ -157,7 +157,7 @@ release-test: FORCE
 release: FORCE
 	PYVER=3 ./release-test.sh
 	. testenv2/bin/activate && \
-		testenv2/src/${MODULE}/setup.py sdist bdist_wheel
+		python testenv2/src/${MODULE}/setup.py sdist bdist_wheel
 	. testenv2/bin/activate && \
 		pip install twine && \
 		twine upload testenv2/src/${MODULE}/dist/*whl && \
