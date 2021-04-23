@@ -60,12 +60,12 @@ install: FORCE
 dist: dist/${MODULE}-$(VERSION).tar.gz
 
 dist/${MODULE}-$(VERSION).tar.gz: $(SOURCES)
-	./setup.py sdist bdist_wheel
+	python setup.py sdist bdist_wheel
 
 ## clean       : clean up all temporary / machine-generated files
 clean: FORCE
 	rm -f ${MODILE}/*.pyc tests/*.pyc
-	./setup.py clean --all || true
+	python setup.py clean --all || true
 	rm -Rf .coverage
 	rm -f diff-cover.html
 
@@ -125,7 +125,7 @@ diff-cover.html: coverage-gcovr.xml coverage.xml
 
 ## test        : run the ${MODULE} test suite
 test: all
-	./setup.py test
+	python setup.py test
 
 sloccount.sc: ${PYSOURCES} Makefile
 	sloccount --duplicates --wide --details $^ > $@
