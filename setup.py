@@ -15,7 +15,7 @@ try:
 except ImportError:
     tagger = egg_info_cmd.egg_info
 
-install_requires = ["schema-salad >= 5.0.20200220195218, < 8", "junit-xml >= 1.8"]
+install_requires = ["schema-salad >= 5.0.20200220195218, < 9", "junit-xml >= 1.8"]
 
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
 pytest_runner = ["pytest < 6", "pytest-runner < 5"] if needs_pytest else []
