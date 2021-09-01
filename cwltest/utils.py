@@ -1,6 +1,5 @@
 import json
-
-from typing import Any, Dict, Set, Text, List, Optional
+from typing import Any, Dict, List, Optional, Set, Text
 
 import junit_xml
 
