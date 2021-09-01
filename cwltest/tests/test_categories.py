@@ -8,11 +8,17 @@ from .util import run_with_mock_cwl_runner, get_data
 import defusedxml.ElementTree as ET
 import schema_salad.ref_resolver
 
+
 class TestCategories(unittest.TestCase):
     maxDiff = None
 
     def test_unsupported_with_required_tests(self):
-        args = ["--test", schema_salad.ref_resolver.file_uri(get_data("tests/test-data/required-unsupported.yml"))]
+        args = [
+            "--test",
+            schema_salad.ref_resolver.file_uri(
+                get_data("tests/test-data/required-unsupported.yml")
+            ),
+        ]
         try:
             cwd = os.getcwd()
             os.chdir(get_data("tests/test-data/"))
@@ -47,7 +53,12 @@ class TestCategories(unittest.TestCase):
         )
 
     def test_unsupported_with_optional_tests(self):
-        args = ["--test", schema_salad.ref_resolver.file_uri(get_data("tests/test-data/optional-unsupported.yml"))]
+        args = [
+            "--test",
+            schema_salad.ref_resolver.file_uri(
+                get_data("tests/test-data/optional-unsupported.yml")
+            ),
+        ]
         error_code, stdout, stderr = run_with_mock_cwl_runner(args)
         self.assertEqual(error_code, 0)
         self.assertEqual(
@@ -58,7 +69,12 @@ class TestCategories(unittest.TestCase):
         )
 
     def test_error_with_optional_tests(self):
-        args = ["--test", schema_salad.ref_resolver.file_uri(get_data("tests/test-data/optional-error.yml"))]
+        args = [
+            "--test",
+            schema_salad.ref_resolver.file_uri(
+                get_data("tests/test-data/optional-error.yml")
+            ),
+        ]
         error_code, stdout, stderr = run_with_mock_cwl_runner(args)
         self.assertEqual(error_code, 1)
         self.assertIn("1 failures", stderr)
@@ -67,7 +83,9 @@ class TestCategories(unittest.TestCase):
         junit_xml_report = get_data("tests/test-data/junit-report.xml")
         args = [
             "--test",
-            schema_salad.ref_resolver.file_uri(get_data("tests/test-data/optional-error.yml")),
+            schema_salad.ref_resolver.file_uri(
+                get_data("tests/test-data/optional-error.yml")
+            ),
             "--junit-xml",
             junit_xml_report,
         ]

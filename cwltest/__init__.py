@@ -37,12 +37,8 @@ _logger.setLevel(logging.INFO)
 UNSUPPORTED_FEATURE = 33
 DEFAULT_TIMEOUT = 600  # 10 minutes
 
-if sys.version_info < (3, 0):
-    import subprocess32 as subprocess  # nosec
-    from pipes import quote
-else:
-    import subprocess  # nosec
-    from shlex import quote
+import subprocess  # nosec
+from shlex import quote
 
 templock = threading.Lock()
 
@@ -55,7 +51,7 @@ def prepare_test_command(
     cwd,  # type: str
     verbose=False,  # type: bool
 ):  # type: (...) -> List[str]
-    """ Turn the test into a command line. """
+    """Turn the test into a command line."""
     test_command = [tool]
     test_command.extend(args)
 
@@ -72,26 +68,26 @@ def prepare_test_command(
             outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
             test_command.extend(
                 [
-                    "--tmp-outdir-prefix={}".format(outdir),
-                    "--tmpdir-prefix={}".format(outdir),
+                    f"--tmp-outdir-prefix={outdir}",
+                    f"--tmpdir-prefix={outdir}",
                 ]
             )
         else:
             outdir = tempfile.mkdtemp()
-    test_command.extend(["--outdir={}".format(outdir)])
+    test_command.extend([f"--outdir={outdir}"])
     if not verbose:
         test_command.extend(["--quiet"])
 
     cwd = schema_salad.ref_resolver.file_uri(cwd)
     toolpath = test["tool"]
     if toolpath.startswith(cwd):
-        toolpath = toolpath[len(cwd)+1:]
+        toolpath = toolpath[len(cwd) + 1 :]
     test_command.extend([os.path.normcase(toolpath)])
 
     jobpath = test.get("job")
     if jobpath:
         if jobpath.startswith(cwd):
-            jobpath = jobpath[len(cwd)+1:]
+            jobpath = jobpath[len(cwd) + 1 :]
         test_command.append(os.path.normcase(jobpath))
     return test_command
 
@@ -108,7 +104,7 @@ def run_test(
     global templock
 
     out = {}  # type: Dict[str,Any]
-    outdir = outstr = outerr = u""
+    outdir = outstr = outerr = ""
     test_command = []  # type: List[str]
     duration = 0.0
     prefix = ""
@@ -145,7 +141,13 @@ def run_test(
 
         start_time = time.time()
         stderr = subprocess.PIPE if not args.verbose else None
-        process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=stderr, universal_newlines=True, cwd=cwd)  # nosec
+        process = subprocess.Popen(  # nosec
+            test_command,
+            stdout=subprocess.PIPE,
+            stderr=stderr,
+            universal_newlines=True,
+            cwd=cwd,
+        )
         outstr, outerr = process.communicate(timeout=timeout)
         return_code = process.poll()
         duration = time.time() - start_time
@@ -167,25 +169,25 @@ def run_test(
         if test.get("should_fail", False):
             return TestResult(0, outstr, outerr, duration, args.classname)
         _logger.error(
-            u"""Test %i failed: %s""",
+            """Test %i failed: %s""",
             test_number,
             " ".join([quote(tc) for tc in test_command]),
         )
         _logger.error(test.get("doc"))
         if err.returncode == UNSUPPORTED_FEATURE:
-            _logger.error(u"Does not support required feature")
+            _logger.error("Does not support required feature")
         else:
-            _logger.error(u"Returned non-zero")
+            _logger.error("Returned non-zero")
         _logger.error(outerr)
         return TestResult(1, outstr, outerr, duration, args.classname, str(err))
     except (yamlscanner.ScannerError, TypeError) as err:
         _logger.error(
-            u"""Test %i failed: %s""",
+            """Test %i failed: %s""",
             test_number,
-            u" ".join([quote(tc) for tc in test_command]),
+            " ".join([quote(tc) for tc in test_command]),
         )
         _logger.error(outstr)
-        _logger.error(u"Parse error %s", str(err))
+        _logger.error("Parse error %s", str(err))
         _logger.error(outerr)
     except KeyboardInterrupt:
         _logger.error(
@@ -204,7 +206,7 @@ def run_test(
         return TestResult(2, outstr, outerr, timeout, args.classname, "Test timed out")
     finally:
         if process is not None and process.returncode is None:
-            _logger.error(u"""Terminating lingering process""")
+            _logger.error("""Terminating lingering process""")
             process.terminate()
             for _ in range(0, 3):
                 time.sleep(1)
@@ -217,24 +219,24 @@ def run_test(
 
     if test.get("should_fail", False):
         _logger.warning(
-            u"""Test %i failed: %s""",
+            """Test %i failed: %s""",
             test_number,
-            u" ".join([quote(tc) for tc in test_command]),
+            " ".join([quote(tc) for tc in test_command]),
         )
         _logger.warning(test.get("doc"))
-        _logger.warning(u"Returned zero but it should be non-zero")
+        _logger.warning("Returned zero but it should be non-zero")
         return TestResult(1, outstr, outerr, duration, args.classname)
 
     try:
         compare(test.get("output"), out)
     except CompareFail as ex:
         _logger.warning(
-            u"""Test %i failed: %s""",
+            """Test %i failed: %s""",
             test_number,
-            u" ".join([quote(tc) for tc in test_command]),
+            " ".join([quote(tc) for tc in test_command]),
         )
         _logger.warning(test.get("doc"))
-        _logger.warning(u"Compare failure %s", ex)
+        _logger.warning("Compare failure %s", ex)
         fail_message = str(ex)
 
     if outdir:
@@ -345,12 +347,13 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     pkg = pkg_resources.require("cwltest")
     if pkg:
-        ver = u"%s %s" % (sys.argv[0], pkg[0].version)
+        ver = f"{sys.argv[0]} {pkg[0].version}"
     else:
-        ver = u"%s %s" % (sys.argv[0], "unknown version")
+        ver = "{} {}".format(sys.argv[0], "unknown version")
     parser.add_argument("--version", action="version", version=ver)
 
     return parser
+
 
 def expand_number_range(nr: str) -> List[int]:
     ans: List[int] = []
@@ -361,6 +364,7 @@ def expand_number_range(nr: str) -> List[int]:
         else:
             ans.append(int(s) - 1)
     return ans
+
 
 def main():  # type: () -> int
 
@@ -558,12 +562,12 @@ def main():  # type: () -> int
             else:
                 color = "yellow"
 
-            with open("{}/{}.json".format(args.badgedir, t), "w") as out:
+            with open(f"{args.badgedir}/{t}.json", "w") as out:
                 out.write(
                     json.dumps(
                         {
-                            "subject": "{}".format(t),
-                            "status": "{}%".format(percent),
+                            "subject": f"{t}",
+                            "status": f"{percent}%",
                             "color": color,
                         }
                     )

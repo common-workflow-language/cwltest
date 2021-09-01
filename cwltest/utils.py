@@ -7,7 +7,7 @@ import junit_xml
 REQUIRED = "required"
 
 
-class TestResult(object):
+class TestResult:
 
     """Encapsulate relevant test result data."""
 
@@ -30,12 +30,12 @@ class TestResult(object):
 
     def create_test_case(self, test):
         # type: (Dict[Text, Any]) -> junit_xml.TestCase
-        doc = test.get(u"doc", "N/A").strip()
+        doc = test.get("doc", "N/A").strip()
         if test.get("tags"):
             category = ", ".join(test["tags"])
         else:
             category = REQUIRED
-        short_name = test.get(u"short_name")
+        short_name = test.get("short_name")
         case = junit_xml.TestCase(
             doc,
             elapsed_sec=self.duration,
@@ -53,12 +53,12 @@ class CompareFail(Exception):
     @classmethod
     def format(cls, expected, actual, cause=None):
         # type: (Any, Any, Any) -> CompareFail
-        message = u"expected: %s\ngot: %s" % (
+        message = "expected: {}\ngot: {}".format(
             json.dumps(expected, indent=4, sort_keys=True),
             json.dumps(actual, indent=4, sort_keys=True),
         )
         if cause:
-            message += u"\ncaused by: %s" % cause
+            message += "\ncaused by: %s" % cause
         return cls(message)
 
 
@@ -84,7 +84,7 @@ def compare_location(expected, actual):
         raise CompareFail.format(
             expected,
             actual,
-            u"%s does not end with %s" % (actual[comp], expected[comp]),
+            f"{actual[comp]} does not end with {expected[comp]}",
         )
 
 
@@ -98,7 +98,7 @@ def compare_contents(expected, actual):
             expected,
             actual,
             json.dumps(
-                u"Output file contents do not match: actual '%s' is not equal to expected '%s'"
+                "Output file contents do not match: actual '%s' is not equal to expected '%s'"
                 % (actual_contents, expected_contents)
             ),
         )
@@ -111,7 +111,7 @@ def check_keys(keys, expected, actual):
             compare(expected.get(k), actual.get(k))
         except CompareFail as e:
             raise CompareFail.format(
-                expected, actual, u"field '%s' failed comparison: %s" % (k, str(e))
+                expected, actual, f"field '{k}' failed comparison: {str(e)}"
             )
 
 
@@ -128,11 +128,11 @@ def compare_directory(expected, actual):
     # type: (Dict[str,Any], Dict[str,Any]) -> None
     if actual.get("class") != "Directory":
         raise CompareFail.format(
-            expected, actual, u"expected object with a class 'Directory'"
+            expected, actual, "expected object with a class 'Directory'"
         )
     if "listing" not in actual:
         raise CompareFail.format(
-            expected, actual, u"'listing' is mandatory field in Directory object"
+            expected, actual, "'listing' is mandatory field in Directory object"
         )
     for i in expected["listing"]:
         found = False
@@ -147,7 +147,7 @@ def compare_directory(expected, actual):
             raise CompareFail.format(
                 expected,
                 actual,
-                u"%s not found" % json.dumps(i, indent=4, sort_keys=True),
+                "%s not found" % json.dumps(i, indent=4, sort_keys=True),
             )
     compare_file(expected, actual)
 
@@ -159,12 +159,12 @@ def compare_dict(expected, actual):
             compare(expected[c], actual.get(c))
         except CompareFail as e:
             raise CompareFail.format(
-                expected, actual, u"failed comparison for key '%s': %s" % (c, e)
+                expected, actual, f"failed comparison for key '{c}': {e}"
             )
     extra_keys = set(actual.keys()).difference(list(expected.keys()))
     for k in extra_keys:
         if actual[k] is not None:
-            raise CompareFail.format(expected, actual, u"unexpected key '%s'" % k)
+            raise CompareFail.format(expected, actual, "unexpected key '%s'" % k)
 
 
 def compare(expected, actual):  # type: (Any, Any) -> None
@@ -190,7 +190,7 @@ def compare(expected, actual):  # type: (Any, Any) -> None
                 raise CompareFail.format(expected, actual)
 
             if len(expected) != len(actual):
-                raise CompareFail.format(expected, actual, u"lengths don't match")
+                raise CompareFail.format(expected, actual, "lengths don't match")
             for c in range(0, len(expected)):
                 try:
                     compare(expected[c], actual[c])
