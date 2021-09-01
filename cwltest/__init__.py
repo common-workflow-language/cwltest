@@ -96,6 +96,7 @@ def run_test(
     test_number,  # type: int
     total_tests,  # type: int
     timeout,  # type: int
+    junit_verbose=False,  # type: bool
     verbose=False,  # type: bool
 ):  # type: (...) -> TestResult
 
@@ -115,7 +116,7 @@ def run_test(
         process = None  # type: Optional[subprocess.Popen[str]]
         cwd = os.getcwd()
         test_command = prepare_test_command(
-            args.tool, args.args, args.testargs, test, cwd, verbose
+            args.tool, args.args, args.testargs, test, cwd, junit_verbose
         )
 
         if test.get("short_name"):
@@ -135,6 +136,8 @@ def run_test(
                 "%sTest [%i/%i] %s%s\n"
                 % (prefix, test_number, total_tests, test.get("doc"), suffix)
             )
+        if verbose:
+            sys.stderr.write(f"Running: {' '.join(test_command)}\n")
         sys.stderr.flush()
 
         start_time = time.time()
@@ -386,12 +389,7 @@ def main():  # type: () -> int
             "utf-8"
         )
     }  # type: Optional[Dict[str, Union[str, Graph, bool]]]
-    (
-        document_loader,
-        avsc_names,
-        _,
-        _,
-    ) = schema_salad.schema.load_schema(
+    (document_loader, avsc_names, _, _,) = schema_salad.schema.load_schema(
         "https://w3id.org/cwl/cwltest/cwltest-schema.yml", cache=cache
     )
 
@@ -500,6 +498,7 @@ def main():  # type: () -> int
                 len(tests),
                 args.timeout,
                 args.junit_verbose,
+                args.verbose,
             )
             for i in ntest
         ]
