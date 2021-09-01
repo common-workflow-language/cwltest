@@ -5,28 +5,29 @@ import json
 import logging
 import os
 import shutil
+import subprocess  # nosec
 import sys
 import tempfile
 import threading
 import time
-from typing import Any, Dict, List, Optional, Set, Text, Union
-from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
-from rdflib import Graph
-
-import ruamel.yaml as yaml
-import ruamel.yaml.scanner as yamlscanner
-import schema_salad.ref_resolver
-import schema_salad.schema
-import schema_salad.avro.schema
-import pkg_resources  # part of setuptools
+from concurrent.futures import ThreadPoolExecutor
+from shlex import quote
+from typing import Any, Dict, List, Optional, Set, Union
 
 import junit_xml
+import pkg_resources  # part of setuptools
+import ruamel.yaml.scanner as yamlscanner
+import schema_salad.avro.schema
+import schema_salad.ref_resolver
+import schema_salad.schema
+from rdflib import Graph
+
 from cwltest.utils import (
-    compare,
+    REQUIRED,
     CompareFail,
     TestResult,
-    REQUIRED,
+    compare,
     get_test_number_by_key,
 )
 
@@ -36,9 +37,6 @@ _logger.setLevel(logging.INFO)
 
 UNSUPPORTED_FEATURE = 33
 DEFAULT_TIMEOUT = 600  # 10 minutes
-
-import subprocess  # nosec
-from shlex import quote
 
 templock = threading.Lock()
 
@@ -391,8 +389,8 @@ def main():  # type: () -> int
     (
         document_loader,
         avsc_names,
-        schema_metadata,
-        metaschema_loader,
+        _,
+        _,
     ) = schema_salad.schema.load_schema(
         "https://w3id.org/cwl/cwltest/cwltest-schema.yml", cache=cache
     )
