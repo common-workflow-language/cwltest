@@ -4,7 +4,7 @@ import os
 from os import linesep as n
 
 from .util import run_with_mock_cwl_runner, get_data
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 
 
 class TestShortNames(unittest.TestCase):

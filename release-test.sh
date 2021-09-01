@@ -7,15 +7,21 @@ export LC_ALL=C
 
 package=cwltest
 module=cwltest
-slug=${TRAVIS_PULL_REQUEST_SLUG:=common-workflow-language/${module}}
-repo=https://github.com/${slug}.git
+if [ "$GITHUB_ACTIONS" = "true" ]; then
+    # We are running as a GH Action
+    repo=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git
+    HEAD=${GITHUB_REF}
+else
+    repo=https://github.com/common-workflow-language/cwltest.git
+    HEAD=$(git rev-parse HEAD)
+fi
 run_tests="bin/py.test --pyargs ${module}"
 pipver=20.3b1 # minimum required version of pip for Python 3.9
 setuptoolsver=41.1.0 # required for Python 3.9
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
-rm -Rf "testenv${PYVER}_"? || /bin/true
+rm -Rf testenv? || /bin/true
 
-export HEAD=${TRAVIS_PULL_REQUEST_SHA:-$(git rev-parse HEAD)}
 
 if [ "${RELEASE_SKIP}" != "head" ]
 then
@@ -27,10 +33,9 @@ then
 	rm -f testenv1/lib/python-wheels/setuptools* \
 		&& pip install --force-reinstall -U pip==${pipver} \
 		&& pip install setuptools==${setuptoolsver} wheel
-	make install-dependencies
+	pip install -rtest-requirements.txt
 	make test
-	pip uninstall -y ${package} || true; pip uninstall -y ${package} \
-		|| true; make install
+	pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
 	mkdir testenv1/not-${module}
 	# if there is a subdir named '${module}' py.test will execute tests
 	# there instead of the installed module's tests
@@ -56,7 +61,7 @@ rm -f lib/python-wheels/setuptools* \
 # The following can fail if you haven't pushed your commits to ${repo}
 pip install -e "git+${repo}@${HEAD}#egg=${package}"
 pushd src/${package}
-make install-dependencies
+pip install -rtest-requirements.txt
 make dist
 make test
 cp dist/${package}*tar.gz ../../../testenv3/
@@ -76,13 +81,16 @@ source bin/activate
 rm -f lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setuptoolsver} wheel
-pip install ${package}*tar.gz
-pip install pytest\<5
+package_tar=$(find . -name "${package}*tar.gz")
+pip install "-r${DIR}/test-requirements.txt"
+pip install "${package_tar}"
 mkdir out
 tar --extract --directory=out -z -f ${package}*.tar.gz
 pushd out/${package}*
 make dist
 make test
+pip install "-r${DIR}/mypy_requirements.txt"
+make mypy
 pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
 mkdir ../not-${module}
 pushd ../not-${module}
@@ -100,7 +108,7 @@ rm -f lib/python-wheels/setuptools* \
 	&& pip install --force-reinstall -U pip==${pipver} \
         && pip install setuptools==${setuptoolsver} wheel
 pip install ${module}*.whl
-pip install pytest\<5
+pip install "-r${DIR}/test-requirements.txt"
 mkdir not-${module}
 pushd not-${module}
 # shellcheck disable=SC2086

@@ -5,7 +5,7 @@ from os import linesep as n
 from os import sep as p
 
 from .util import run_with_mock_cwl_runner, get_data
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 import schema_salad.ref_resolver
 
 class TestCategories(unittest.TestCase):

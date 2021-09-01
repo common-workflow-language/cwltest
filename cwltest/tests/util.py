@@ -1,7 +1,7 @@
 import os
 import sys
 
-import subprocess
+import subprocess  # nosec
 
 from pkg_resources import (
     Requirement,
@@ -25,7 +25,7 @@ def get_data(filename):
 
 
 def run_with_mock_cwl_runner(args):
-    process = subprocess.Popen(
+    process = subprocess.Popen(  # nosec
         ["cwltest", "--tool", "mock-cwl-runner"] + args,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
