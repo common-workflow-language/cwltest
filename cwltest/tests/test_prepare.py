@@ -4,10 +4,10 @@ from cwltest import prepare_test_command
 
 
 class TestPrepareCommand(unittest.TestCase):
-    """ Test prepare_test_command() """
+    """Test prepare_test_command()"""
 
     def test_unix_relative_path(self):
-        """ Confirm unix style to windows style path corrections. """
+        """Confirm unix style to windows style path corrections."""
         command = prepare_test_command(
             tool="cwl-runner",
             args=[],
@@ -19,7 +19,7 @@ class TestPrepareCommand(unittest.TestCase):
                 "job": "v1.0/bwa-mem-job.json",
                 "tags": ["required"],
             },
-            cwd=os.getcwd()
+            cwd=os.getcwd(),
         )
         if os.name == "nt":
             self.assertEqual(command[3], "v1.0\\bwa-mem-tool.cwl")
