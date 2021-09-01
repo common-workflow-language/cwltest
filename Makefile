@@ -15,36 +15,36 @@
 #
 # Contact: common-workflow-language@googlegroups.com
 
-# make pycodestyle to check for basic Python code compliance
-# make autopep8 to fix most pep8 errors
+# make format to fix most python formatting errors
 # make pylint to check Python code for enhanced compliance including naming
 #  and documentation
 # make coverage-report to check coverage of the python scripts by the tests
 
 MODULE=cwltest
+PACKAGE=cwltest
 
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
-DEVPKGS=pycodestyle diff_cover pylint coverage pydocstyle flake8 \
-	pytest pytest-xdist isort
+DEVPKGS=diff_cover black pylint pep257 pydocstyle flake8 tox tox-pyenv \
+	isort wheel autoflake flake8-bugbear pyupgrade bandit \
+	-rtest-requirements.txt -rmypy_requirements.txt
 DEBDEVPKGS=pep8 python-autopep8 pylint python-coverage pydocstyle sloccount \
 	   python-flake8 python-mock shellcheck
-VERSION=2.1.$(shell TZ=UTC git log --first-parent --max-count=1 \
+VERSION=2.2.$(shell TZ=UTC git log --first-parent --max-count=1 \
 	--format=format:%cd --date=format-local:%Y%m%d%H%M%S)
-mkfile_dir := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 ## all         : default task
-all: FORCE
-	pip install -e .
+all: dev
 
 ## help        : print this help message and exit
 help: Makefile
 	@sed -n 's/^##//p' $<
 
-install-dependencies: install-dep
 ## install-dep : install most of the development dependencies via pip
-install-dep:
+install-dep: install-dependencies
+
+install-dependencies: FORCE
 	pip install --upgrade $(DEVPKGS)
 	pip install -r requirements.txt
 
@@ -52,9 +52,13 @@ install-dep:
 install-deb-dep:
 	sudo apt-get install $(DEBDEVPKGS)
 
-## install     : install the ${MODULE} module and schema-salad-tool
+## install     : install the ${MODULE} module and cwltest
 install: FORCE
 	pip install .
+
+## dev     : install the ${MODULE} module in dev mode
+dev: install-dep
+	pip install -e .
 
 ## dist        : create a module package for distribution
 dist: dist/${MODULE}-$(VERSION).tar.gz
@@ -71,8 +75,11 @@ clean: FORCE
 
 # Linting and code style related targets
 ## sorting imports using isort: https://github.com/timothycrosley/isort
-sort_imports:
-	isort ${MODULE}/*.py tests/*.py setup.py
+sort_imports: $(PYSOURCES)
+	isort $^
+
+remove_unused_imports: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+	autoflake --in-place --remove-all-unused-imports $^
 
 pep257: pydocstyle
 ## pydocstyle      : check Python code style
@@ -83,18 +90,21 @@ pydocstyle_report.txt: $(PYSOURCES)
 	pydocstyle setup.py $^ > $@ 2>&1 || true
 
 diff_pydocstyle_report: pydocstyle_report.txt
-	diff-quality --violations=pycodestyle --fail-under=100 $^
+	diff-quality --compare-branch=main --violations=pydocstyle --fail-under=100 $^
 
 ## format      : check/fix all code indentation and formatting (runs black)
 format:
-	black --exclude cwltool/schemas setup.py cwltest
+	black setup.py cwltest setup.py
+
+format-check:
+	black --diff --check setup.py cwltest
 
 ## pylint      : run static code analysis on Python code
 pylint: $(PYSOURCES)
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
                 $^ -j0|| true
 
-pylint_report.txt: ${PYSOURCES}
+pylint_report.txt: $(PYSOURCES)
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
 		$^ -j0> $@ || true
 
@@ -102,36 +112,39 @@ diff_pylint_report: pylint_report.txt
 	diff-quality --violations=pylint pylint_report.txt
 
 .coverage: $(PYSOURCES) all
-	coverage run ./setup.py test
+	python setup.py test --addopts "--cov --cov-config=.coveragerc --cov-report= -n auto ${PYTEST_EXTRA}"
 
 coverage.xml: .coverage
-	python-coverage xml
+	coverage xml
 
 coverage.html: htmlcov/index.html
 
 htmlcov/index.html: .coverage
-	python-coverage html
+	coverage html
 	@echo Test coverage of the Python code is now in htmlcov/index.html
 
 coverage-report: .coverage
-	python-coverage report
+	coverage report
 
-diff-cover: coverage-gcovr.xml coverage.xml
-	diff-cover coverage-gcovr.xml coverage.xml
+diff-cover: coverage.xml
+	diff-cover $^
 
-diff-cover.html: coverage-gcovr.xml coverage.xml
-	diff-cover coverage-gcovr.xml coverage.xml \
-		--html-report diff-cover.html
+diff-cover.html: coverage.xml
+	diff-cover $^ --html-report $@
 
 ## test        : run the ${MODULE} test suite
-test: all
-	python setup.py test
+test: $(PYSOURCES) all
+	python setup.py test ${PYTEST_EXTRA}
 
-sloccount.sc: ${PYSOURCES} Makefile
+## testcov     : run the ${MODULE} test suite and collect coverage
+testcov: $(PYSOURCES)
+	python setup.py test --addopts "--cov" ${PYTEST_EXTRA}
+
+sloccount.sc: $(PYSOURCES) Makefile
 	sloccount --duplicates --wide --details $^ > $@
 
 ## sloccount   : count lines of code
-sloccount: ${PYSOURCES} Makefile
+sloccount: $(PYSOURCES) Makefile
 	sloccount $^
 
 list-author-emails:
@@ -139,29 +152,32 @@ list-author-emails:
 	@git log --format='%aN,%aE' | sort -u | grep -v 'root'
 
 mypy3: mypy
-mypy: ${PYSOURCES}
+mypy: $(filter-out setup.py gittagger.py,$(PYSOURCES))
 	if ! test -f $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))')/py.typed ; \
 	then \
-		rm -Rf typeshed/2and3/ruamel/yaml ; \
+		rm -Rf typeshed/ruamel/yaml ; \
 		ln -s $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
-			typeshed/2and3/ruamel/ ; \
+			typeshed/ruamel/ ; \
 	fi  # if minimally required ruamel.yaml version is 0.15.99 or greater, than the above can be removed
-	MYPYPATH=$$MYPYPATH:typeshed/3:typeshed/2and3 mypy --disallow-untyped-calls \
-		 --warn-redundant-casts \
-		 ${MODULE}
+	MYPYPATH=$$MYPYPATH:typeshed mypy $^
+
+pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
+	pyupgrade --exit-zero-even-if-changed --py36-plus $^
 
 release-test: FORCE
 	git diff-index --quiet HEAD -- || ( echo You have uncommited changes, please commit them and try again; false )
 	./release-test.sh
 
-release: FORCE
-	PYVER=3 ./release-test.sh
+release: release-test
 	. testenv2/bin/activate && \
-		python testenv2/src/${MODULE}/setup.py sdist bdist_wheel
+		python testenv2/src/${PACKAGE}/setup.py sdist bdist_wheel
 	. testenv2/bin/activate && \
 		pip install twine && \
-		twine upload testenv2/src/${MODULE}/dist/*whl && \
+		twine upload testenv2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags
+
+flake8: $(PYSOURCES)
+	flake8 $^
 
 FORCE:
 

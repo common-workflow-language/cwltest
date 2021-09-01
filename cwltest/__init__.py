@@ -38,10 +38,10 @@ UNSUPPORTED_FEATURE = 33
 DEFAULT_TIMEOUT = 600  # 10 minutes
 
 if sys.version_info < (3, 0):
-    import subprocess32 as subprocess
+    import subprocess32 as subprocess  # nosec
     from pipes import quote
 else:
-    import subprocess
+    import subprocess  # nosec
     from shlex import quote
 
 templock = threading.Lock()
@@ -145,7 +145,7 @@ def run_test(
 
         start_time = time.time()
         stderr = subprocess.PIPE if not args.verbose else None
-        process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=stderr, universal_newlines=True, cwd=cwd)
+        process = subprocess.Popen(test_command, stdout=subprocess.PIPE, stderr=stderr, universal_newlines=True, cwd=cwd)  # nosec
         outstr, outerr = process.communicate(timeout=timeout)
         return_code = process.poll()
         duration = time.time() - start_time
@@ -189,16 +189,16 @@ def run_test(
         _logger.error(outerr)
     except KeyboardInterrupt:
         _logger.error(
-            u"""Test %i interrupted: %s""",
+            """Test %i interrupted: %s""",
             test_number,
-            u" ".join([quote(tc) for tc in test_command]),
+            " ".join([quote(tc) for tc in test_command]),
         )
         raise
     except subprocess.TimeoutExpired:
         _logger.error(
-            u"""Test %i timed out: %s""",
+            """Test %i timed out: %s""",
             test_number,
-            u" ".join([quote(tc) for tc in test_command]),
+            " ".join([quote(tc) for tc in test_command]),
         )
         _logger.error(test.get("doc"))
         return TestResult(2, outstr, outerr, timeout, args.classname, "Test timed out")
@@ -379,17 +379,27 @@ def main():  # type: () -> int
         return 1
 
     schema_resource = pkg_resources.resource_stream(__name__, "cwltest-schema.yml")
-    cache = {"https://w3id.org/cwl/cwltest/cwltest-schema.yml": schema_resource.read().decode("utf-8")}  # type: Optional[Dict[str, Union[str, Graph, bool]]]
-    (document_loader,
-     avsc_names,
-     schema_metadata,
-     metaschema_loader) = schema_salad.schema.load_schema("https://w3id.org/cwl/cwltest/cwltest-schema.yml", cache=cache)
+    cache = {
+        "https://w3id.org/cwl/cwltest/cwltest-schema.yml": schema_resource.read().decode(
+            "utf-8"
+        )
+    }  # type: Optional[Dict[str, Union[str, Graph, bool]]]
+    (
+        document_loader,
+        avsc_names,
+        schema_metadata,
+        metaschema_loader,
+    ) = schema_salad.schema.load_schema(
+        "https://w3id.org/cwl/cwltest/cwltest-schema.yml", cache=cache
+    )
 
     if not isinstance(avsc_names, schema_salad.avro.schema.Names):
         print(avsc_names)
         return 1
 
-    tests, metadata = schema_salad.schema.load_and_validate(document_loader, avsc_names, args.test, True)
+    tests, metadata = schema_salad.schema.load_and_validate(
+        document_loader, avsc_names, args.test, True
+    )
 
     failures = 0
     unsupported = 0
@@ -421,7 +431,7 @@ def main():  # type: () -> int
         tags = args.tags.split(",")
         for t in alltests:
             ts = t.get("tags", [])
-            if any((tag in ts for tag in tags)):
+            if any(tag in ts for tag in tags):
                 tests.append(t)
 
     for t in tests:
@@ -441,10 +451,10 @@ def main():  # type: () -> int
         for i, t in enumerate(tests):
             if t.get("short_name"):
                 print(
-                    u"[%i] %s: %s" % (i + 1, t["short_name"], t.get("doc", "").strip())
+                    "[%i] %s: %s" % (i + 1, t["short_name"], t.get("doc", "").strip())
                 )
             else:
-                print(u"[%i] %s" % (i + 1, t.get("doc", "").strip()))
+                print("[%i] %s" % (i + 1, t.get("doc", "").strip()))
 
         return 0
 
@@ -495,7 +505,7 @@ def main():  # type: () -> int
             for i, job in zip(ntest, jobs):
                 test_result = job.result()
                 test_case = test_result.create_test_case(tests[i])
-                test_case.url = "cwltest:{}#{}".format(suite_name, i + 1)
+                test_case.url = f"cwltest:{suite_name}#{i + 1}"
                 total += 1
                 tags = tests[i].get("tags", [])
                 for t in tags:
