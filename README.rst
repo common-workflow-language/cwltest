@@ -1,30 +1,57 @@
-|Linux Build Status| |Windows Build status| |Code coverage|
+==========================================
+Common Workflow Language testing framework
+==========================================
 
-.. |Linux Build Status| image:: https://img.shields.io/travis/common-workflow-language/cwltest/master.svg?label=unix%20build
-   :target: https://travis-ci.org/common-workflow-language/cwltest
-.. |Windows Build status| image:: https://img.shields.io/appveyor/ci/mr-c/cwltest/master.svg?label=windows%20build
-   :target: https://ci.appveyor.com/project/mr-c/cwltest/branch/master
+|Linux Build Status| |Code coverage|
+
+PyPI: |PyPI Version| |PyPI Downloads Month| |Total PyPI Downloads|
+
+Conda: |Conda Version| |Conda Installs|
+
+.. |Linux Build Status| image:: https://github.com/common-workflow-language/cwltest/actions/workflows/ci-tests.yml/badge.svg?branch=main
+   :target: https://github.com/common-workflow-language/cwltest/actions/workflows/ci-tests.yml
 .. |Code coverage| image:: https://codecov.io/gh/common-workflow-language/cwltest/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/common-workflow-language/cwltest
 
-==========================================
-Common workflow language testing framework
-==========================================
+.. |PyPI Version| image:: https://badge.fury.io/py/cwltest.svg
+   :target: https://badge.fury.io/py/cwltest
+
+.. |PyPI Downloads Month| image:: https://pepy.tech/badge/cwltest/month
+   :target: https://pepy.tech/project/cwltest
+
+.. |Total PyPI Downloads| image:: https://static.pepy.tech/personalized-badge/cwltest?period=total&units=international_system&left_color=black&right_color=orange&left_text=Total%20PyPI%20Downloads
+   :target: https://pepy.tech/project/cwltest
+
+.. |Conda Version| image:: https://anaconda.org/bioconda/cwltest/badges/version.svg
+   :target: https://anaconda.org/bioconda/cwltest
+
+.. |Conda Installs| image:: https://anaconda.org/bioconda/cwltest/badges/downloads.svg
+   :target: https://anaconda.org/bioconda/cwltest
 
 This is a testing tool for checking the output of Tools and Workflows described
 with the Common Workflow Language.  Among other uses, it is used to run the CWL
 conformance tests.
 
-This is written and tested for Python 2.7, 3.4, 3.5, 3.6, and 3.7
+This is written and tested for Python 3.6, 3.7, 3.8, and 3.9
 
 Install
 -------
 
-Installing the official package from PyPi::
+Installing the official package from PyPi
+
+.. code:: bash
 
   pip install cwltest
 
-Or from source::
+Or from bioconda
+
+.. code:: bash
+
+  conda install -c bioconda cwltest
+
+Or from source
+
+.. code:: bash
 
   git clone https://github.com/common-workflow-language/cwltest.git
   cd cwltest && python setup.py install
