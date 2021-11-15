@@ -1,20 +1,13 @@
-import unittest
 from cwltest import arg_parser
 
 
-class TestArgparse(unittest.TestCase):
-    def setUp(self):
-        self.parser = arg_parser()
-
-    def test_arg(self):
-        parsed = self.parser.parse_args(
-            ["--test", "test_name", "-n", "52", "--tool", "cwltool", "-j", "4"]
-        )
-        self.assertEqual(parsed.test, "test_name")
-        self.assertEqual(parsed.n, "52")
-        self.assertEqual(parsed.tool, "cwltool")
-        self.assertEqual(parsed.j, 4)
-
-
-if __name__ == "__main__":
-    unittest.main()
+def test_arg():
+    """Basic test of the argparse."""
+    parser = arg_parser()
+    parsed = parser.parse_args(
+        ["--test", "test_name", "-n", "52", "--tool", "cwltool", "-j", "4"]
+    )
+    assert parsed.test == "test_name"
+    assert parsed.n == "52"
+    assert parsed.tool == "cwltool"
+    assert parsed.j == 4
