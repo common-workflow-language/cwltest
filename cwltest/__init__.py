@@ -204,6 +204,10 @@ def run_test(
             " ".join([quote(tc) for tc in test_command]),
         )
         _logger.error(test.get("doc"))
+        # Kill and re-communicate to get the logs and reap the child, as
+        # instructed in the subprocess docs.
+        process.kill()
+        outstr, outerr = process.communicate()
         return TestResult(2, outstr, outerr, timeout, args.classname, "Test timed out")
     finally:
         if process is not None and process.returncode is None:
