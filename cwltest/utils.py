@@ -111,7 +111,7 @@ def check_keys(keys, expected, actual):
         except CompareFail as e:
             raise CompareFail.format(
                 expected, actual, f"field '{k}' failed comparison: {str(e)}"
-            )
+            ) from e
 
 
 def compare_file(expected, actual):
@@ -159,7 +159,7 @@ def compare_dict(expected, actual):
         except CompareFail as e:
             raise CompareFail.format(
                 expected, actual, f"failed comparison for key '{c}': {e}"
-            )
+            ) from e
     extra_keys = set(actual.keys()).difference(list(expected.keys()))
     for k in extra_keys:
         if actual[k] is not None:
@@ -194,13 +194,13 @@ def compare(expected, actual):  # type: (Any, Any) -> None
                 try:
                     compare(expected[c], actual[c])
                 except CompareFail as e:
-                    raise CompareFail.format(expected, actual, e)
+                    raise CompareFail.format(expected, actual, e) from e
         else:
             if expected != actual:
                 raise CompareFail.format(expected, actual)
 
     except Exception as e:
-        raise CompareFail(str(e))
+        raise CompareFail(str(e)) from e
 
 
 def get_test_number_by_key(tests, key, value):
