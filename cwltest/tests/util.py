@@ -1,5 +1,4 @@
 import os
-import sys
 
 import subprocess  # nosec
 
@@ -11,9 +10,9 @@ from pkg_resources import (
 
 
 def get_data(filename):
-    filename = os.path.normpath(
-        filename
-    )  # normalizing path depending on OS or else it will cause problem when joining path
+    filename = os.path.normpath(filename)
+    # normalizing path depending on OS or else it will cause problem when
+    # joining path
     filepath = None
     try:
         filepath = resource_filename(Requirement.parse("cwltest"), filename)
