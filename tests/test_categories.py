@@ -62,6 +62,7 @@ def test_unsupported_with_optional_tests() -> None:
         ),
     ]
     error_code, stdout, stderr = run_with_mock_cwl_runner(args)
+    stderr = re.sub(r" '?--outdir=[^ ]*", "", stderr)
     assert error_code == 0
     assert (
         "The `id` field is missing.{n}"

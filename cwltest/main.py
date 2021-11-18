@@ -29,14 +29,14 @@ else:
 
 
 def _run_test(
-        args,  # type: argparse.Namespace
-        test,  # type: Dict[str, str]
-        test_number,  # type: int
-        total_tests,  # type: int
-        timeout,  # type: int
-        junit_verbose=False,  # type: bool
-        verbose=False,  # type: bool
-):  # type: (...) -> TestResult
+        args: argparse.Namespace,
+        test: Dict[str, str],
+        test_number: int,
+        total_tests: int,
+        timeout: int,
+        junit_verbose: Optional[bool] = False,
+        verbose: Optional[bool] = False,
+) -> TestResult:
     if test.get("short_name"):
         sys.stderr.write(
             "%sTest [%i/%i] %s: %s%s\n"

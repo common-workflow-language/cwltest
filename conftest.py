@@ -1,57 +1,155 @@
-""" Discovers CWL test files and converts them to pytest.Items """
+"""Discovers CWL test files and converts them to pytest.Items."""
+from typing import (
+    cast,
+    Any,
+    Dict,
+    List,
+    Iterator,
+    Optional,
+    Union,
+    Tuple,
+    TYPE_CHECKING,
+)
+
 import pytest
-from cwltest import DEFAULT_TIMEOUT, utils
+import py
+
+from cwltest import (
+    DEFAULT_TIMEOUT,
+    load_and_validate_tests,
+    parse_results, utils,
+)
+from cwltest.utils import TestResult
+
+if TYPE_CHECKING:
+    from _pytest.config import Config as PytestConfig
+    from _pytest._code.code import ExceptionInfo, _TracebackStyle
+    from _pytest.nodes import Node
+    from _pytest.config.argparsing import Parser as PytestParser
 
 
-def pytest_collect_file(parent, path):
-    """Is this file for us?"""
-    if (path.ext == ".yml" or path.ext == ".yaml") \
-            and path.basename.startswith("conformance_test"):
-        return YamlFile(path, parent)
-    return None
+def pytest_addoption(parser: "PytestParser") -> None:
+    """Add our options to the pytest command line."""
+    parser.addoption(
+        "--cwl-runner",
+        type=str,
+        dest="cwl_runner",
+        default="cwl-runner",
+        help="Name of the CWL runner to use.",
+    )
 
-class YamlFile(pytest.File):
-    """A CWL test file."""
-    def collect(self):
-        import yaml  # we need a yaml parser, e.g. PyYAML
-        raw = yaml.safe_load(self.fspath.open())
-        for entry in raw:
-            name = entry["short_name"] if "short_name" in entry \
-                else entry["doc"]
-            yield CWLItem(name, self, entry)
+
+class CWLTestException(Exception):
+    """custom exception for error reporting."""
+
 
 class CWLItem(pytest.Item):
     """A CWL test Item."""
-    def __init__(self, name, parent, spec):
-        super(CWLItem, self).__init__(name, parent)
+
+    def __init__(
+        self,
+        name: str,
+        parent: Optional["Node"],
+        spec: Dict[str, Any],
+    ) -> None:
+        """Initialize this CWLItem."""
+        super().__init__(name, parent)
         self.spec = spec
 
-    def runtest(self):
-        """Execute using cwltest"""
-        args = {'tool': 'cwltool',
-                'args': {'--enable-dev'},
-                'testargs': None,
-                'verbose': True,
-                'classname': 'cwltool'}
+    def runtest(self) -> None:
+        """Execute using cwltest."""
+        args = {
+            "tool": self.config.getoption("cwl_runner"),
+            "args": {},
+            "testargs": None,
+            "verbose": True,
+            "classname": "cwltool",
+        }
         result = utils.run_test_plain(args, self.spec, DEFAULT_TIMEOUT)
-
+        cwl_results = self.config.cwl_results  # type: ignore[attr-defined]
+        cast(List[Tuple[Dict[str, Any], TestResult]], cwl_results).append(
+            (self.spec, result)
+        )
         if result.return_code != 0:
             raise CWLTestException(self, result)
 
-    def repr_failure(self, excinfo):
-        """ called when self.runtest() raises an exception. """
+    def repr_failure(
+        self,
+        excinfo: "ExceptionInfo[BaseException]",
+        style: Optional["_TracebackStyle"] = None,
+    ) -> str:
+        """
+        Document failure reason.
+
+        Called when self.runtest() raises an exception.
+        """
         if isinstance(excinfo.value, CWLTestException):
             import yaml
-            result = excinfo.value.args[1]
-            return "\n".join([
-                "CWL test execution failed. ",
-                "{}".format(result.message),
-                "Test: {}".format(yaml.dump(self.spec))
-            ])
-        return None
 
-    def reportinfo(self):
+            result = excinfo.value.args[1]
+            return "\n".join(
+                [
+                    "CWL test execution failed. ",
+                    result.message,
+                    f"Test: {yaml.dump(self.spec)}",
+                ]
+            )
+        return ""
+
+    def reportinfo(self) -> Tuple[Union[py.path.local, str], int, str]:
+        """Status report."""
         return self.fspath, 0, "cwl test: %s" % self.name
 
-class CWLTestException(Exception):
-    """ custom exception for error reporting. """
+
+class CWLYamlFile(pytest.File):
+    """A CWL test file."""
+
+    def collect(self) -> Iterator[CWLItem]:
+        """Load the cwltest file and yield parsed entries."""
+        for entry in load_and_validate_tests(str(self.fspath)):
+            name = entry.get("label", entry["doc"])
+            yield CWLItem.from_parent(self, name=name, spec=entry)
+
+
+def pytest_collect_file(
+    parent: pytest.Collector, path: py.path.local
+) -> Optional[pytest.Collector]:
+    """Is this file for us."""
+    if (path.ext == ".yml" or path.ext == ".yaml") and path.basename.startswith(
+        "conformance_test"
+    ):
+        return cast(
+            Optional[pytest.Collector],
+            CWLYamlFile.from_parent(  # type: ignore[no-untyped-call]
+                parent, fspath=path
+            ),
+        )
+    return None
+
+
+def pytest_configure(config: "PytestConfig") -> None:
+    """Store the raw tests and the test results."""
+    cwl_results: List[Tuple[Dict[str, Any], TestResult]] = []
+    config.cwl_results = cwl_results  # type: ignore[attr-defined]
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Generate badges."""
+    cwl_results = cast(
+        List[Tuple[Dict[str, Any], TestResult]],
+        getattr(session.config, "cwl_results", None),
+    )
+    if not cwl_results:
+        return
+    results, tests = (list(item) for item in zip(*cwl_results))
+    (
+        total,
+        passed,
+        failures,
+        unsupported,
+        ntotal,
+        npassed,
+        nfailures,
+        nunsupported,
+        _,
+    ) = parse_results(results, tests)

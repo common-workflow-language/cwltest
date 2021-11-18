@@ -1,3 +1,4 @@
 mypy==0.991
 types-setuptools
 types-requests
+types-PyYAML

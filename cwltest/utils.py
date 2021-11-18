@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import re
@@ -7,7 +8,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from typing import Any, Dict, List, Optional, Set, Text
+from typing import Any, Dict, List, Optional, Set
 
 import junit_xml
 import ruamel.yaml.scanner
@@ -21,14 +22,13 @@ class TestResult:
 
     def __init__(
             self,
-            return_code,
-            standard_output,
-            error_output,
-            duration,
-            classname,
-            message="",
-    ):
-        # type: (int, Text, Text, float, Text, str) -> None
+            return_code: int,
+            standard_output: str,
+            error_output: str,
+            duration: float,
+            classname: str,
+            message: str = "",
+    ) -> None:
         """Initialize a TestResult object."""
         self.return_code = return_code
         self.standard_output = standard_output
@@ -37,8 +37,8 @@ class TestResult:
         self.message = message
         self.classname = classname
 
-    def create_test_case(self, test):
-        # type: (Dict[Text, Any]) -> junit_xml.TestCase
+    def create_test_case(self, test: Dict[str, Any]) -> junit_xml.TestCase:
+        """Create a jUnit XML test case from this test result."""
         doc = test.get("doc", "N/A").strip()
         if test.get("tags"):
             category = ", ".join(test["tags"])
@@ -222,13 +222,13 @@ def get_test_number_by_key(tests, key, value):
 
 
 def prepare_test_command(
-        tool,  # type: str
-        args,  # type: List[str]
-        testargs,  # type: Optional[List[str]]
-        test,  # type: Dict[str, Any]
-        cwd,  # type: str
-        verbose=False,  # type: bool
-):  # type: (...) -> List[str]
+        tool: str,
+        args: List[str],
+        testargs: Optional[List[str]],
+        test: Dict[str, Any],
+        cwd: str,
+        verbose: Optional[bool] = False,
+) -> List[str]:
     """Turn the test into a command line."""
     test_command = [tool]
     test_command.extend(args)
@@ -271,18 +271,19 @@ def prepare_test_command(
 
 
 def run_test_plain(
-        args,  # type: argparse.Namespace
-        test,  # type: Dict[str, str]
-        test_number,  # type: int
-        timeout,  # type: int
-        junit_verbose=False,  # type: bool
-        verbose=False,  # type: bool
-):  # type: (...) -> TestResult
-    out = {}  # type: Dict[str,Any]
+        args: argparse.Namespace,
+        test: Dict[str, str],
+        test_number: int,
+        timeout: int,
+        junit_verbose: Optional[bool] = False,
+        verbose: Optional[bool] = False,
+) -> TestResult:
+    """Plain test runner."""
+    out: Dict[str, Any] = {}
     outdir = outstr = outerr = ""
-    test_command = []  # type: List[str]
+    test_command: List[str] = []
     duration = 0.0
-    process = None  # type: Optional[subprocess.Popen[str]]
+    process: Optional[subprocess.Popen[str]] = None
     try:
         cwd = os.getcwd()
         test_command = prepare_test_command(
@@ -306,28 +307,35 @@ def run_test_plain(
         if return_code:
             raise subprocess.CalledProcessError(return_code, " ".join(test_command))
 
-        out = json.loads(outstr)
+        logger.debug('outstr: "%s".', outstr)
+        out = json.loads(outstr) if outstr else {}
     except subprocess.CalledProcessError as err:
         if err.returncode == UNSUPPORTED_FEATURE and REQUIRED not in test.get(
                 "tags", ["required"]
         ):
             return TestResult(
-                UNSUPPORTED_FEATURE, outstr, outerr, duration, args['classname']
+                UNSUPPORTED_FEATURE, outstr, outerr, duration, args["classname"]
             )
-        if test.get("should_fail", False):
-            return TestResult(0, outstr, outerr, duration, args['classname'])
-        logger.error(
-            """Test %i failed: %s""",
-            test_number,
-            " ".join([shlex.quote(tc) for tc in test_command]),
-        )
+        if test_number:
+            logger.error(
+                """Test %i failed: %s""",
+                test_number,
+                " ".join([shlex.quote(tc) for tc in test_command]),
+            )
+        else:
+            logger.error(
+                """Test failed: %s""",
+                " ".join([shlex.quote(tc) for tc in test_command]),
+            )
         logger.error(test.get("doc", "").replace("\n", " ").strip())
         if err.returncode == UNSUPPORTED_FEATURE:
             logger.error("Does not support required feature")
         else:
             logger.error("Returned non-zero")
         logger.error(outerr)
-        return TestResult(1, outstr, outerr, duration, args['classname'], str(err))
+        if test.get("should_fail", False):
+            return TestResult(0, outstr, outerr, duration, args["classname"])
+        return TestResult(1, outstr, outerr, duration, args["classname"], str(err))
     except (ruamel.yaml.scanner.ScannerError, TypeError) as err:
         logger.error(
             """Test %i failed: %s""",
@@ -357,7 +365,7 @@ def run_test_plain(
             process.kill()
             outstr, outerr = process.communicate()
         return TestResult(
-            2, outstr, outerr, timeout, args['classname'], "Test timed out"
+            2, outstr, outerr, timeout, args["classname"], "Test timed out"
         )
     finally:
         if process is not None and process.returncode is None:
@@ -380,7 +388,7 @@ def run_test_plain(
         )
         logger.warning(test.get("doc", "").replace("\n", " ").strip())
         logger.warning("Returned zero but it should be non-zero")
-        return TestResult(1, outstr, outerr, duration, args['classname'])
+        return TestResult(1, outstr, outerr, duration, args["classname"])
 
     try:
         compare(test.get("output"), out)
@@ -402,7 +410,7 @@ def run_test_plain(
         outstr,
         outerr,
         duration,
-        args['classname'],
+        args["classname"],
         fail_message,
     )
 

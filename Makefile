@@ -25,7 +25,7 @@ PACKAGE=cwltest
 
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
-PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
+PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py conftest.py
 DEVPKGS=diff_cover black pylint pep257 pydocstyle flake8 tox tox-pyenv \
 	isort wheel autoflake flake8-bugbear pyupgrade bandit \
 	-rtest-requirements.txt -rmypy-requirements.txt
@@ -101,11 +101,11 @@ codespell:
 	codespell -w $(shell git ls-files | grep -v mypy-stubs | grep -v gitignore)
 
 ## format                 : check/fix all code indentation and formatting (runs black)
-format:
-	black setup.py setup.py cwltest tests mypy-stubs
+format: $(PYSOURCES)
+	black $^
 
-format-check:
-	black --diff --check setup.py cwltest tests mypy-stubs
+format-check: $(PYSOURCES)
+	black --diff --check $^
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -160,7 +160,7 @@ list-author-emails:
 	@git log --format='%aN,%aE' | sort -u | grep -v 'root'
 
 mypy3: mypy
-mypy: $(filter-out setup.py gittagger.py,$(PYSOURCES))
+mypy: $(filter-out setup.py,$(PYSOURCES))
 	if ! test -f $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))')/py.typed ; \
 	then \
 		rm -Rf mypy-stubs/ruamel/yaml ; \
