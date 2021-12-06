@@ -1,4 +1,3 @@
-import argparse
 import json
 import os
 import re
@@ -8,11 +7,17 @@ import subprocess
 import sys
 import tempfile
 import time
-from typing import Any, Dict, List, Optional, Set
+from collections import defaultdict
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 import junit_xml
+import pkg_resources
 import ruamel.yaml.scanner
+import schema_salad.avro
 import schema_salad.ref_resolver
+import schema_salad.schema
+from rdflib import Graph
+from schema_salad.exceptions import ValidationException
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
 
@@ -213,12 +218,136 @@ def compare(expected, actual):  # type: (Any, Any) -> None
         raise CompareFail(str(e)) from e
 
 
+def generate_badges(badgedir: str, ntotal: Dict[str, int], npassed: Dict[str, int]) -> None:
+    os.mkdir(badgedir)
+    for t, v in ntotal.items():
+        percent = int((npassed[t] / float(v)) * 100)
+        if npassed[t] == v:
+            color = "green"
+        elif t == "required":
+            color = "red"
+        else:
+            color = "yellow"
+
+        with open(f"{badgedir}/{t}.json", "w") as out:
+            out.write(
+                json.dumps(
+                    {
+                        "subject": f"{t}",
+                        "status": f"{percent}%",
+                        "color": color,
+                    }
+                )
+            )
+
+
 def get_test_number_by_key(tests, key, value):
     # type: (List[Dict[str, str]], str, str) -> Optional[int]
     for i, test in enumerate(tests):
         if key in test and test[key] == value:
             return i
     return None
+
+
+def load_and_validate_tests(path: str) -> Tuple[Any, Dict[str, Any]]:
+    """Load and validate the given tests against the cwltest schema."""
+    schema_resource = pkg_resources.resource_stream(__name__, "cwltest-schema.yml")
+    cache: Optional[Dict[str, Union[str, Graph, bool]]] = {
+        "https://w3id.org/cwl/cwltest/cwltest-schema.yml": schema_resource.read().decode(
+            "utf-8"
+        )
+    }
+    (document_loader, avsc_names, _, _,) = schema_salad.schema.load_schema(
+        "https://w3id.org/cwl/cwltest/cwltest-schema.yml", cache=cache
+    )
+
+    if not isinstance(avsc_names, schema_salad.avro.schema.Names):
+        print(avsc_names)
+        raise ValidationException
+
+    return schema_salad.schema.load_and_validate(
+        document_loader, avsc_names, path, True
+    )
+
+
+def parse_results(
+        results: Iterable[TestResult],
+        tests: List[Dict[str, Any]],
+        suite_name: Optional[str] = None,
+        report: Optional[junit_xml.TestSuite] = None,
+) -> Tuple[
+    int,  # total
+    int,  # passed
+    int,  # failures
+    int,  # unsupported
+    Dict[str, int],
+    Dict[str, int],
+    Dict[str, int],
+    Dict[str, int],
+    Optional[junit_xml.TestSuite]
+]:
+    """
+    Parse the results and return statistics and an optional report.
+
+    Returns the total number of tests, dictionary of test counts
+    (total, passed, failed, unsupported) by tag, and a jUnit XML report.
+    """
+    total = 0
+    passed = 0
+    failures = 0
+    unsupported = 0
+    ntotal: Dict[str, int] = defaultdict(int)
+    nfailures: Dict[str, int] = defaultdict(int)
+    nunsupported: Dict[str, int] = defaultdict(int)
+    npassed: Dict[str, int] = defaultdict(int)
+
+    for i, test_result in enumerate(results):
+        test_case = test_result.create_test_case(tests[i])
+        test_case.url = f"cwltest:{suite_name}#{i + 1}" if suite_name is not None else "cwltest:#{i + 1}"
+        total += 1
+        tags = tests[i].get("tags", [])
+        for t in tags:
+            ntotal[t] += 1
+
+        return_code = test_result.return_code
+        category = test_case.category
+        if return_code == 0:
+            passed += 1
+            for t in tags:
+                npassed[t] += 1
+        elif return_code != 0 and return_code != UNSUPPORTED_FEATURE:
+            failures += 1
+            for t in tags:
+                nfailures[t] += 1
+            test_case.add_failure_info(output=test_result.message)
+        elif return_code == UNSUPPORTED_FEATURE and category == REQUIRED:
+            failures += 1
+            for t in tags:
+                nfailures[t] += 1
+            test_case.add_failure_info(output=test_result.message)
+        elif category != REQUIRED and return_code == UNSUPPORTED_FEATURE:
+            unsupported += 1
+            for t in tags:
+                nunsupported[t] += 1
+            test_case.add_skipped_info("Unsupported")
+        else:
+            raise Exception(
+                "This is impossible, return_code: {}, category: "
+                "{}".format(return_code, category)
+            )
+        if report:
+            report.test_cases.append(test_case)
+    return (
+        total,
+        passed,
+        failures,
+        unsupported,
+        ntotal,
+        npassed,
+        nfailures,
+        nunsupported,
+        report,
+    )
 
 
 def prepare_test_command(
@@ -271,10 +400,10 @@ def prepare_test_command(
 
 
 def run_test_plain(
-        args: argparse.Namespace,
+        args: Dict[str, Any],
         test: Dict[str, str],
-        test_number: int,
         timeout: int,
+        test_number: Optional[int] = None,
         junit_verbose: Optional[bool] = False,
         verbose: Optional[bool] = False,
 ) -> TestResult:

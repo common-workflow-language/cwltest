@@ -14,11 +14,7 @@ from typing import (
 import pytest
 import py
 
-from cwltest import (
-    DEFAULT_TIMEOUT,
-    load_and_validate_tests,
-    parse_results, utils,
-)
+from cwltest import DEFAULT_TIMEOUT, utils
 from cwltest.utils import TestResult
 
 if TYPE_CHECKING:
@@ -36,6 +32,11 @@ def pytest_addoption(parser: "PytestParser") -> None:
         dest="cwl_runner",
         default="cwl-runner",
         help="Name of the CWL runner to use.",
+    )
+    parser.addoption(
+        "--cwl-badgedir",
+        type=str,
+        help="Directory to store JSON file for badges.",
     )
 
 
@@ -106,7 +107,7 @@ class CWLYamlFile(pytest.File):
 
     def collect(self) -> Iterator[CWLItem]:
         """Load the cwltest file and yield parsed entries."""
-        for entry in load_and_validate_tests(str(self.fspath)):
+        for entry, _ in utils.load_and_validate_tests(str(self.fspath)):
             name = entry.get("label", entry["doc"])
             yield CWLItem.from_parent(self, name=name, spec=entry)
 
@@ -152,4 +153,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         nfailures,
         nunsupported,
         _,
-    ) = parse_results(results, tests)
+    ) = utils.parse_results(results, tests)
+    cwl_badgedir = session.config.getoption("cwl_badgedir")
+    if cwl_badgedir:
+        utils.generate_badges(cwl_badgedir, ntotal, npassed)

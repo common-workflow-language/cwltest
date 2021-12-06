@@ -2,21 +2,19 @@
 """Entry point for cwltest."""
 
 import argparse
-import json
 import os
 import sys
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Set
 
 import junit_xml
-import pkg_resources
 import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
-from rdflib import Graph
+from schema_salad.exceptions import ValidationException
 
-from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, utils
+from cwltest import logger, utils
 from cwltest.argparser import arg_parser
 from cwltest.utils import TestResult
 
@@ -61,7 +59,7 @@ def _run_test(
             )
         )
     sys.stderr.flush()
-    return utils.run_test_plain(args, test, test_number, timeout, junit_verbose, verbose)
+    return utils.run_test_plain(vars(args), test, timeout, test_number, junit_verbose, verbose)
 
 
 def _expand_number_range(nr: str) -> List[int]:
@@ -91,34 +89,18 @@ def main() -> int:
         arg_parser().print_help()
         return 1
 
-    schema_resource = pkg_resources.resource_stream(__name__, "cwltest-schema.yml")
-    cache = {
-        "https://w3id.org/cwl/cwltest/cwltest-schema.yml": schema_resource.read().decode(
-            "utf-8"
-        )
-    }  # type: Optional[Dict[str, Union[str, Graph, bool]]]
-    (document_loader, avsc_names, _, _,) = schema_salad.schema.load_schema(
-        "https://w3id.org/cwl/cwltest/cwltest-schema.yml", cache=cache
-    )
-
-    if not isinstance(avsc_names, schema_salad.avro.schema.Names):
-        print(avsc_names)
+    try:
+        tests, metadata = utils.load_and_validate_tests(args.test)
+    except ValidationException:
         return 1
-
-    tests, metadata = schema_salad.schema.load_and_validate(
-        document_loader, avsc_names, args.test, True
-    )
 
     failures = 0
     unsupported = 0
-    passed = 0
     suite_name, _ = os.path.splitext(os.path.basename(args.test))
     report = junit_xml.TestSuite(suite_name, [])
 
     # the number of total tests, failed tests, unsupported tests and passed tests for each tag
     ntotal = defaultdict(int)  # type: Dict[str, int]
-    nfailures = defaultdict(int)  # type: Dict[str, int]
-    nunsupported = defaultdict(int)  # type: Dict[str, int]
     npassed = defaultdict(int)  # type: Dict[str, int]
 
     if args.only_tools:
@@ -235,42 +217,17 @@ def main() -> int:
             for i in ntest
         ]
         try:
-            for i, job in zip(ntest, jobs):
-                test_result = job.result()
-                test_case = test_result.create_test_case(tests[i])
-                test_case.url = f"cwltest:{suite_name}#{i + 1}"
-                total += 1
-                tags = tests[i].get("tags", [])
-                for t in tags:
-                    ntotal[t] += 1
-
-                return_code = test_result.return_code
-                category = test_case.category
-                if return_code == 0:
-                    passed += 1
-                    for t in tags:
-                        npassed[t] += 1
-                elif return_code != UNSUPPORTED_FEATURE:
-                    failures += 1
-                    for t in tags:
-                        nfailures[t] += 1
-                    test_case.add_failure_info(output=test_result.message)
-                elif return_code == UNSUPPORTED_FEATURE and category == REQUIRED:
-                    failures += 1
-                    for t in tags:
-                        nfailures[t] += 1
-                    test_case.add_failure_info(output=test_result.message)
-                elif category != REQUIRED and return_code == UNSUPPORTED_FEATURE:
-                    unsupported += 1
-                    for t in tags:
-                        nunsupported[t] += 1
-                    test_case.add_skipped_info("Unsupported")
-                else:
-                    raise Exception(
-                        "This is impossible, return_code: {}, category: "
-                        "{}".format(return_code, category)
-                    )
-                report.test_cases.append(test_case)
+            (
+                total,
+                passed,
+                failures,
+                unsupported,
+                ntotal,
+                npassed,
+                nfailures,
+                nunsupported,
+                report,
+            ) = utils.parse_results((job.result() for job in jobs), tests, suite_name, report)
         except KeyboardInterrupt:
             for job in jobs:
                 job.cancel()
@@ -281,26 +238,7 @@ def main() -> int:
             junit_xml.to_xml_report_file(xml, [report])
 
     if args.badgedir:
-        os.mkdir(args.badgedir)
-        for t, v in ntotal.items():
-            percent = int((npassed[t] / float(v)) * 100)
-            if npassed[t] == v:
-                color = "green"
-            elif t == "required":
-                color = "red"
-            else:
-                color = "yellow"
-
-            with open(f"{args.badgedir}/{t}.json", "w") as out:
-                out.write(
-                    json.dumps(
-                        {
-                            "subject": f"{t}",
-                            "status": f"{percent}%",
-                            "color": color,
-                        }
-                    )
-                )
+        utils.generate_badges(args.badgedir, ntotal, npassed)
 
     if failures == 0 and unsupported == 0:
         logger.info("All tests passed")
