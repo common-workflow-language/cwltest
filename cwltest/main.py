@@ -99,7 +99,6 @@ def main() -> int:
     suite_name, _ = os.path.splitext(os.path.basename(args.test))
     report = junit_xml.TestSuite(suite_name, [])
 
-    # the number of total tests, failed tests, unsupported tests and passed tests for each tag
     ntotal = defaultdict(int)  # type: Dict[str, int]
     npassed = defaultdict(int)  # type: Dict[str, int]
 

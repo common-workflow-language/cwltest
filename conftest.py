@@ -38,6 +38,14 @@ def pytest_addoption(parser: "PytestParser") -> None:
         type=str,
         help="Directory to store JSON file for badges.",
     )
+    parser.addoption(
+        "--cwl-timeout",
+        type=int,
+        default=DEFAULT_TIMEOUT,
+        help="Time of execution in seconds after which the test will be "
+        f"skipped. Defaults to {DEFAULT_TIMEOUT} seconds "
+        f"({DEFAULT_TIMEOUT/60} minutes).",
+    )
 
 
 class CWLTestException(Exception):
@@ -66,7 +74,7 @@ class CWLItem(pytest.Item):
             "verbose": True,
             "classname": "cwltool",
         }
-        result = utils.run_test_plain(args, self.spec, DEFAULT_TIMEOUT)
+        result = utils.run_test_plain(args, self.spec, self.config.getoption("cwl_timeout"))
         cwl_results = self.config.cwl_results  # type: ignore[attr-defined]
         cast(List[Tuple[Dict[str, Any], TestResult]], cwl_results).append(
             (self.spec, result)
@@ -142,7 +150,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     )
     if not cwl_results:
         return
-    results, tests = (list(item) for item in zip(*cwl_results))
+    tests, results = (list(item) for item in zip(*cwl_results))
     (
         total,
         passed,
