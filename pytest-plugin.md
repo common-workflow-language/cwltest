@@ -49,9 +49,11 @@ jUnit XML: `cwltest --junit-xml report.xml --test conformance_test_whatever.yml`
 
 `cwltest --verbose` → `pytest -v` (print test names) or `pytest -vv` or `pytest -vvv`
 
+`cwltest --tags command_line_tool` → `pytest --cwl-tags command_line_tool`
+(`--cwl-tags` can be combined with `-k not test_name` and/or `--collect-only`)
+
 Not yet supported
-- `cwltest --only-tools`
-- `cwltest --tags`
+- `cwltest --only-tools` (similar to, but not the same as `pytest --cwl-tags command_line_tool`
 - `cwltest --show-tags`
 - `cwltest --junit-verbose`
 - `cwltest --test-arg`

@@ -384,19 +384,28 @@ def prepare_test_command(
     test_command.extend([f"--outdir={outdir}"])
     if not verbose:
         test_command.extend(["--quiet"])
+    toolpath, jobpath = prepare_test_paths(test, cwd)
+    test_command.extend([os.path.normcase(toolpath)])
+    if jobpath:
+        test_command.append(os.path.normcase(jobpath))
+    return test_command
 
+
+def prepare_test_paths(
+        test: Dict[str, str],
+        cwd: str,
+) -> Tuple[str, Optional[str]]:
+    """Determine the test path and the tool path."""
     cwd = schema_salad.ref_resolver.file_uri(cwd)
     toolpath = test["tool"]
     if toolpath.startswith(cwd):
         toolpath = toolpath[len(cwd) + 1:]
-    test_command.extend([os.path.normcase(toolpath)])
 
     jobpath = test.get("job")
     if jobpath:
         if jobpath.startswith(cwd):
             jobpath = jobpath[len(cwd) + 1:]
-        test_command.append(os.path.normcase(jobpath))
-    return test_command
+    return toolpath, jobpath
 
 
 def run_test_plain(

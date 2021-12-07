@@ -49,7 +49,10 @@ setup(
     entry_points={
         "console_scripts": [
             "cwltest=cwltest.main:main",
-        ]
+        ],
+        "pytest11": [
+            "cwl = cwltest.plugin",
+        ],
     },
     zip_safe=True,
     cmdclass={"egg_info": tagger},
