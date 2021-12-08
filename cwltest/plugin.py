@@ -31,19 +31,23 @@ class TestRunner(Protocol):
         ...
 
 
-def _run_test_hook(
+def _run_test_hook_or_plain(
         args: Dict[str, Any],
         test: Dict[str, str],
         cwd: str,
+        timeout: int,
         outdir: str,
         hook: TestRunner,
 ) -> utils.TestResult:
-    """Run tests using a provided pytest_cwl_execute_test compatible runner."""
+    """Run tests using a provided pytest_cwl_execute_test hook or the --cwl-runner."""
     toolpath, jobpath = utils.prepare_test_paths(test, cwd)
     start_time = time.time()
     outerr = ""
     try:
-        out = hook(description=toolpath, outdir=outdir, inputs=jobpath)[0]
+        hook_out = hook(description=toolpath, outdir=outdir, inputs=jobpath)
+        if not hook_out:
+            return utils.run_test_plain(args, test, timeout)
+        out = hook_out[0]
     except UnsupportedCWLFeature as unsup:
         duration = time.time() - start_time
         outerr = str(unsup)
@@ -135,32 +139,30 @@ class CWLItem(pytest.Item):
         """Execute using cwltest."""
         args = {
             "tool": self.config.getoption("cwl_runner"),
-            "args": self.config.getoption("cwl_args", default=None),
+            "args": self.config.getoption("cwl_args") or [],
             "testargs": None,
             "verbose": True,
             "classname": "",
         }
-        outdir = str(self.config._tmp_path_factory.mktemp(  # type: ignore[attr-defined]
-            self.spec.get("label", "unlabled_test")))
+        outdir = str(
+            self.config._tmp_path_factory.mktemp(  # type: ignore[attr-defined]
+                self.spec.get("label", "unlabled_test")
+            )
+        )
         hook = self.config.hook.pytest_cwl_execute_test
-        if hook:
-            result = _run_test_hook(
-                args, self.spec, self.config.getoption("cwl_basedir"), outdir, hook
-            )
-        else:
-            result = utils.run_test_plain(
-                args, self.spec, self.config.getoption("cwl_timeout")
-            )
+        result = _run_test_hook_or_plain(
+            args,
+            self.spec,
+            self.config.getoption("cwl_basedir"),
+            self.config.getoption("cwl_timeout"),
+            outdir,
+            hook,
+        )
         cwl_results = self.config.cwl_results  # type: ignore[attr-defined]
         cast(List[Tuple[Dict[str, Any], utils.TestResult]], cwl_results).append(
             (self.spec, result)
         )
-        if result.return_code != 0 and not self.spec.get("should_fail", False):
-            # unexpected failure
-            raise CWLTestException(self, result)
-
-        if result.return_code == 0 and self.spec.get("should_fail", False):
-            # missing failure
+        if result.return_code != 0:
             raise CWLTestException(self, result)
 
     def repr_failure(

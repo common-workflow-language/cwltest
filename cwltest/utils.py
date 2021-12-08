@@ -421,6 +421,9 @@ def run_test_plain(
     outdir = outstr = outerr = ""
     test_command: List[str] = []
     duration = 0.0
+    number = "?"
+    if test_number is not None:
+        number = str(test_number)
     process: Optional[subprocess.Popen[str]] = None
     try:
         cwd = os.getcwd()
@@ -476,8 +479,8 @@ def run_test_plain(
         return TestResult(1, outstr, outerr, duration, args["classname"], str(err))
     except (ruamel.yaml.scanner.ScannerError, TypeError) as err:
         logger.error(
-            """Test %i failed: %s""",
-            test_number,
+            """Test %s failed: %s""",
+            number,
             " ".join([shlex.quote(tc) for tc in test_command]),
         )
         logger.error(outstr)
@@ -485,15 +488,15 @@ def run_test_plain(
         logger.error(outerr)
     except KeyboardInterrupt:
         logger.error(
-            """Test %i interrupted: %s""",
-            test_number,
+            """Test %s interrupted: %s""",
+            number,
             " ".join([shlex.quote(tc) for tc in test_command]),
         )
         raise
     except subprocess.TimeoutExpired:
         logger.error(
-            """Test %i timed out: %s""",
-            test_number,
+            """Test %s timed out: %s""",
+            number,
             " ".join([shlex.quote(tc) for tc in test_command]),
         )
         logger.error(test.get("doc", "").replace("\n", " ").strip())
@@ -520,8 +523,8 @@ def run_test_plain(
 
     if test.get("should_fail", False):
         logger.warning(
-            """Test %i failed: %s""",
-            test_number,
+            """Test %s failed: %s""",
+            number,
             " ".join([shlex.quote(tc) for tc in test_command]),
         )
         logger.warning(test.get("doc", "").replace("\n", " ").strip())
@@ -532,8 +535,8 @@ def run_test_plain(
         compare(test.get("output"), out)
     except CompareFail as ex:
         logger.warning(
-            """Test %i failed: %s""",
-            test_number,
+            """Test %s failed: %s""",
+            number,
             " ".join([shlex.quote(tc) for tc in test_command]),
         )
         logger.warning(test.get("doc", "").replace("\n", " ").strip())

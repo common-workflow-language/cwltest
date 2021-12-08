@@ -21,6 +21,7 @@ install_requires = [
     "schema-salad >= 5.0.20200220195218, < 9",
     "junit-xml >= 1.8",
     "defusedxml",
+    "typing-extensions",
 ]
 
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
