@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any
 
 
 def pytest_cwl_execute_test(
-    description: str, inputs: Optional[str]
+    description: str, outdir: str, inputs: Optional[str]
 ) -> Optional[Dict[str, Any]]:
     """
     Execute CWL test using a Python function instead of a command line runner.

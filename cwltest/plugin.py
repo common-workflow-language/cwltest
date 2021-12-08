@@ -25,7 +25,7 @@ class TestRunner(Protocol):
     """Protocol to type-check test runner functions via the pluggy hook."""
 
     def __call__(
-            self, description: str, inputs: Optional[str]
+            self, description: str, outdir: str, inputs: Optional[str]
     ) -> List[Optional[Dict[str, Any]]]:
         """Type signature for pytest_cwl_execute_test hook results."""
         ...
@@ -35,6 +35,7 @@ def _run_test_hook(
         args: Dict[str, Any],
         test: Dict[str, str],
         cwd: str,
+        outdir: str,
         hook: TestRunner,
 ) -> utils.TestResult:
     """Run tests using a provided pytest_cwl_execute_test compatible runner."""
@@ -42,7 +43,7 @@ def _run_test_hook(
     start_time = time.time()
     outerr = ""
     try:
-        out = hook(description=toolpath, inputs=jobpath)[0]
+        out = hook(description=toolpath, outdir=outdir, inputs=jobpath)[0]
     except UnsupportedCWLFeature as unsup:
         duration = time.time() - start_time
         outerr = str(unsup)
@@ -139,10 +140,12 @@ class CWLItem(pytest.Item):
             "verbose": True,
             "classname": "",
         }
+        outdir = str(self.config._tmp_path_factory.mktemp(  # type: ignore[attr-defined]
+            self.spec.get("label", "unlabled_test")))
         hook = self.config.hook.pytest_cwl_execute_test
         if hook:
             result = _run_test_hook(
-                args, self.spec, self.config.getoption("cwl_basedir"), hook
+                args, self.spec, self.config.getoption("cwl_basedir"), outdir, hook
             )
         else:
             result = utils.run_test_plain(
