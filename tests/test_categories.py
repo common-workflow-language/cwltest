@@ -41,13 +41,11 @@ def test_unsupported_with_required_tests() -> None:
         "Test 1 failed: {cwl_runner} --quiet return-unsupported.cwl {q}v1.0{p}cat-job.json{q}{n}"
         "Required test that is unsupported (without tags){n}"
         "Does not support required feature{n}"
-        "{n}"
         "Test [2/2] Required test that is unsupported (with tags){n}"
         "{n}"
         "Test 2 failed: {cwl_runner} --quiet return-unsupported.cwl {q}v1.0{p}cat-job.json{q}{n}"
         "Required test that is unsupported (with tags){n}"
         "Does not support required feature{n}"
-        "{n}"
         "0 tests passed, 2 failures, 0 unsupported features{n}".format(
             cwl_runner=cwl_runner, n=n, p=p, q=q
         )

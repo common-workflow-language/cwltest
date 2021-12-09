@@ -43,29 +43,35 @@ def _run_test_hook_or_plain(
     toolpath, jobpath = utils.prepare_test_paths(test, cwd)
     start_time = time.time()
     outerr = ""
-    try:
-        hook_out = hook(description=toolpath, outdir=outdir, inputs=jobpath)
-        if not hook_out:
-            return utils.run_test_plain(args, test, timeout)
-        out = hook_out[0]
-    except UnsupportedCWLFeature as unsup:
-        duration = time.time() - start_time
-        outerr = str(unsup)
-        if REQUIRED not in test.get("tags", ["required"]):
-            return utils.TestResult(
-                UNSUPPORTED_FEATURE, "", outerr, duration, args["classname"]
-            )
-        if test.get("should_fail", False):
-            return utils.TestResult(0, "", outerr, duration, args["classname"])
-        return utils.TestResult(1, "", outerr, duration, args["classname"], outerr)
+    hook_out = hook(description=toolpath, outdir=outdir, inputs=jobpath)
+    if not hook_out:
+        return utils.run_test_plain(args, test, timeout)
+    returncode, out = cast(Tuple[int, Optional[Dict[str, Any]]], hook_out[0])
     duration = time.time() - start_time
     outstr = json.dumps(out) if out is not None else "{}"
+    if returncode == UNSUPPORTED_FEATURE:
+        if REQUIRED not in test.get("tags", ["required"]):
+            return utils.TestResult(
+                UNSUPPORTED_FEATURE, outstr, "", duration, args["classname"]
+            )
+    elif returncode != 0:
+        if not bool(test.get("should_fail", False)):
+            logger.warning("Test failed unexpectedly: %s %s", toolpath, jobpath)
+            logger.warning(test.get("doc"))
+            message = "Returned non-zero but it should be zero"
+            return utils.TestResult(1, outstr, outerr, duration, args["classname"], message)
+        return utils.TestResult(0, outstr, outerr, duration, args["classname"])
+    if bool(test.get("should_fail", False)):
+        return utils.TestResult(
+            1,
+            outstr,
+            outerr,
+            duration,
+            args["classname"],
+            "Test should failed, but it did not.",
+        )
+
     fail_message = ""
-    if test.get("should_fail", False):
-        logger.warning("""Test failed: %s %s""", toolpath, jobpath)
-        logger.warning(test.get("doc"))
-        logger.warning("Returned zero but it should be non-zero")
-        return utils.TestResult(1, outstr, outerr, duration, args["classname"])
 
     try:
         utils.compare(test.get("output"), out)

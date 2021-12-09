@@ -8,7 +8,7 @@ import sys
 import tempfile
 import time
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterable, List, MutableMapping, MutableSequence, Optional, Set, Tuple, Union, cast
 
 import junit_xml
 import pkg_resources
@@ -17,6 +17,7 @@ import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
 from rdflib import Graph
+from ruamel.yaml.scalarstring import ScalarString
 from schema_salad.exceptions import ValidationException
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
@@ -127,6 +128,28 @@ def check_keys(keys, expected, actual):
             raise CompareFail.format(
                 expected, actual, f"field '{k}' failed comparison: {str(e)}"
             ) from e
+
+
+def clean_ruamel(obj: Any) -> Any:
+    """Transform roundtrip loaded ruamel.yaml to plain objects."""
+    if isinstance(obj, MutableMapping):
+        new_dict = {}
+        for k, v in obj.items():
+            new_dict[str(k)] = clean_ruamel(v)
+        return new_dict
+    if isinstance(obj, MutableSequence):
+        new_list = []
+        for entry in obj:
+            new_list.append(clean_ruamel(entry))
+        return new_list
+    if isinstance(obj, ScalarString):
+        return str(obj)
+    for typ in int, float, bool, str:
+        if isinstance(obj, typ):
+            return typ(obj)
+    if obj is None:
+        return None
+    raise Exception(f"Unsupported type {type(obj)} of '{obj}'.")
 
 
 def compare_file(expected, actual):
@@ -250,7 +273,11 @@ def get_test_number_by_key(tests, key, value):
 
 
 def load_and_validate_tests(path: str) -> Tuple[Any, Dict[str, Any]]:
-    """Load and validate the given tests against the cwltest schema."""
+    """
+    Load and validate the given test file against the cwltest schema.
+
+    This also processes $import directives.
+    """
     schema_resource = pkg_resources.resource_stream(__name__, "cwltest-schema.yml")
     cache: Optional[Dict[str, Union[str, Graph, bool]]] = {
         "https://w3id.org/cwl/cwltest/cwltest-schema.yml": schema_resource.read().decode(
@@ -265,9 +292,11 @@ def load_and_validate_tests(path: str) -> Tuple[Any, Dict[str, Any]]:
         print(avsc_names)
         raise ValidationException
 
-    return schema_salad.schema.load_and_validate(
+    tests, metadata = schema_salad.schema.load_and_validate(
         document_loader, avsc_names, path, True
     )
+
+    return cast(List[Dict[str, Any]], clean_ruamel(tests)), metadata
 
 
 def parse_results(
@@ -457,6 +486,8 @@ def run_test_plain(
             return TestResult(
                 UNSUPPORTED_FEATURE, outstr, outerr, duration, args["classname"]
             )
+        if test.get("should_fail", False):
+            return TestResult(0, outstr, outerr, duration, args["classname"])
         if test_number:
             logger.error(
                 """Test %i failed: %s""",
@@ -473,9 +504,6 @@ def run_test_plain(
             logger.error("Does not support required feature")
         else:
             logger.error("Returned non-zero")
-        logger.error(outerr)
-        if test.get("should_fail", False):
-            return TestResult(0, outstr, outerr, duration, args["classname"])
         return TestResult(1, outstr, outerr, duration, args["classname"], str(err))
     except (ruamel.yaml.scanner.ScannerError, TypeError) as err:
         logger.error(
