@@ -5,8 +5,6 @@ import sys
 import setuptools.command.egg_info as egg_info_cmd
 from setuptools import setup
 
-import cwltest
-
 SETUP_DIR = os.path.dirname(__file__)
 README = os.path.join(SETUP_DIR, "README.rst")
 
@@ -47,12 +45,13 @@ setup(
     install_requires=install_requires,
     test_suite="tests",
     tests_require=["pytest<8"],
+    extras_require={"pytest-plugin": ["pytest"]},
     entry_points={
         "console_scripts": [
             "cwltest=cwltest.main:main",
         ],
         "pytest11": [
-            "cwl = cwltest.plugin",
+            "cwl = cwltest.plugin [pytest-plugin]",
         ],
     },
     zip_safe=True,
