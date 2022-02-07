@@ -22,7 +22,7 @@ install_requires = [
 ]
 
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
-pytest_runner = ["pytest < 7", "pytest-runner"] if needs_pytest else []
+pytest_runner = ["pytest < 8", "pytest-runner"] if needs_pytest else []
 
 setup(
     name="cwltest",
