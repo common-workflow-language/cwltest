@@ -1,4 +1,4 @@
 schema-salad >= 5.0.20200220195218, < 9
 junit-xml >= 1.8
-pytest < 7
+pytest < 8
 defusedxml
