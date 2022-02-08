@@ -42,7 +42,7 @@ setup(
     include_package_data=True,
     install_requires=install_requires,
     test_suite="tests",
-    tests_require=["pytest<7"],
+    tests_require=["pytest<8"],
     entry_points={
         "console_scripts": [
             "cwltest=cwltest:main",
