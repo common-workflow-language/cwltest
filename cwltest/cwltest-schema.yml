@@ -21,6 +21,8 @@ $graph:
         type: string?
         jsonldPredicate:
           _type: "@id"
-      should_fail: boolean?
+      should_fail:
+        type: boolean?
+        default: false
       output:
         type: Any?
