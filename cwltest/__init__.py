@@ -317,6 +317,9 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
         "--only-tools", action="store_true", help="Only test CommandLineTools"
     )
     parser.add_argument("--tags", type=str, default=None, help="Tags to be tested")
+    parser.add_argument(
+        "--exclude-tags", type=str, default=None, help="Tags not to be tested"
+    )
     parser.add_argument("--show-tags", action="store_true", help="Show all Tags.")
     parser.add_argument(
         "--junit-xml", type=str, default=None, help="Path to JUnit xml file"
@@ -455,6 +458,15 @@ def main():  # type: () -> int
             ts = t.get("tags", [])
             if any(tag in ts for tag in tags):
                 tests.append(t)
+
+    if args.exclude_tags:
+        ex_tests = []
+        tags = args.exclude_tags.split(",")
+        for t in tests:
+            ts = t.get("tags", [])
+            if all(tag not in ts for tag in tags):
+                ex_tests.append(t)
+        tests = ex_tests
 
     for t in tests:
         if t.get("label"):

@@ -1,0 +1,24 @@
+- job: v1.0/cat-job.json
+  output: {}
+  tool: return-0.cwl
+  doc: |
+    Test with
+    label
+  id: opt-error1
+  tags: [ command_line_tool ]
+- job: v1.0/cat-job.json
+  id: opt-error2
+  output: {}
+  tool: return-0.cwl
+  doc: |
+    Test without
+    label
+  tags: [ command_line_tool, workflow ]
+- job: v1.0/cat-job.json
+  id: opt-error3
+  output: {}
+  tool: return-0.cwl
+  doc: |
+    Test without
+    label
+  tags: [ workflow ]
