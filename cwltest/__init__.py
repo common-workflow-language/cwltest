@@ -127,14 +127,14 @@ def run_test(
                     test_number,
                     total_tests,
                     test.get("short_name"),
-                    test.get("doc"),
+                    test.get("doc").replace("\n", " "),
                     suffix,
                 )
             )
         else:
             sys.stderr.write(
                 "%sTest [%i/%i] %s%s\n"
-                % (prefix, test_number, total_tests, test.get("doc"), suffix)
+                % (prefix, test_number, total_tests, test.get("doc").replace("\n", " "), suffix)
             )
         if verbose:
             sys.stderr.write(f"Running: {' '.join(test_command)}\n")
@@ -174,7 +174,7 @@ def run_test(
             test_number,
             " ".join([quote(tc) for tc in test_command]),
         )
-        _logger.error(test.get("doc"))
+        _logger.error(test.get("doc").replace("\n", " "))
         if err.returncode == UNSUPPORTED_FEATURE:
             _logger.error("Does not support required feature")
         else:
@@ -203,7 +203,7 @@ def run_test(
             test_number,
             " ".join([quote(tc) for tc in test_command]),
         )
-        _logger.error(test.get("doc"))
+        _logger.error(test.get("doc").replace("\n", " "))
         # Kill and re-communicate to get the logs and reap the child, as
         # instructed in the subprocess docs.
         if process:
@@ -229,7 +229,7 @@ def run_test(
             test_number,
             " ".join([quote(tc) for tc in test_command]),
         )
-        _logger.warning(test.get("doc"))
+        _logger.warning(test.get("doc").replace("\n", " "))
         _logger.warning("Returned zero but it should be non-zero")
         return TestResult(1, outstr, outerr, duration, args.classname)
 
@@ -241,7 +241,7 @@ def run_test(
             test_number,
             " ".join([quote(tc) for tc in test_command]),
         )
-        _logger.warning(test.get("doc"))
+        _logger.warning(test.get("doc").replace("\n", " "))
         _logger.warning("Compare failure %s", ex)
         fail_message = str(ex)
 
@@ -456,10 +456,10 @@ def main():  # type: () -> int
         for i, t in enumerate(tests):
             if t.get("short_name"):
                 print(
-                    "[%i] %s: %s" % (i + 1, t["short_name"], t.get("doc", "").strip())
+                    "[%i] %s: %s" % (i + 1, t["short_name"], t.get("doc", "").replace("\n", " ").strip())
                 )
             else:
-                print("[%i] %s" % (i + 1, t.get("doc", "").strip()))
+                print("[%i] %s" % (i + 1, t.get("doc", "").replace("\n", " ").strip()))
 
         return 0
 
