@@ -1,0 +1,27 @@
+$base: "https://w3id.org/cwl/cwltest#"
+$graph:
+  - name: TestCase
+    type: record
+    documentRoot: true
+    fields:
+      id:
+        type: int
+        jsonldPredicate:
+          _type: "@id"
+          identity: true
+      short_name: string?
+      doc: string?
+      tags: string[]
+      tool:
+        type: string
+        jsonldPredicate:
+          _type: "@id"
+      job:
+        type: string?
+        jsonldPredicate:
+          _type: "@id"
+      should_fail:
+        type: boolean?
+        default: false
+      output:
+        type: Any?
