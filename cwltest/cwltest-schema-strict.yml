@@ -5,7 +5,7 @@ $graph:
     documentRoot: true
     fields:
       id:
-        type: int
+        type: string
         jsonldPredicate:
           _type: "@id"
           identity: true
