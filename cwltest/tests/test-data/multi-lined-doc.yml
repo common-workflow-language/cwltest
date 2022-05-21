@@ -1,0 +1,15 @@
+- job: v1.0/cat-job.json
+  output: {}
+  tool: return-0.cwl
+  doc: |
+    Test with
+    label
+  label: opt-error
+  tags: [ js, init_work_dir ]
+- job: v1.0/cat-job.json
+  output: {}
+  tool: return-0.cwl
+  doc: |
+    Test without
+    label
+  tags: [ js, init_work_dir ]
