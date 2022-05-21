@@ -127,7 +127,7 @@ def run_test(
                     test_number,
                     total_tests,
                     test.get("short_name"),
-                    test.get("doc", "").replace("\n", " "),
+                    test.get("doc", "").replace("\n", " ").strip(),
                     suffix,
                 )
             )
@@ -138,7 +138,7 @@ def run_test(
                     prefix,
                     test_number,
                     total_tests,
-                    test.get("doc", "").replace("\n", " "),
+                    test.get("doc", "").replace("\n", " ").strip(),
                     suffix,
                 )
             )
@@ -180,7 +180,7 @@ def run_test(
             test_number,
             " ".join([quote(tc) for tc in test_command]),
         )
-        _logger.error(test.get("doc", "").replace("\n", " "))
+        _logger.error(test.get("doc", "").replace("\n", " ").strip())
         if err.returncode == UNSUPPORTED_FEATURE:
             _logger.error("Does not support required feature")
         else:
@@ -209,7 +209,7 @@ def run_test(
             test_number,
             " ".join([quote(tc) for tc in test_command]),
         )
-        _logger.error(test.get("doc", "").replace("\n", " "))
+        _logger.error(test.get("doc", "").replace("\n", " ").strip())
         # Kill and re-communicate to get the logs and reap the child, as
         # instructed in the subprocess docs.
         if process:
@@ -235,7 +235,7 @@ def run_test(
             test_number,
             " ".join([quote(tc) for tc in test_command]),
         )
-        _logger.warning(test.get("doc", "").replace("\n", " "))
+        _logger.warning(test.get("doc", "").replace("\n", " ").strip())
         _logger.warning("Returned zero but it should be non-zero")
         return TestResult(1, outstr, outerr, duration, args.classname)
 
@@ -247,7 +247,7 @@ def run_test(
             test_number,
             " ".join([quote(tc) for tc in test_command]),
         )
-        _logger.warning(test.get("doc", "").replace("\n", " "))
+        _logger.warning(test.get("doc", "").replace("\n", " ").strip())
         _logger.warning("Compare failure %s", ex)
         fail_message = str(ex)
 
