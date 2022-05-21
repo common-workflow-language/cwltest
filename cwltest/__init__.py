@@ -4,6 +4,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess  # nosec
 import sys
@@ -39,6 +40,16 @@ UNSUPPORTED_FEATURE = 33
 DEFAULT_TIMEOUT = 600  # 10 minutes
 
 templock = threading.Lock()
+
+
+def shortname(
+    name,  # type: str
+):  # type: (...) -> str
+    """
+    Return the short name of a given name.
+    It is a workaround of https://github.com/common-workflow-language/schema_salad/issues/511.
+    """
+    return [n for n in re.split("[/#]", name) if len(n)][-1]
 
 
 def prepare_test_command(
@@ -448,6 +459,8 @@ def main():  # type: () -> int
     for t in tests:
         if t.get("label"):
             t["short_name"] = t["label"]
+        elif t.get("id") and isinstance(t.get("id"), str):
+            t["short_name"] = shortname(t["id"])
 
     if args.show_tags:
         alltags = set()  # type: Set[str]
