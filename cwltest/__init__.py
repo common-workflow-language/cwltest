@@ -471,7 +471,8 @@ def main():  # type: () -> int
     for t in tests:
         if t.get("label"):
             _logger.warning(
-                "The `label` field is deprecated. Use `id` field instead. It will become an error since 2023/1/1."
+                "The `label` field is deprecated. Use `id` field instead. "
+                "It will become an error since 2023/1/1."
             )
             t["short_name"] = t["label"]
         elif t.get("id"):
@@ -479,7 +480,8 @@ def main():  # type: () -> int
                 t["short_name"] = shortname(t["id"])
             else:
                 _logger.warning(
-                    "The `id` field with integer is deprecated. Use string identifier instead. It will become an error since 2023/1/1."
+                    "The `id` field with integer is deprecated. Use string identifier instead. "
+                    "It will become an error since 2023/1/1."
                 )
         else:
             _logger.warning(
