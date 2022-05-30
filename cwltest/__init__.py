@@ -470,23 +470,17 @@ def main():  # type: () -> int
 
     for t in tests:
         if t.get("label"):
-            _logger.warning(
-                "The `label` field is deprecated. Use `id` field instead. "
-                "It will become an error since 2023/1/1."
-            )
+            _logger.warning("The `label` field is deprecated. Use `id` field instead.")
             t["short_name"] = t["label"]
         elif t.get("id"):
             if isinstance(t.get("id"), str):
                 t["short_name"] = shortname(t["id"])
             else:
                 _logger.warning(
-                    "The `id` field with integer is deprecated. Use string identifier instead. "
-                    "It will become an error since 2023/1/1."
+                    "The `id` field with integer is deprecated. Use string identifier instead."
                 )
         else:
-            _logger.warning(
-                "The `id` field is missing. It will become an error since 2023/1/1."
-            )
+            _logger.warning("The `id` field is missing.")
 
     if args.show_tags:
         alltags = set()  # type: Set[str]

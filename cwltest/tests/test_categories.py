@@ -31,8 +31,8 @@ def test_unsupported_with_required_tests():
     else:
         q = ""
     assert (
-        "The `id` field is missing. It will become an error since 2023/1/1.{n}"
-        "The `id` field is missing. It will become an error since 2023/1/1.{n}"
+        "The `id` field is missing.{n}"
+        "The `id` field is missing.{n}"
         "Test [1/2] Required test that is unsupported (without tags){n}"
         "{n}"
         "Test 1 failed: mock-cwl-runner --quiet return-unsupported.cwl {q}v1.0{p}cat-job.json{q}{n}"
@@ -59,7 +59,7 @@ def test_unsupported_with_optional_tests():
     error_code, stdout, stderr = run_with_mock_cwl_runner(args)
     assert error_code == 0
     assert (
-        "The `id` field is missing. It will become an error since 2023/1/1.{n}"
+        "The `id` field is missing.{n}"
         "Test [1/1] Optional test that is unsupported{n}{n}"
         "0 tests passed, 1 unsupported "
         "features{n}".format(n=n)
