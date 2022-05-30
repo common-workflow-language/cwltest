@@ -1,0 +1,5 @@
+- job: v1.0/cat1-job.json
+  output: {}
+  tool: return-0.cwl
+  doc: Test with an integer id
+  id: 1
