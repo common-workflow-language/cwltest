@@ -595,7 +595,7 @@ def main():  # type: () -> int
 
     if args.junit_xml:
         with open(args.junit_xml, "w") as xml:
-            junit_xml.TestSuite.to_file(xml, [report])
+            junit_xml.to_xml_report_file(xml, [report])
 
     if args.badgedir:
         os.mkdir(args.badgedir)
