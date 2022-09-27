@@ -161,6 +161,15 @@ mypy: $(filter-out setup.py gittagger.py,$(PYSOURCES))
 	fi  # if minimally required ruamel.yaml version is 0.15.99 or greater, than the above can be removed
 	MYPYPATH=$$MYPYPATH:typeshed mypy $^
 
+mypy_3.6: $(filter-out setup.py gittagger.py,$(PYSOURCES))
+	if ! test -f $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))')/py.typed ; \
+	then \
+		rm -Rf typeshed/ruamel/yaml ; \
+		ln -s $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
+			typeshed/ruamel/ ; \
+	fi  # if minimally required ruamel.yaml version is 0.15.99 or greater, than the above can be removed
+	MYPYPATH=$$MYPYPATH:typeshed mypy --python-version 3.6 $^
+
 pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	pyupgrade --exit-zero-even-if-changed --py36-plus $^
 
