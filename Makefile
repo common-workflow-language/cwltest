@@ -182,7 +182,7 @@ pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
 	pyupgrade --exit-zero-even-if-changed --py36-plus $^
 
 release-test: FORCE
-	git diff-index --quiet HEAD -- || ( echo You have uncommited changes, please commit them and try again; false )
+	git diff-index --quiet HEAD -- || ( echo You have uncommitted changes, please commit them and try again; false )
 	./release-test.sh
 
 release: release-test
