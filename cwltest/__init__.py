@@ -382,18 +382,18 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
 
 def expand_number_range(nr: str) -> List[int]:
-    ans: List[int] = []
+    result: List[int] = []
     for s in nr.split(","):
         sp = s.split("-")
         if len(sp) == 2:
-            ans.extend(range(int(sp[0]) - 1, int(sp[1])))
+            result.extend(range(int(sp[0]) - 1, int(sp[1])))
         else:
-            ans.append(int(s) - 1)
-    return ans
+            result.append(int(s) - 1)
+    return result
 
 
-def main():  # type: () -> int
-
+def main() -> int:
+    """Run the main logic loop."""
     args = arg_parser().parse_args(sys.argv[1:])
     if "--" in args.args:
         args.args.remove("--")
@@ -432,7 +432,7 @@ def main():  # type: () -> int
     suite_name, _ = os.path.splitext(os.path.basename(args.test))
     report = junit_xml.TestSuite(suite_name, [])
 
-    # the number of total tests, failured tests, unsupported tests and passed tests for each tag
+    # the number of total tests, failed tests, unsupported tests and passed tests for each tag
     ntotal = defaultdict(int)  # type: Dict[str, int]
     nfailures = defaultdict(int)  # type: Dict[str, int]
     nunsupported = defaultdict(int)  # type: Dict[str, int]
