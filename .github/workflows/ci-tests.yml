@@ -15,13 +15,13 @@ jobs:
   tox:
     name: CI tests via Tox
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-20.04  # 22.04 doesn't support Python 3.6
 
     strategy:
       matrix:
         # The README.rst file mentions the versions tested, please update it as well
         py-ver-major: [3]
-        py-ver-minor: [6, 7, 8, 9, 10]
+        py-ver-minor: [6, 7, 8, 9, 10, 11]
         step: [lint, unit, mypy]
         exclude:
           - py-ver-major: 3
@@ -33,15 +33,23 @@ jobs:
       TOXENV: ${{ format('py{0}{1}-{2}', matrix.py-ver-major, matrix.py-ver-minor, matrix.step) }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        if: matrix.py-ver-minor != 11
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ env.py-semver }}
 
+      - name: Set up Python 3.11.0-rc.2
+        if: matrix.py-ver-minor == 11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11.0-rc.2
+
+
       - name: Cache for pip
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ matrix.step }}-${{ hashFiles('requirements.txt', 'tox.ini') }}
@@ -53,7 +61,7 @@ jobs:
 
       - name: MyPy cache
         if: ${{ matrix.step == 'mypy' }}
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .mypy_cache/${{ env.py-semver }}
           key: mypy-${{ env.py-semver }}
@@ -63,7 +71,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: ${{ matrix.step == 'unit' }}
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true
 
@@ -81,17 +89,17 @@ jobs:
       TOXENV: ${{ format('py310-{0}', matrix.step) }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ env.py-semver }}
 
       - name: Cache for pip
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ matrix.step }}-${{ hashFiles('requirements.txt') }}
@@ -111,18 +119,18 @@ jobs:
   release_test:
     name: cwltest release test
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: "3.10"  # quoted, otherwise that turns into the number 3.1
 
       - name: Cache for pip
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-release-${{ hashFiles('requirements.txt', 'test-requirements.txt') }}

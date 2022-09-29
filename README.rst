@@ -32,7 +32,7 @@ This is a testing tool for checking the output of Tools and Workflows described
 with the Common Workflow Language.  Among other uses, it is used to run the CWL
 conformance tests.
 
-This is written and tested for Python 3.6, 3.7, 3.8, 3.9, and 3.10.
+This is written and tested for Python 3.6, 3.7, 3.8, 3.9, 3.10, and 3.11.
 
 Install
 -------
