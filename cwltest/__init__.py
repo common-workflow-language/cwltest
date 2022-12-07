@@ -567,7 +567,7 @@ def main() -> int:
                     passed += 1
                     for t in tags:
                         npassed[t] += 1
-                elif return_code != 0 and return_code != UNSUPPORTED_FEATURE:
+                elif return_code != UNSUPPORTED_FEATURE:
                     failures += 1
                     for t in tags:
                         nfailures[t] += 1
