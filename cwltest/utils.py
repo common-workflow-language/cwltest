@@ -23,8 +23,8 @@ class TestResult:
         classname,
         message="",
     ):
-        """Initialize a TestResult object."""
         # type: (int, Text, Text, float, Text, str) -> None
+        """Initialize a TestResult object."""
         self.return_code = return_code
         self.standard_output = standard_output
         self.error_output = error_output
