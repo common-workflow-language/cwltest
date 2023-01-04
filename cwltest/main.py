@@ -6,7 +6,7 @@ import json
 import os
 import shlex
 import shutil
-import subprocess
+import subprocess  # nosec
 import sys
 import time
 from collections import defaultdict
