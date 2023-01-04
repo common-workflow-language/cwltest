@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import defusedxml.ElementTree as ET
 import schema_salad.ref_resolver
@@ -6,7 +7,7 @@ import schema_salad.ref_resolver
 from .util import get_data, run_with_mock_cwl_runner
 
 
-def test_timeout_stderr_stdout(tmp_path):
+def test_timeout_stderr_stdout(tmp_path: Path) -> None:
     junit_xml_report = tmp_path / "junit-report.xml"
 
     args = [

@@ -4,7 +4,7 @@ import os
 from cwltest import utils
 
 
-def test_unix_relative_path():
+def test_unix_relative_path() -> None:
     """Confirm unix style to windows style path corrections."""
     command = utils.prepare_test_command(
         tool="cwl-runner",

@@ -4,7 +4,7 @@ from cwltest.utils import CompareFail, compare_file, compare
 import pytest
 
 
-def test_compare_file():
+def test_compare_file() -> None:
     expected = {
         "location": "cores.txt",
         "size": 2,
@@ -23,7 +23,7 @@ def test_compare_file():
     compare_file(expected, actual)
 
 
-def test_compare_contents_success():
+def test_compare_contents_success() -> None:
     expected = {
         "location": "cores.txt",
         "size": 2,
@@ -42,7 +42,7 @@ def test_compare_contents_success():
     compare(expected, actual)
 
 
-def test_compare_contents_failure():
+def test_compare_contents_failure() -> None:
     expected = {
         "location": "cores.txt",
         "size": 2,

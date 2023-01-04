@@ -1,7 +1,7 @@
 from .util import get_data, run_with_mock_cwl_runner
 
 
-def test_warning_with_integer_id():
+def test_warning_with_integer_id() -> None:
     args = [
         "--test",
         get_data("tests/test-data/integer-id.yml"),

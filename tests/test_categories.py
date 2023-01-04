@@ -9,7 +9,7 @@ import defusedxml.ElementTree as ET
 import schema_salad.ref_resolver
 
 
-def test_unsupported_with_required_tests():
+def test_unsupported_with_required_tests() -> None:
     args = [
         "--test",
         schema_salad.ref_resolver.file_uri(
@@ -49,7 +49,7 @@ def test_unsupported_with_required_tests():
     ) == stderr
 
 
-def test_unsupported_with_optional_tests():
+def test_unsupported_with_optional_tests() -> None:
     args = [
         "--test",
         schema_salad.ref_resolver.file_uri(
@@ -66,7 +66,7 @@ def test_unsupported_with_optional_tests():
     ) == stderr
 
 
-def test_error_with_optional_tests():
+def test_error_with_optional_tests() -> None:
     args = [
         "--test",
         schema_salad.ref_resolver.file_uri(
@@ -78,7 +78,7 @@ def test_error_with_optional_tests():
     assert "1 failures" in stderr
 
 
-def test_category_in_junit_xml(tmp_path: Path):
+def test_category_in_junit_xml(tmp_path: Path) -> None:
     junit_xml_report = tmp_path / "junit-report.xml"
     args = [
         "--test",
