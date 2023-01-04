@@ -45,7 +45,7 @@ setup(
     tests_require=["pytest<8"],
     entry_points={
         "console_scripts": [
-            "cwltest=cwltest:main",
+            "cwltest=cwltest.main:main",
             "mock-cwl-runner=cwltest.tests.mock_cwl_runner:main",
         ]
     },

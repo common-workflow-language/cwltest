@@ -1,9 +1,6 @@
-import os
 from os import linesep as n
-from pathlib import Path
 
-from .util import run_with_mock_cwl_runner, get_data
-import defusedxml.ElementTree as ET
+from .util import get_data, run_with_mock_cwl_runner
 
 
 def test_list():

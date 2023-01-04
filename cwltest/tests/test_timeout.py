@@ -1,13 +1,9 @@
-import re
 import os
-from os import linesep as n
-from os import sep as p
-from pathlib import Path
 
 import defusedxml.ElementTree as ET
-
-from .util import run_with_mock_cwl_runner, get_data
 import schema_salad.ref_resolver
+
+from .util import get_data, run_with_mock_cwl_runner
 
 
 def test_timeout_stderr_stdout(tmp_path):
@@ -21,8 +17,8 @@ def test_timeout_stderr_stdout(tmp_path):
         "--junit-xml",
         str(junit_xml_report),
     ]
+    cwd = os.getcwd()
     try:
-        cwd = os.getcwd()
         os.chdir(get_data("tests/test-data/"))
         error_code, stdout, stderr = run_with_mock_cwl_runner(args)
     finally:

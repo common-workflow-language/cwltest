@@ -1,11 +1,12 @@
 """Test prepare_test_command()"""
 import os
-from cwltest import prepare_test_command
+
+from cwltest import utils
 
 
 def test_unix_relative_path():
     """Confirm unix style to windows style path corrections."""
-    command = prepare_test_command(
+    command = utils.prepare_test_command(
         tool="cwl-runner",
         args=[],
         testargs=None,

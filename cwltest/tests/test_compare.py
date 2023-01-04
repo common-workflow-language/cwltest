@@ -1,6 +1,5 @@
 from .util import get_data
-from cwltest import CompareFail
-from cwltest.utils import compare_file, compare
+from cwltest.utils import CompareFail, compare_file, compare
 
 import pytest
 
