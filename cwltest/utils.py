@@ -23,6 +23,7 @@ class TestResult:
         classname,
         message="",
     ):
+        """Initialize a TestResult object."""
         # type: (int, Text, Text, float, Text, str) -> None
         self.return_code = return_code
         self.standard_output = standard_output
@@ -272,5 +273,4 @@ def shortname(
 
     It is a workaround of https://github.com/common-workflow-language/schema_salad/issues/511.
     """
-
     return [n for n in re.split("[/#]", name) if len(n)][-1]

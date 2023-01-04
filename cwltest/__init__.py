@@ -1,3 +1,5 @@
+"""Common Workflow Language testing framework."""
+
 import logging
 import threading
 
