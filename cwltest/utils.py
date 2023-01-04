@@ -269,6 +269,7 @@ def shortname(
 ):  # type: (...) -> str
     """
     Return the short name of a given name.
+
     It is a workaround of https://github.com/common-workflow-language/schema_salad/issues/511.
     """
 
