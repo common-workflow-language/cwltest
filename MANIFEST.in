@@ -1,8 +1,8 @@
 include Makefile gittaggers.py test-requirements.txt mypy-requirements.txt requirements.txt
 include cwltest/cwltest-schema.yml
-include cwltest/tests/*
-include cwltest/tests/test-data/*
-include cwltest/tests/test-data/v1.0/*
+include tests/*
+include tests/test-data/*
+include tests/test-data/v1.0/*
 recursive-include mypy-stubs *.py?
 global-exclude *~
 global-exclude *.pyc

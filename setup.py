@@ -38,7 +38,7 @@ setup(
     python_requires=">=3.6, <4",
     setup_requires=[] + pytest_runner,
     packages=["cwltest", "cwltest.tests"],
-    package_dir={"cwltool.tests": "tests"},
+    package_dir={"cwltest.tests": "tests"},
     package_data={"cwltest": ["py.typed"], "tests": ["test-data/*"]},
     include_package_data=True,
     install_requires=install_requires,
