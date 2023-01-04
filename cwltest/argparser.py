@@ -8,6 +8,8 @@ from cwltest import DEFAULT_TIMEOUT
 
 
 def arg_parser():  # type: () -> argparse.ArgumentParser
+    """Generate a command Line argument parser for cwltest."""
+
     parser = argparse.ArgumentParser(
         description="Common Workflow Language testing framework"
     )

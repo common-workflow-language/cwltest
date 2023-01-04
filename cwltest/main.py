@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+"""Entry point for cwltest."""
+
 import argparse
 import json
 import os

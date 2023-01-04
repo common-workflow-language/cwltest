@@ -271,4 +271,5 @@ def shortname(
     Return the short name of a given name.
     It is a workaround of https://github.com/common-workflow-language/schema_salad/issues/511.
     """
+
     return [n for n in re.split("[/#]", name) if len(n)][-1]
