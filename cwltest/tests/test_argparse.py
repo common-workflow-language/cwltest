@@ -1,4 +1,4 @@
-from cwltest import arg_parser
+from cwltest.argparser import arg_parser
 
 
 def test_arg():

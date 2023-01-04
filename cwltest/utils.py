@@ -1,13 +1,17 @@
 import json
+import os
+import re
+import sys
+import tempfile
 from typing import Any, Dict, List, Optional, Set, Text
 
 import junit_xml
+import schema_salad.ref_resolver
 
-REQUIRED = "required"
+from cwltest import REQUIRED, templock
 
 
 class TestResult:
-
     """Encapsulate relevant test result data."""
 
     def __init__(
@@ -209,3 +213,62 @@ def get_test_number_by_key(tests, key, value):
         if key in test and test[key] == value:
             return i
     return None
+
+
+def prepare_test_command(
+    tool,  # type: str
+    args,  # type: List[str]
+    testargs,  # type: Optional[List[str]]
+    test,  # type: Dict[str, Any]
+    cwd,  # type: str
+    verbose=False,  # type: bool
+):  # type: (...) -> List[str]
+    """Turn the test into a command line."""
+    test_command = [tool]
+    test_command.extend(args)
+
+    # Add additional arguments given in test case
+    if testargs is not None:
+        for testarg in testargs:
+            (test_case_name, prefix) = testarg.split("==")
+            if test_case_name in test:
+                test_command.extend([prefix, test[test_case_name]])
+
+    # Add prefixes if running on MacOSX so that boot2docker writes to /Users
+    with templock:
+        if "darwin" in sys.platform and tool.endswith("cwltool"):
+            outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
+            test_command.extend(
+                [
+                    f"--tmp-outdir-prefix={outdir}",
+                    f"--tmpdir-prefix={outdir}",
+                ]
+            )
+        else:
+            outdir = tempfile.mkdtemp()
+    test_command.extend([f"--outdir={outdir}"])
+    if not verbose:
+        test_command.extend(["--quiet"])
+
+    cwd = schema_salad.ref_resolver.file_uri(cwd)
+    toolpath = test["tool"]
+    if toolpath.startswith(cwd):
+        toolpath = toolpath[len(cwd) + 1 :]
+    test_command.extend([os.path.normcase(toolpath)])
+
+    jobpath = test.get("job")
+    if jobpath:
+        if jobpath.startswith(cwd):
+            jobpath = jobpath[len(cwd) + 1 :]
+        test_command.append(os.path.normcase(jobpath))
+    return test_command
+
+
+def shortname(
+    name,  # type: str
+):  # type: (...) -> str
+    """
+    Return the short name of a given name.
+    It is a workaround of https://github.com/common-workflow-language/schema_salad/issues/511.
+    """
+    return [n for n in re.split("[/#]", name) if len(n)][-1]

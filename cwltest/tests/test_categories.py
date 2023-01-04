@@ -16,8 +16,8 @@ def test_unsupported_with_required_tests():
             get_data("tests/test-data/required-unsupported.yml")
         ),
     ]
+    cwd = os.getcwd()
     try:
-        cwd = os.getcwd()
         os.chdir(get_data("tests/test-data/"))
         error_code, stdout, stderr = run_with_mock_cwl_runner(args)
     finally:
