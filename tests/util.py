@@ -1,15 +1,16 @@
 import os
-
 import subprocess  # nosec
+from typing import List, Tuple
 
 from pkg_resources import (
     Requirement,
-    ResolutionError,  # type: ignore
+    ResolutionError,
     resource_filename,
 )
 
 
-def get_data(filename):
+def get_data(filename: str) -> str:
+    """Return the absolute path starting from a file name."""
     filename = os.path.normpath(filename)
     # normalizing path depending on OS or else it will cause problem when
     # joining path
@@ -23,9 +24,11 @@ def get_data(filename):
     return filepath
 
 
-def run_with_mock_cwl_runner(args):
+def run_with_mock_cwl_runner(args: List[str]) -> Tuple[int, str, str]:
+    """Bind a mock cwlref-runner implementation to cwltest."""
+    cwl_runner = get_data("tests/test-data/mock_cwl_runner.py")
     process = subprocess.Popen(  # nosec
-        ["cwltest", "--tool", "mock-cwl-runner"] + args,
+        ["cwltest", "--tool", cwl_runner] + args,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )

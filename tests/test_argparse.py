@@ -1,7 +1,7 @@
 from cwltest.argparser import arg_parser
 
 
-def test_arg():
+def test_arg() -> None:
     """Basic test of the argparse."""
     parser = arg_parser()
     parsed = parser.parse_args(

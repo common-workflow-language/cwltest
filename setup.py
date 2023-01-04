@@ -5,6 +5,8 @@ import sys
 import setuptools.command.egg_info as egg_info_cmd
 from setuptools import setup
 
+import cwltest
+
 SETUP_DIR = os.path.dirname(__file__)
 README = os.path.join(SETUP_DIR, "README.rst")
 
@@ -38,7 +40,8 @@ setup(
     python_requires=">=3.6, <4",
     setup_requires=[] + pytest_runner,
     packages=["cwltest", "cwltest.tests"],
-    package_data={"cwltest": ["py.typed"], "cwltest.tests": ["test-data/*"]},
+    package_dir={"cwltest.tests": "tests"},
+    package_data={"cwltest": ["py.typed"], "tests": ["test-data/*"]},
     include_package_data=True,
     install_requires=install_requires,
     test_suite="tests",
@@ -46,7 +49,6 @@ setup(
     entry_points={
         "console_scripts": [
             "cwltest=cwltest.main:main",
-            "mock-cwl-runner=cwltest.tests.mock_cwl_runner:main",
         ]
     },
     zip_safe=True,

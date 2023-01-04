@@ -102,10 +102,10 @@ codespell:
 
 ## format                 : check/fix all code indentation and formatting (runs black)
 format:
-	black setup.py cwltest setup.py mypy-stubs
+	black setup.py setup.py cwltest tests mypy-stubs
 
 format-check:
-	black --diff --check setup.py cwltest mypy-stubs
+	black --diff --check setup.py cwltest tests mypy-stubs
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)

@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+"""Mock implementation of the cwlref-runner command line."""
+
 import argparse
 import sys
 from time import sleep

@@ -3,7 +3,7 @@ from os import linesep as n
 from .util import get_data, run_with_mock_cwl_runner
 
 
-def test_list_only_exclude():
+def test_list_only_exclude() -> None:
     args = [
         "--test",
         get_data("tests/test-data/exclude-tags.yml"),
@@ -16,7 +16,7 @@ def test_list_only_exclude():
     assert "opt-error3" not in stdout
 
 
-def test_list_include_and_exclude():
+def test_list_include_and_exclude() -> None:
     args = [
         "--test",
         get_data("tests/test-data/exclude-tags.yml"),
