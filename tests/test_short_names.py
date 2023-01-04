@@ -1,5 +1,7 @@
 from os import linesep as n
 from pathlib import Path
+from typing import cast
+from xml.etree.ElementTree import Element
 
 import defusedxml.ElementTree as ET
 
@@ -48,5 +50,7 @@ def test_short_name_in_junit_xml(tmp_path: Path) -> None:
     run_with_mock_cwl_runner(args)
     tree = ET.parse(junit_xml_report)
     root = tree.getroot()
-    category = root.find("testsuite").find("testcase").attrib["file"]
+    category = cast(
+        Element, cast(Element, root.find("testsuite")).find("testcase")
+    ).attrib["file"]
     assert category == "opt-error"

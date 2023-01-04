@@ -1,5 +1,4 @@
 import os
-
 import subprocess  # nosec
 from typing import List, Tuple
 
@@ -27,8 +26,9 @@ def get_data(filename: str) -> str:
 
 def run_with_mock_cwl_runner(args: List[str]) -> Tuple[int, str, str]:
     """Bind a mock cwlref-runner implementation to cwltest."""
+    cwl_runner = get_data("tests/test-data/mock_cwl_runner.py")
     process = subprocess.Popen(  # nosec
-        ["cwltest", "--tool", "mock-cwl-runner"] + args,
+        ["cwltest", "--tool", cwl_runner] + args,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )

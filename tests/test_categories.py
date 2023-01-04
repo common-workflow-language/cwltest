@@ -3,6 +3,8 @@ import os
 from os import linesep as n
 from os import sep as p
 from pathlib import Path
+from typing import cast
+from xml.etree.ElementTree import Element
 
 from .util import run_with_mock_cwl_runner, get_data
 import defusedxml.ElementTree as ET
@@ -10,6 +12,7 @@ import schema_salad.ref_resolver
 
 
 def test_unsupported_with_required_tests() -> None:
+    cwl_runner = get_data("tests/test-data/mock_cwl_runner.py")
     args = [
         "--test",
         schema_salad.ref_resolver.file_uri(
@@ -35,17 +38,19 @@ def test_unsupported_with_required_tests() -> None:
         "The `id` field is missing.{n}"
         "Test [1/2] Required test that is unsupported (without tags){n}"
         "{n}"
-        "Test 1 failed: mock-cwl-runner --quiet return-unsupported.cwl {q}v1.0{p}cat-job.json{q}{n}"
+        "Test 1 failed: {cwl_runner} --quiet return-unsupported.cwl {q}v1.0{p}cat-job.json{q}{n}"
         "Required test that is unsupported (without tags){n}"
         "Does not support required feature{n}"
         "{n}"
         "Test [2/2] Required test that is unsupported (with tags){n}"
         "{n}"
-        "Test 2 failed: mock-cwl-runner --quiet return-unsupported.cwl {q}v1.0{p}cat-job.json{q}{n}"
+        "Test 2 failed: {cwl_runner} --quiet return-unsupported.cwl {q}v1.0{p}cat-job.json{q}{n}"
         "Required test that is unsupported (with tags){n}"
         "Does not support required feature{n}"
         "{n}"
-        "0 tests passed, 2 failures, 0 unsupported features{n}".format(n=n, p=p, q=q)
+        "0 tests passed, 2 failures, 0 unsupported features{n}".format(
+            cwl_runner=cwl_runner, n=n, p=p, q=q
+        )
     ) == stderr
 
 
@@ -91,5 +96,7 @@ def test_category_in_junit_xml(tmp_path: Path) -> None:
     run_with_mock_cwl_runner(args)
     tree = ET.parse(junit_xml_report)
     root = tree.getroot()
-    category = root.find("testsuite").find("testcase").attrib["class"]
+    category = cast(
+        Element, cast(Element, root.find("testsuite")).find("testcase")
+    ).attrib["class"]
     assert category == "js, init_work_dir"

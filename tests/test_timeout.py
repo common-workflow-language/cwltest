@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+from typing import cast
+from xml.etree.ElementTree import Element
 
 import defusedxml.ElementTree as ET
 import schema_salad.ref_resolver
@@ -30,10 +32,20 @@ def test_timeout_stderr_stdout(tmp_path: Path) -> None:
     tree = ET.parse(junit_xml_report)
     try:
         root = tree.getroot()
-        timeout_text = root.find("testsuite").find("testcase").find("failure").text
-        timeout_stderr = root.find("testsuite").find("testcase").find("system-err").text
-        assert "Test timed out" in timeout_text
-        assert "timeout stderr" in timeout_stderr
+        timeout_text = cast(
+            Element,
+            cast(Element, cast(Element, root.find("testsuite")).find("testcase")).find(
+                "failure"
+            ),
+        ).text
+        timeout_stderr = cast(
+            Element,
+            cast(Element, cast(Element, root.find("testsuite")).find("testcase")).find(
+                "system-err"
+            ),
+        ).text
+        assert timeout_text is not None and "Test timed out" in timeout_text
+        assert timeout_stderr is not None and "timeout stderr" in timeout_stderr
     except AttributeError as e:
         print(junit_xml_report.read_text())
         raise e
