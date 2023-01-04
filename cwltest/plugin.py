@@ -4,17 +4,28 @@ import json
 import os
 import time
 from io import StringIO
-from typing import (Any, Dict, Iterator, List, Optional, TYPE_CHECKING, Tuple, Union, cast)
+from pathlib import Path
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    TYPE_CHECKING,
+    Tuple,
+    Union,
+    cast,
+)
 
-import py
 import pytest
 from typing_extensions import Protocol
 
-from conftest import UnsupportedCWLFeature
 from cwltest import DEFAULT_TIMEOUT, REQUIRED, UNSUPPORTED_FEATURE, logger, utils
+from cwltest.compare import CompareFail, compare
 
 if TYPE_CHECKING:
     from _pytest.config import Config as PytestConfig
+    from _pytest.compat import LEGACY_PATH
     from _pytest._code.code import ExceptionInfo, _TracebackStyle
     from _pytest.nodes import Node
     from _pytest.config.argparsing import Parser as PytestParser
@@ -25,19 +36,19 @@ class TestRunner(Protocol):
     """Protocol to type-check test runner functions via the pluggy hook."""
 
     def __call__(
-            self, description: str, outdir: str, inputs: Optional[str]
+        self, description: str, outdir: str, inputs: Optional[str]
     ) -> List[Optional[Dict[str, Any]]]:
         """Type signature for pytest_cwl_execute_test hook results."""
         ...
 
 
 def _run_test_hook_or_plain(
-        args: Dict[str, Any],
-        test: Dict[str, str],
-        cwd: str,
-        timeout: int,
-        outdir: str,
-        hook: TestRunner,
+    args: Dict[str, Any],
+    test: Dict[str, str],
+    cwd: str,
+    timeout: int,
+    outdir: str,
+    hook: TestRunner,
 ) -> utils.TestResult:
     """Run tests using a provided pytest_cwl_execute_test hook or the --cwl-runner."""
     toolpath, jobpath = utils.prepare_test_paths(test, cwd)
@@ -59,7 +70,9 @@ def _run_test_hook_or_plain(
             logger.warning("Test failed unexpectedly: %s %s", toolpath, jobpath)
             logger.warning(test.get("doc"))
             message = "Returned non-zero but it should be zero"
-            return utils.TestResult(1, outstr, outerr, duration, args["classname"], message)
+            return utils.TestResult(
+                1, outstr, outerr, duration, args["classname"], message
+            )
         return utils.TestResult(0, outstr, outerr, duration, args["classname"])
     if bool(test.get("should_fail", False)):
         return utils.TestResult(
@@ -74,8 +87,8 @@ def _run_test_hook_or_plain(
     fail_message = ""
 
     try:
-        utils.compare(test.get("output"), out)
-    except utils.CompareFail as ex:
+        compare(test.get("output"), out)
+    except CompareFail as ex:
         logger.warning("""Test failed: %s %s""", toolpath, jobpath)
         logger.warning(test.get("doc"))
         logger.warning("Compare failure %s", ex)
@@ -110,8 +123,8 @@ def pytest_addoption(parser: "PytestParser") -> None:
         type=int,
         default=DEFAULT_TIMEOUT,
         help="Time of execution in seconds after which the test will be "
-             f"skipped. Defaults to {DEFAULT_TIMEOUT} seconds "
-             f"({DEFAULT_TIMEOUT / 60} minutes).",
+        f"skipped. Defaults to {DEFAULT_TIMEOUT} seconds "
+        f"({DEFAULT_TIMEOUT / 60} minutes).",
     )
     parser.addoption("--cwl-tags", type=str, default=None, help="Tags to be tested.")
     parser.addoption(
@@ -132,10 +145,10 @@ class CWLItem(pytest.Item):
     """A CWL test Item."""
 
     def __init__(
-            self,
-            name: str,
-            parent: Optional["Node"],
-            spec: Dict[str, Any],
+        self,
+        name: str,
+        parent: Optional["Node"],
+        spec: Dict[str, Any],
     ) -> None:
         """Initialize this CWLItem."""
         super().__init__(name, parent)
@@ -172,9 +185,9 @@ class CWLItem(pytest.Item):
             raise CWLTestException(self, result)
 
     def repr_failure(
-            self,
-            excinfo: "ExceptionInfo[BaseException]",
-            style: Optional["_TracebackStyle"] = None,
+        self,
+        excinfo: "ExceptionInfo[BaseException]",
+        style: Optional["_TracebackStyle"] = None,
     ) -> str:
         """
         Document failure reason.
@@ -197,7 +210,7 @@ class CWLItem(pytest.Item):
             )
         return ""
 
-    def reportinfo(self) -> Tuple[Union[py.path.local, str], int, str]:
+    def reportinfo(self) -> Tuple[Union["os.PathLike[str]", str], Optional[int], str]:
         """Status report."""
         return self.fspath, 0, "cwl test: %s" % self.name
 
@@ -222,17 +235,15 @@ class CWLYamlFile(pytest.File):
 
 
 def pytest_collect_file(
-        parent: pytest.Collector, path: py.path.local
+    file_path: Path, path: "LEGACY_PATH", parent: pytest.Collector
 ) -> Optional[pytest.Collector]:
     """Is this file for us."""
-    if (path.ext == ".yml" or path.ext == ".yaml") and path.basename.startswith(
-            "conformance_test"
-    ):
+    if (
+        file_path.suffix == ".yml" or file_path.suffix == ".yaml"
+    ) and path.basename.startswith("conformance_test"):
         return cast(
             Optional[pytest.Collector],
-            CWLYamlFile.from_parent(  # type: ignore[no-untyped-call]
-                parent, fspath=path
-            ),
+            CWLYamlFile.from_parent(parent, fspath=path),
         )
     return None
 

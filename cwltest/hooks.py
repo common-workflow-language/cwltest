@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any, Tuple
 
 def pytest_cwl_execute_test(
     description: str, outdir: str, inputs: Optional[str]
-) -> Tuple[int, Optional[Dict[str, Any]]]:
+) -> None:
     """
     Execute CWL test using a Python function instead of a command line runner.
 

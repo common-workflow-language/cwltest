@@ -6,7 +6,7 @@ import os
 import sys
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, cast
 
 import junit_xml
 import schema_salad.avro
@@ -27,13 +27,13 @@ else:
 
 
 def _run_test(
-        args: argparse.Namespace,
-        test: Dict[str, str],
-        test_number: int,
-        total_tests: int,
-        timeout: int,
-        junit_verbose: Optional[bool] = False,
-        verbose: Optional[bool] = False,
+    args: argparse.Namespace,
+    test: Dict[str, str],
+    test_number: int,
+    total_tests: int,
+    timeout: int,
+    junit_verbose: Optional[bool] = False,
+    verbose: Optional[bool] = False,
 ) -> TestResult:
     if test.get("short_name"):
         sys.stderr.write(
@@ -59,7 +59,9 @@ def _run_test(
             )
         )
     sys.stderr.flush()
-    return utils.run_test_plain(vars(args), test, timeout, test_number, junit_verbose, verbose)
+    return utils.run_test_plain(
+        vars(args), test, timeout, test_number, junit_verbose, verbose
+    )
 
 
 def _expand_number_range(nr: str) -> List[int]:
@@ -97,7 +99,7 @@ def main() -> int:
     failures = 0
     unsupported = 0
     suite_name, _ = os.path.splitext(os.path.basename(args.test))
-    report = junit_xml.TestSuite(suite_name, [])
+    report: Optional[junit_xml.TestSuite] = junit_xml.TestSuite(suite_name, [])
 
     ntotal = defaultdict(int)  # type: Dict[str, int]
     npassed = defaultdict(int)  # type: Dict[str, int]
@@ -226,7 +228,9 @@ def main() -> int:
                 nfailures,
                 nunsupported,
                 report,
-            ) = utils.parse_results((job.result() for job in jobs), tests, suite_name, report)
+            ) = utils.parse_results(
+                (job.result() for job in jobs), tests, suite_name, report
+            )
         except KeyboardInterrupt:
             for job in jobs:
                 job.cancel()
@@ -234,7 +238,7 @@ def main() -> int:
 
     if args.junit_xml:
         with open(args.junit_xml, "w") as xml:
-            junit_xml.to_xml_report_file(xml, [report])
+            junit_xml.to_xml_report_file(xml, [cast(junit_xml.TestSuite, report)])
 
     if args.badgedir:
         utils.generate_badges(args.badgedir, ntotal, npassed)

@@ -29,4 +29,3 @@ def pytest_cwl_execute_test(
         return 1, {}
     out = stdout.getvalue()
     return result, json.loads(out) if out else {}
-

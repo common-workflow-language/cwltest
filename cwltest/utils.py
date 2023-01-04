@@ -3,12 +3,23 @@ import os
 import re
 import shlex
 import shutil
-import subprocess
+import subprocess  # nosec
 import sys
 import tempfile
 import time
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, MutableMapping, MutableSequence, Optional, Set, Tuple, Union, cast
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    MutableMapping,
+    MutableSequence,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
 import junit_xml
 import pkg_resources
@@ -21,19 +32,42 @@ from ruamel.yaml.scalarstring import ScalarString
 from schema_salad.exceptions import ValidationException
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
+from cwltest.compare import CompareFail, compare
+
+
+def _clean_ruamel(obj: Any) -> Any:
+    """Transform roundtrip loaded ruamel.yaml to plain objects."""
+    if isinstance(obj, MutableMapping):
+        new_dict = {}
+        for k, v in obj.items():
+            new_dict[str(k)] = _clean_ruamel(v)
+        return new_dict
+    if isinstance(obj, MutableSequence):
+        new_list = []
+        for entry in obj:
+            new_list.append(_clean_ruamel(entry))
+        return new_list
+    if isinstance(obj, ScalarString):
+        return str(obj)
+    for typ in int, float, bool, str:
+        if isinstance(obj, typ):
+            return typ(obj)
+    if obj is None:
+        return None
+    raise Exception(f"Unsupported type {type(obj)} of '{obj}'.")
 
 
 class TestResult:
     """Encapsulate relevant test result data."""
 
     def __init__(
-            self,
-            return_code: int,
-            standard_output: str,
-            error_output: str,
-            duration: float,
-            classname: str,
-            message: str = "",
+        self,
+        return_code: int,
+        standard_output: str,
+        error_output: str,
+        duration: float,
+        classname: str,
+        message: str = "",
     ) -> None:
         """Initialize a TestResult object."""
         self.return_code = return_code
@@ -64,184 +98,10 @@ class TestResult:
         return case
 
 
-class CompareFail(Exception):
-    @classmethod
-    def format(cls, expected, actual, cause=None):
-        # type: (Any, Any, Any) -> CompareFail
-        message = "expected: {}\ngot: {}".format(
-            json.dumps(expected, indent=4, sort_keys=True),
-            json.dumps(actual, indent=4, sort_keys=True),
-        )
-        if cause:
-            message += "\ncaused by: %s" % cause
-        return cls(message)
-
-
-def compare_location(expected, actual):
-    # type: (Dict[str,Any], Dict[str,Any]) -> None
-    if "path" in expected:
-        comp = "path"
-        if "path" not in actual:
-            actual["path"] = actual["location"]
-    elif "location" in expected:
-        comp = "location"
-    else:
-        return
-    if actual.get("class") == "Directory":
-        actual[comp] = actual[comp].rstrip("/")
-
-    if expected[comp] != "Any" and (
-            not (
-                    actual[comp].endswith("/" + expected[comp])
-                    or ("/" not in actual[comp] and expected[comp] == actual[comp])
-            )
-    ):
-        raise CompareFail.format(
-            expected,
-            actual,
-            f"{actual[comp]} does not end with {expected[comp]}",
-        )
-
-
-def compare_contents(expected, actual):
-    # type: (Dict[str,Any], Dict[str,Any]) -> None
-    expected_contents = expected["contents"]
-    with open(actual["path"]) as f:
-        actual_contents = f.read()
-    if expected_contents != actual_contents:
-        raise CompareFail.format(
-            expected,
-            actual,
-            json.dumps(
-                "Output file contents do not match: actual '%s' is not equal to expected '%s'"
-                % (actual_contents, expected_contents)
-            ),
-        )
-
-
-def check_keys(keys, expected, actual):
-    # type: (Set[str], Dict[str,Any], Dict[str,Any]) -> None
-    for k in keys:
-        try:
-            compare(expected.get(k), actual.get(k))
-        except CompareFail as e:
-            raise CompareFail.format(
-                expected, actual, f"field '{k}' failed comparison: {str(e)}"
-            ) from e
-
-
-def clean_ruamel(obj: Any) -> Any:
-    """Transform roundtrip loaded ruamel.yaml to plain objects."""
-    if isinstance(obj, MutableMapping):
-        new_dict = {}
-        for k, v in obj.items():
-            new_dict[str(k)] = clean_ruamel(v)
-        return new_dict
-    if isinstance(obj, MutableSequence):
-        new_list = []
-        for entry in obj:
-            new_list.append(clean_ruamel(entry))
-        return new_list
-    if isinstance(obj, ScalarString):
-        return str(obj)
-    for typ in int, float, bool, str:
-        if isinstance(obj, typ):
-            return typ(obj)
-    if obj is None:
-        return None
-    raise Exception(f"Unsupported type {type(obj)} of '{obj}'.")
-
-
-def compare_file(expected, actual):
-    # type: (Dict[str,Any], Dict[str,Any]) -> None
-    compare_location(expected, actual)
-    if "contents" in expected:
-        compare_contents(expected, actual)
-    other_keys = set(expected.keys()) - {"path", "location", "listing", "contents"}
-    check_keys(other_keys, expected, actual)
-
-
-def compare_directory(expected, actual):
-    # type: (Dict[str,Any], Dict[str,Any]) -> None
-    if actual.get("class") != "Directory":
-        raise CompareFail.format(
-            expected, actual, "expected object with a class 'Directory'"
-        )
-    if "listing" not in actual:
-        raise CompareFail.format(
-            expected, actual, "'listing' is mandatory field in Directory object"
-        )
-    for i in expected["listing"]:
-        found = False
-        for j in actual["listing"]:
-            try:
-                compare(i, j)
-                found = True
-                break
-            except CompareFail:
-                pass
-        if not found:
-            raise CompareFail.format(
-                expected,
-                actual,
-                "%s not found" % json.dumps(i, indent=4, sort_keys=True),
-            )
-    compare_file(expected, actual)
-
-
-def compare_dict(expected, actual):
-    # type: (Dict[str,Any], Dict[str,Any]) -> None
-    for c in expected:
-        try:
-            compare(expected[c], actual.get(c))
-        except CompareFail as e:
-            raise CompareFail.format(
-                expected, actual, f"failed comparison for key '{c}': {e}"
-            ) from e
-    extra_keys = set(actual.keys()).difference(list(expected.keys()))
-    for k in extra_keys:
-        if actual[k] is not None:
-            raise CompareFail.format(expected, actual, "unexpected key '%s'" % k)
-
-
-def compare(expected, actual):  # type: (Any, Any) -> None
-    if expected == "Any":
-        return
-    if expected is not None and actual is None:
-        raise CompareFail.format(expected, actual)
-
-    try:
-        if isinstance(expected, dict):
-            if not isinstance(actual, dict):
-                raise CompareFail.format(expected, actual)
-
-            if expected.get("class") == "File":
-                compare_file(expected, actual)
-            elif expected.get("class") == "Directory":
-                compare_directory(expected, actual)
-            else:
-                compare_dict(expected, actual)
-
-        elif isinstance(expected, list):
-            if not isinstance(actual, list):
-                raise CompareFail.format(expected, actual)
-
-            if len(expected) != len(actual):
-                raise CompareFail.format(expected, actual, "lengths don't match")
-            for c in range(0, len(expected)):
-                try:
-                    compare(expected[c], actual[c])
-                except CompareFail as e:
-                    raise CompareFail.format(expected, actual, e) from e
-        else:
-            if expected != actual:
-                raise CompareFail.format(expected, actual)
-
-    except Exception as e:
-        raise CompareFail(str(e)) from e
-
-
-def generate_badges(badgedir: str, ntotal: Dict[str, int], npassed: Dict[str, int]) -> None:
+def generate_badges(
+    badgedir: str, ntotal: Dict[str, int], npassed: Dict[str, int]
+) -> None:
+    """Generate badges with conformance levels."""
     os.mkdir(badgedir)
     for t, v in ntotal.items():
         percent = int((npassed[t] / float(v)) * 100)
@@ -264,8 +124,10 @@ def generate_badges(badgedir: str, ntotal: Dict[str, int], npassed: Dict[str, in
             )
 
 
-def get_test_number_by_key(tests, key, value):
-    # type: (List[Dict[str, str]], str, str) -> Optional[int]
+def get_test_number_by_key(
+    tests: List[Dict[str, str]], key: str, value: str
+) -> Optional[int]:
+    """Retreive the test index from its name."""
     for i, test in enumerate(tests):
         if key in test and test[key] == value:
             return i
@@ -290,20 +152,22 @@ def load_and_validate_tests(path: str) -> Tuple[Any, Dict[str, Any]]:
 
     if not isinstance(avsc_names, schema_salad.avro.schema.Names):
         print(avsc_names)
-        raise ValidationException
+        raise ValidationException(
+            "Wrong instance for avsc_names: {}".format(type(avsc_names))
+        )
 
     tests, metadata = schema_salad.schema.load_and_validate(
         document_loader, avsc_names, path, True
     )
 
-    return cast(List[Dict[str, Any]], clean_ruamel(tests)), metadata
+    return cast(List[Dict[str, Any]], _clean_ruamel(tests)), metadata
 
 
 def parse_results(
-        results: Iterable[TestResult],
-        tests: List[Dict[str, Any]],
-        suite_name: Optional[str] = None,
-        report: Optional[junit_xml.TestSuite] = None,
+    results: Iterable[TestResult],
+    tests: List[Dict[str, Any]],
+    suite_name: Optional[str] = None,
+    report: Optional[junit_xml.TestSuite] = None,
 ) -> Tuple[
     int,  # total
     int,  # passed
@@ -313,7 +177,7 @@ def parse_results(
     Dict[str, int],
     Dict[str, int],
     Dict[str, int],
-    Optional[junit_xml.TestSuite]
+    Optional[junit_xml.TestSuite],
 ]:
     """
     Parse the results and return statistics and an optional report.
@@ -332,7 +196,11 @@ def parse_results(
 
     for i, test_result in enumerate(results):
         test_case = test_result.create_test_case(tests[i])
-        test_case.url = f"cwltest:{suite_name}#{i + 1}" if suite_name is not None else "cwltest:#{i + 1}"
+        test_case.url = (
+            f"cwltest:{suite_name}#{i + 1}"
+            if suite_name is not None
+            else "cwltest:#{i + 1}"
+        )
         total += 1
         tags = tests[i].get("tags", [])
         for t in tags:
@@ -380,12 +248,12 @@ def parse_results(
 
 
 def prepare_test_command(
-        tool: str,
-        args: List[str],
-        testargs: Optional[List[str]],
-        test: Dict[str, Any],
-        cwd: str,
-        verbose: Optional[bool] = False,
+    tool: str,
+    args: List[str],
+    testargs: Optional[List[str]],
+    test: Dict[str, Any],
+    cwd: str,
+    verbose: Optional[bool] = False,
 ) -> List[str]:
     """Turn the test into a command line."""
     test_command = [tool]
@@ -421,29 +289,29 @@ def prepare_test_command(
 
 
 def prepare_test_paths(
-        test: Dict[str, str],
-        cwd: str,
+    test: Dict[str, str],
+    cwd: str,
 ) -> Tuple[str, Optional[str]]:
     """Determine the test path and the tool path."""
     cwd = schema_salad.ref_resolver.file_uri(cwd)
     toolpath = test["tool"]
     if toolpath.startswith(cwd):
-        toolpath = toolpath[len(cwd) + 1:]
+        toolpath = toolpath[len(cwd) + 1 :]
 
     jobpath = test.get("job")
     if jobpath:
         if jobpath.startswith(cwd):
-            jobpath = jobpath[len(cwd) + 1:]
+            jobpath = jobpath[len(cwd) + 1 :]
     return toolpath, jobpath
 
 
 def run_test_plain(
-        args: Dict[str, Any],
-        test: Dict[str, str],
-        timeout: int,
-        test_number: Optional[int] = None,
-        junit_verbose: Optional[bool] = False,
-        verbose: Optional[bool] = False,
+    args: Dict[str, Any],
+    test: Dict[str, str],
+    timeout: int,
+    test_number: Optional[int] = None,
+    junit_verbose: Optional[bool] = False,
+    verbose: Optional[bool] = False,
 ) -> TestResult:
     """Plain test runner."""
     out: Dict[str, Any] = {}
@@ -457,13 +325,13 @@ def run_test_plain(
     try:
         cwd = os.getcwd()
         test_command = prepare_test_command(
-            args['tool'], args['args'], args['testargs'], test, cwd, junit_verbose
+            args["tool"], args["args"], args["testargs"], test, cwd, junit_verbose
         )
         if verbose:
             sys.stderr.write(f"Running: {' '.join(test_command)}\n")
         sys.stderr.flush()
         start_time = time.time()
-        stderr = subprocess.PIPE if not args['verbose'] else None
+        stderr = subprocess.PIPE if not args["verbose"] else None
         process = subprocess.Popen(  # nosec
             test_command,
             stdout=subprocess.PIPE,
@@ -481,7 +349,7 @@ def run_test_plain(
         out = json.loads(outstr) if outstr else {}
     except subprocess.CalledProcessError as err:
         if err.returncode == UNSUPPORTED_FEATURE and REQUIRED not in test.get(
-                "tags", ["required"]
+            "tags", ["required"]
         ):
             return TestResult(
                 UNSUPPORTED_FEATURE, outstr, outerr, duration, args["classname"]
@@ -585,7 +453,7 @@ def run_test_plain(
 
 
 def shortname(
-        name,  # type: str
+    name,  # type: str
 ):  # type: (...) -> str
     """
     Return the short name of a given name.

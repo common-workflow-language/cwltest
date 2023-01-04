@@ -1,5 +1,5 @@
+from cwltest.compare import CompareFail, compare
 from .util import get_data
-from cwltest.utils import CompareFail, compare_file, compare
 
 import pytest
 
@@ -20,7 +20,7 @@ def test_compare_file() -> None:
         "path": "/var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/cores.txt",
         "size": 2,
     }
-    compare_file(expected, actual)
+    compare(expected, actual)
 
 
 def test_compare_contents_success() -> None:
@@ -59,4 +59,4 @@ def test_compare_contents_failure() -> None:
         "size": 2,
     }
     with pytest.raises(CompareFail):
-        compare_file(expected, actual)
+        compare(expected, actual)
