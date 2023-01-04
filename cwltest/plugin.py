@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 import time
+import traceback
 from io import StringIO
 from pathlib import Path
 from typing import (
@@ -208,7 +209,15 @@ class CWLItem(pytest.Item):
                     f"Test: {stream.getvalue()}",
                 ]
             )
-        return ""
+        else:
+            return (
+                f"{excinfo.type.__name__} occurred during CWL test execution:\n"
+                + "".join(
+                    traceback.format_exception(
+                        excinfo.type, excinfo.value, excinfo.traceback[0]._rawentry
+                    )
+                )
+            )
 
     def reportinfo(self) -> Tuple[Union["os.PathLike[str]", str], Optional[int], str]:
         """Status report."""
@@ -221,7 +230,8 @@ class CWLYamlFile(pytest.File):
     def collect(self) -> Iterator[CWLItem]:
         """Load the cwltest file and yield parsed entries."""
         tags: List[str] = self.config.getoption("cwl_tags", default=[])
-        for entry, _ in utils.load_and_validate_tests(str(self.fspath)):
+        tests, _ = utils.load_and_validate_tests(str(self.path))
+        for entry in tests:
             name = entry.get("label", entry["doc"])
             if tags:
                 found = False
@@ -240,10 +250,10 @@ def pytest_collect_file(
     """Is this file for us."""
     if (
         file_path.suffix == ".yml" or file_path.suffix == ".yaml"
-    ) and path.basename.startswith("conformance_test"):
+    ) and file_path.stem.startswith("conformance_test"):
         return cast(
             Optional[pytest.Collector],
-            CWLYamlFile.from_parent(parent, fspath=path),
+            CWLYamlFile.from_parent(parent, path=file_path),
         )
     return None
 

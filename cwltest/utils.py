@@ -159,8 +159,9 @@ def load_and_validate_tests(path: str) -> Tuple[Any, Dict[str, Any]]:
     tests, metadata = schema_salad.schema.load_and_validate(
         document_loader, avsc_names, path, True
     )
+    tests = cast(List[Dict[str, Any]], _clean_ruamel(tests))
 
-    return cast(List[Dict[str, Any]], _clean_ruamel(tests)), metadata
+    return tests, metadata
 
 
 def parse_results(

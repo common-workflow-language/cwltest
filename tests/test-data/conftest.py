@@ -8,12 +8,8 @@ from io import StringIO
 from typing import Any, Dict, List, Optional, Tuple
 
 
-class UnsupportedCWLFeature(Exception):
-    """Exception to be used by pytest_cwl_execute_test implementors."""
-
-
 def pytest_cwl_execute_test(
-    description: str, outdir: str, inputs: str
+        description: str, outdir: str, inputs: str
 ) -> Tuple[int, Optional[Dict[str, Any]]]:
     """Use the CWL reference runner (cwltool) to execute tests."""
     from cwltool import main

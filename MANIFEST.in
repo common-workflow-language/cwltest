@@ -1,5 +1,4 @@
 include Makefile gittaggers.py test-requirements.txt mypy-requirements.txt requirements.txt
-include sample_plugin_impl/*.py
 include cwltest/cwltest-schema.yml
 include tests/*
 include tests/test-data/*

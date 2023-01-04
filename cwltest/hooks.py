@@ -1,6 +1,6 @@
 """Hooks for pytest-cwl users."""
 
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional
 
 
 def pytest_cwl_execute_test(
