@@ -12,6 +12,7 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Set,
     TYPE_CHECKING,
     Tuple,
     Union,
@@ -126,7 +127,8 @@ def pytest_addoption(parser: "PytestParser") -> None:
         f"skipped. Defaults to {DEFAULT_TIMEOUT} seconds "
         f"({DEFAULT_TIMEOUT / 60} minutes).",
     )
-    parser.addoption("--cwl-tags", type=str, default=None, help="Tags to be tested.")
+    parser.addoption("--cwl-tags", type=str, help="Tags to be tested.")
+    parser.addoption("--cwl-exclude-tags", type=str, help="Tags not to be tested.")
     parser.addoption(
         "--cwl-args",
         help="arguments to pass first to tool runner",
@@ -224,18 +226,16 @@ class CWLYamlFile(pytest.File):
 
     def collect(self) -> Iterator[CWLItem]:
         """Load the cwltest file and yield parsed entries."""
-        tags: List[str] = self.config.getoption("cwl_tags", default=[])
+        tags: Set[str] = set(self.config.getoption("cwl_tags") or [])
+        exclude_tags: Set[str] = set(self.config.getoption("cwl_exclude_tags") or [])
         tests, _ = utils.load_and_validate_tests(str(self.path))
         for entry in tests:
             name = entry.get("label", entry["doc"])
-            if tags:
-                found = False
-                for tag in entry.get("tags", []):
-                    if tag in tags:
-                        found = True
-            else:
-                found = True
-            if found:
+            if (
+                (tags and tags.intersection(entry.get("tags", [])))
+                or (exclude_tags and not tags.intersection(entry.get("tags", [])))
+                or (not tags and not exclude_tags)
+            ):
                 yield CWLItem.from_parent(self, name=name, spec=entry)
 
 

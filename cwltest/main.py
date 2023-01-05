@@ -124,22 +124,12 @@ def main() -> int:
                 raise Exception("Unexpected code path.")
 
     if args.tags:
-        alltests = tests
-        tests = []
-        tags = args.tags.split(",")
-        for t in alltests:
-            ts = t.get("tags", [])
-            if any(tag in ts for tag in tags):
-                tests.append(t)
+        tags = set(args.tags.split(","))
+        tests = [t for t in tests if tags.intersection(t.get("tags", []))]
 
     if args.exclude_tags:
-        ex_tests = []
-        tags = args.exclude_tags.split(",")
-        for t in tests:
-            ts = t.get("tags", [])
-            if all(tag not in ts for tag in tags):
-                ex_tests.append(t)
-        tests = ex_tests
+        tags = set(args.exclude_tags.split(","))
+        tests = [t for t in tests if not tags.intersection(t.get("tags", []))]
 
     for t in tests:
         if t.get("label"):

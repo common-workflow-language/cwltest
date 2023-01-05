@@ -98,7 +98,7 @@ In this case, the simple command:
 
 becomes:
 
-  pytest conformance_test_whatever.xxx --cwl-runner cwl-runner
+  pytest conformance_test_xxx.yml --cwl-runner cwl-runner
 
 The table below details all the available command conversions between the two formats.
 
