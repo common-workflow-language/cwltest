@@ -44,27 +44,26 @@ class TestRunner(Protocol):
 
 
 def _run_test_hook_or_plain(
-    args: Dict[str, Any],
     test: Dict[str, str],
-    cwd: str,
-    timeout: int,
-    outdir: str,
+    config: utils.CWLTestConfig,
     hook: TestRunner,
 ) -> utils.TestResult:
     """Run tests using a provided pytest_cwl_execute_test hook or the --cwl-runner."""
-    toolpath, jobpath = utils.prepare_test_paths(test, cwd)
+    toolpath, jobpath = utils.prepare_test_paths(test, config.basedir)
     start_time = time.time()
     outerr = ""
-    hook_out = hook(description=toolpath, outdir=outdir, inputs=jobpath)
+    hook_out = hook(
+        description=toolpath, outdir=cast(str, config.outdir), inputs=jobpath
+    )
     if not hook_out:
-        return utils.run_test_plain(args, test, timeout)
+        return utils.run_test_plain(config, test)
     returncode, out = cast(Tuple[int, Optional[Dict[str, Any]]], hook_out[0])
     duration = time.time() - start_time
     outstr = json.dumps(out) if out is not None else "{}"
     if returncode == UNSUPPORTED_FEATURE:
         if REQUIRED not in test.get("tags", ["required"]):
             return utils.TestResult(
-                UNSUPPORTED_FEATURE, outstr, "", duration, args["classname"]
+                UNSUPPORTED_FEATURE, outstr, "", duration, config.classname
             )
     elif returncode != 0:
         if not bool(test.get("should_fail", False)):
@@ -72,16 +71,16 @@ def _run_test_hook_or_plain(
             logger.warning(test.get("doc"))
             message = "Returned non-zero but it should be zero"
             return utils.TestResult(
-                1, outstr, outerr, duration, args["classname"], message
+                1, outstr, outerr, duration, config.classname, message
             )
-        return utils.TestResult(0, outstr, outerr, duration, args["classname"])
+        return utils.TestResult(0, outstr, outerr, duration, config.classname)
     if bool(test.get("should_fail", False)):
         return utils.TestResult(
             1,
             outstr,
             outerr,
             duration,
-            args["classname"],
+            config.classname,
             "Test should failed, but it did not.",
         )
 
@@ -100,7 +99,7 @@ def _run_test_hook_or_plain(
         outstr,
         outerr,
         duration,
-        args["classname"],
+        config.classname,
         fail_message,
     )
 
@@ -157,25 +156,21 @@ class CWLItem(pytest.Item):
 
     def runtest(self) -> None:
         """Execute using cwltest."""
-        args = {
-            "tool": self.config.getoption("cwl_runner"),
-            "args": self.config.getoption("cwl_args") or [],
-            "testargs": None,
-            "verbose": True,
-            "classname": "",
-        }
-        outdir = str(
-            self.config._tmp_path_factory.mktemp(  # type: ignore[attr-defined]
-                self.spec.get("label", "unlabled_test")
-            )
+        config = utils.CWLTestConfig(
+            basedir=self.config.getoption("cwl_basedir"),
+            outdir=str(
+                self.config._tmp_path_factory.mktemp(  # type: ignore[attr-defined]
+                    self.spec.get("label", "unlabled_test")
+                )
+            ),
+            tool=self.config.getoption("cwl_runner"),
+            args=self.config.getoption("cwl_args"),
+            timeout=self.config.getoption("cwl_timeout"),
         )
         hook = self.config.hook.pytest_cwl_execute_test
         result = _run_test_hook_or_plain(
-            args,
             self.spec,
-            self.config.getoption("cwl_basedir"),
-            self.config.getoption("cwl_timeout"),
-            outdir,
+            config,
             hook,
         )
         cwl_results = self.config.cwl_results  # type: ignore[attr-defined]

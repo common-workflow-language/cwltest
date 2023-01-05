@@ -16,7 +16,7 @@ from schema_salad.exceptions import ValidationException
 
 from cwltest import logger, utils
 from cwltest.argparser import arg_parser
-from cwltest.utils import TestResult
+from cwltest.utils import CWLTestConfig, TestResult
 
 if sys.stderr.isatty():
     PREFIX = "\r"
@@ -31,9 +31,6 @@ def _run_test(
     test: Dict[str, str],
     test_number: int,
     total_tests: int,
-    timeout: int,
-    junit_verbose: Optional[bool] = False,
-    verbose: Optional[bool] = False,
 ) -> TestResult:
     if test.get("short_name"):
         sys.stderr.write(
@@ -59,8 +56,18 @@ def _run_test(
             )
         )
     sys.stderr.flush()
+    config = CWLTestConfig(
+        basedir=args.basedir,
+        badgedir=args.badgedir,
+        classname=args.classname,
+        tags=args.tags,
+        tool=args.tool,
+        args=args.args,
+        timeout=args.timeout,
+        verbose=args.verbose,
+    )
     return utils.run_test_plain(
-        vars(args), test, timeout, test_number, junit_verbose, verbose
+        config, test, args.testargs, test_number, args.junit_verbose
     )
 
 
@@ -211,9 +218,6 @@ def main() -> int:
                 tests[i],
                 i + 1,
                 len(tests),
-                args.timeout,
-                args.junit_verbose,
-                args.verbose,
             )
             for i in ntest
         ]

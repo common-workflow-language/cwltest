@@ -35,26 +35,31 @@ from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
 from cwltest.compare import CompareFail, compare
 
 
-def _clean_ruamel(obj: Any) -> Any:
-    """Transform roundtrip loaded ruamel.yaml to plain objects."""
-    if isinstance(obj, MutableMapping):
-        new_dict = {}
-        for k, v in obj.items():
-            new_dict[str(k)] = _clean_ruamel(v)
-        return new_dict
-    if isinstance(obj, MutableSequence):
-        new_list = []
-        for entry in obj:
-            new_list.append(_clean_ruamel(entry))
-        return new_list
-    if isinstance(obj, ScalarString):
-        return str(obj)
-    for typ in int, float, bool, str:
-        if isinstance(obj, typ):
-            return typ(obj)
-    if obj is None:
-        return None
-    raise Exception(f"Unsupported type {type(obj)} of '{obj}'.")
+class CWLTestConfig(object):
+    """Store configuration values for cwltest."""
+
+    def __init__(
+        self,
+        basedir: Optional[str] = None,
+        badgedir: Optional[str] = None,
+        outdir: Optional[str] = None,
+        classname: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        tool: Optional[str] = None,
+        args: Optional[List[str]] = None,
+        timeout: Optional[int] = None,
+        verbose: Optional[bool] = None,
+    ) -> None:
+        """Initialize test configuration."""
+        self.basedir: str = basedir or os.getcwd()
+        self.badgedir: Optional[str] = badgedir
+        self.outdir: Optional[str] = outdir
+        self.classname: str = classname or ""
+        self.tags: List[str] = tags or []
+        self.tool: str = tool or "cwl-runner"
+        self.args: List[str] = args or []
+        self.timeout: Optional[int] = timeout
+        self.verbose: bool = verbose or False
 
 
 class TestResult:
@@ -96,6 +101,28 @@ class TestResult:
         if self.return_code > 0:
             case.failure_message = self.message
         return case
+
+
+def _clean_ruamel(obj: Any) -> Any:
+    """Transform roundtrip loaded ruamel.yaml to plain objects."""
+    if isinstance(obj, MutableMapping):
+        new_dict = {}
+        for k, v in obj.items():
+            new_dict[str(k)] = _clean_ruamel(v)
+        return new_dict
+    if isinstance(obj, MutableSequence):
+        new_list = []
+        for entry in obj:
+            new_list.append(_clean_ruamel(entry))
+        return new_list
+    if isinstance(obj, ScalarString):
+        return str(obj)
+    for typ in int, float, bool, str:
+        if isinstance(obj, typ):
+            return typ(obj)
+    if obj is None:
+        return None
+    raise Exception(f"Unsupported type {type(obj)} of '{obj}'.")
 
 
 def generate_badges(
@@ -307,16 +334,15 @@ def prepare_test_paths(
 
 
 def run_test_plain(
-    args: Dict[str, Any],
+    config: CWLTestConfig,
     test: Dict[str, str],
-    timeout: int,
+    testargs: Optional[List[str]] = None,
     test_number: Optional[int] = None,
     junit_verbose: Optional[bool] = False,
-    verbose: Optional[bool] = False,
 ) -> TestResult:
     """Plain test runner."""
     out: Dict[str, Any] = {}
-    outdir = outstr = outerr = ""
+    outstr = outerr = ""
     test_command: List[str] = []
     duration = 0.0
     number = "?"
@@ -326,13 +352,13 @@ def run_test_plain(
     try:
         cwd = os.getcwd()
         test_command = prepare_test_command(
-            args["tool"], args["args"], args["testargs"], test, cwd, junit_verbose
+            config.tool, config.args, testargs, test, cwd, junit_verbose
         )
-        if verbose:
+        if config.verbose:
             sys.stderr.write(f"Running: {' '.join(test_command)}\n")
         sys.stderr.flush()
         start_time = time.time()
-        stderr = subprocess.PIPE if not args["verbose"] else None
+        stderr = subprocess.PIPE if not config.verbose else None
         process = subprocess.Popen(  # nosec
             test_command,
             stdout=subprocess.PIPE,
@@ -340,7 +366,7 @@ def run_test_plain(
             universal_newlines=True,
             cwd=cwd,
         )
-        outstr, outerr = process.communicate(timeout=timeout)
+        outstr, outerr = process.communicate(timeout=config.timeout)
         return_code = process.poll()
         duration = time.time() - start_time
         if return_code:
@@ -353,10 +379,10 @@ def run_test_plain(
             "tags", ["required"]
         ):
             return TestResult(
-                UNSUPPORTED_FEATURE, outstr, outerr, duration, args["classname"]
+                UNSUPPORTED_FEATURE, outstr, outerr, duration, config.classname
             )
         if test.get("should_fail", False):
-            return TestResult(0, outstr, outerr, duration, args["classname"])
+            return TestResult(0, outstr, outerr, duration, config.classname)
         if test_number:
             logger.error(
                 """Test %i failed: %s""",
@@ -373,7 +399,7 @@ def run_test_plain(
             logger.error("Does not support required feature")
         else:
             logger.error("Returned non-zero")
-        return TestResult(1, outstr, outerr, duration, args["classname"], str(err))
+        return TestResult(1, outstr, outerr, duration, config.classname, str(err))
     except (ruamel.yaml.scanner.ScannerError, TypeError) as err:
         logger.error(
             """Test %s failed: %s""",
@@ -403,7 +429,12 @@ def run_test_plain(
             process.kill()
             outstr, outerr = process.communicate()
         return TestResult(
-            2, outstr, outerr, timeout, args["classname"], "Test timed out"
+            2,
+            outstr,
+            outerr,
+            float(cast(int, config.timeout)),
+            config.classname,
+            "Test timed out",
         )
     finally:
         if process is not None and process.returncode is None:
@@ -426,7 +457,7 @@ def run_test_plain(
         )
         logger.warning(test.get("doc", "").replace("\n", " ").strip())
         logger.warning("Returned zero but it should be non-zero")
-        return TestResult(1, outstr, outerr, duration, args["classname"])
+        return TestResult(1, outstr, outerr, duration, config.classname)
 
     try:
         compare(test.get("output"), out)
@@ -440,15 +471,15 @@ def run_test_plain(
         logger.warning("Compare failure %s", ex)
         fail_message = str(ex)
 
-    if outdir:
-        shutil.rmtree(outdir, True)
+    if config.outdir:
+        shutil.rmtree(config.outdir, True)
 
     return TestResult(
         (1 if fail_message else 0),
         outstr,
         outerr,
         duration,
-        args["classname"],
+        config.classname,
         fail_message,
     )
 
