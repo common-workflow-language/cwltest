@@ -2,14 +2,16 @@
 
 from typing import Optional
 
+from cwltest import utils
+
 
 def pytest_cwl_execute_test(
-    description: str, outdir: str, inputs: Optional[str]
+    config: utils.CWLTestConfig, processfile: str, jobfile: Optional[str]
 ) -> None:
     """
     Execute CWL test using a Python function instead of a command line runner.
 
-    "description" and "inputs" are both paths.
+    "processfile" and "jobfile" are both paths.
 
     Returns a tuple:
     - status code (0=success, cwltest.UNSUPPORTED_FEATURE, for an unsupported feature,

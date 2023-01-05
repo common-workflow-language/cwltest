@@ -58,9 +58,7 @@ def _run_test(
     sys.stderr.flush()
     config = CWLTestConfig(
         basedir=args.basedir,
-        badgedir=args.badgedir,
         classname=args.classname,
-        tags=args.tags,
         tool=args.tool,
         args=args.args,
         timeout=args.timeout,

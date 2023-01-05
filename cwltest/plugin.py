@@ -26,7 +26,7 @@ from cwltest import DEFAULT_TIMEOUT, REQUIRED, UNSUPPORTED_FEATURE, logger, util
 from cwltest.compare import CompareFail, compare
 
 if TYPE_CHECKING:
-    from _pytest.config import Config as PytestConfig
+    from _pytest.config import Config as PytestConfig, Config
     from _pytest.compat import LEGACY_PATH
     from _pytest._code.code import ExceptionInfo, _TracebackStyle
     from _pytest.nodes import Node
@@ -38,10 +38,20 @@ class TestRunner(Protocol):
     """Protocol to type-check test runner functions via the pluggy hook."""
 
     def __call__(
-        self, description: str, outdir: str, inputs: Optional[str]
+        self, config: utils.CWLTestConfig, processfile: str, jobfile: Optional[str]
     ) -> List[Optional[Dict[str, Any]]]:
         """Type signature for pytest_cwl_execute_test hook results."""
         ...
+
+
+def _get_comma_separated_option(config: "Config", name: str) -> List[str]:
+    options = config.getoption(name)
+    if options is None:
+        return []
+    elif "," in options:
+        return [opt.trim() for opt in options.split(",")]
+    else:
+        return [options]
 
 
 def _run_test_hook_or_plain(
@@ -50,12 +60,10 @@ def _run_test_hook_or_plain(
     hook: TestRunner,
 ) -> utils.TestResult:
     """Run tests using a provided pytest_cwl_execute_test hook or the --cwl-runner."""
-    toolpath, jobpath = utils.prepare_test_paths(test, config.basedir)
+    processfile, jobfile = utils.prepare_test_paths(test, config.basedir)
     start_time = time.time()
     outerr = ""
-    hook_out = hook(
-        description=toolpath, outdir=cast(str, config.outdir), inputs=jobpath
-    )
+    hook_out = hook(config=config, processfile=processfile, jobfile=jobfile)
     if not hook_out:
         return utils.run_test_plain(config, test)
     returncode, out = cast(Tuple[int, Optional[Dict[str, Any]]], hook_out[0])
@@ -68,7 +76,7 @@ def _run_test_hook_or_plain(
             )
     elif returncode != 0:
         if not bool(test.get("should_fail", False)):
-            logger.warning("Test failed unexpectedly: %s %s", toolpath, jobpath)
+            logger.warning("Test failed unexpectedly: %s %s", processfile, jobfile)
             logger.warning(test.get("doc"))
             message = "Returned non-zero but it should be zero"
             return utils.TestResult(
@@ -90,7 +98,7 @@ def _run_test_hook_or_plain(
     try:
         compare(test.get("output"), out)
     except CompareFail as ex:
-        logger.warning("""Test failed: %s %s""", toolpath, jobpath)
+        logger.warning("""Test failed: %s %s""", processfile, jobfile)
         logger.warning(test.get("doc"))
         logger.warning("Compare failure %s", ex)
         fail_message = str(ex)
@@ -102,40 +110,6 @@ def _run_test_hook_or_plain(
         duration,
         config.classname,
         fail_message,
-    )
-
-
-def pytest_addoption(parser: "PytestParser") -> None:
-    """Add our options to the pytest command line."""
-    parser.addoption(
-        "--cwl-runner",
-        type=str,
-        dest="cwl_runner",
-        default="cwl-runner",
-        help="Name of the CWL runner to use.",
-    )
-    parser.addoption(
-        "--cwl-badgedir",
-        type=str,
-        help="Directory to store JSON file for badges.",
-    )
-    parser.addoption(
-        "--cwl-timeout",
-        type=int,
-        default=DEFAULT_TIMEOUT,
-        help="Time of execution in seconds after which the test will be "
-        f"skipped. Defaults to {DEFAULT_TIMEOUT} seconds "
-        f"({DEFAULT_TIMEOUT / 60} minutes).",
-    )
-    parser.addoption("--cwl-tags", type=str, help="Tags to be tested.")
-    parser.addoption("--cwl-exclude-tags", type=str, help="Tags not to be tested.")
-    parser.addoption(
-        "--cwl-args",
-        help="arguments to pass first to tool runner",
-        nargs=argparse.REMAINDER,
-    )
-    parser.addoption(
-        "--cwl-basedir", help="Basedir to use for tests", default=os.getcwd()
     )
 
 
@@ -168,6 +142,7 @@ class CWLItem(pytest.Item):
             tool=self.config.getoption("cwl_runner"),
             args=self.config.getoption("cwl_args"),
             timeout=self.config.getoption("cwl_timeout"),
+            verbose=self.config.getoption("verbose", 0) >= 1,
         )
         hook = self.config.hook.pytest_cwl_execute_test
         result = _run_test_hook_or_plain(
@@ -226,17 +201,56 @@ class CWLYamlFile(pytest.File):
 
     def collect(self) -> Iterator[CWLItem]:
         """Load the cwltest file and yield parsed entries."""
-        tags: Set[str] = set(self.config.getoption("cwl_tags") or [])
-        exclude_tags: Set[str] = set(self.config.getoption("cwl_exclude_tags") or [])
+        tags: Set[str] = set(_get_comma_separated_option(self.config, "cwl_tags"))
+        exclude_tags: Set[str] = set(
+            _get_comma_separated_option(self.config, "cwl_exclude_tags")
+        )
         tests, _ = utils.load_and_validate_tests(str(self.path))
         for entry in tests:
+            entry_tags = entry.get("tags", [])
             name = entry.get("label", entry["doc"])
-            if (
-                (tags and tags.intersection(entry.get("tags", [])))
-                or (exclude_tags and not tags.intersection(entry.get("tags", [])))
-                or (not tags and not exclude_tags)
+            item = CWLItem.from_parent(self, name=name, spec=entry)
+            if (tags and not tags.intersection(entry_tags)) or (
+                exclude_tags and exclude_tags.intersection(entry_tags)
             ):
-                yield CWLItem.from_parent(self, name=name, spec=entry)
+                item.add_marker(
+                    pytest.mark.skip(reason=f"Tags: {', '.join(entry_tags)}")
+                )
+            yield item
+
+
+def pytest_addoption(parser: "PytestParser") -> None:
+    """Add our options to the pytest command line."""
+    parser.addoption(
+        "--cwl-runner",
+        type=str,
+        dest="cwl_runner",
+        default="cwl-runner",
+        help="Name of the CWL runner to use.",
+    )
+    parser.addoption(
+        "--cwl-badgedir",
+        type=str,
+        help="Directory to store JSON file for badges.",
+    )
+    parser.addoption(
+        "--cwl-timeout",
+        type=int,
+        default=DEFAULT_TIMEOUT,
+        help="Time of execution in seconds after which the test will be "
+        f"skipped. Defaults to {DEFAULT_TIMEOUT} seconds "
+        f"({DEFAULT_TIMEOUT / 60} minutes).",
+    )
+    parser.addoption("--cwl-tags", type=str, help="Tags to be tested.")
+    parser.addoption("--cwl-exclude-tags", type=str, help="Tags not to be tested.")
+    parser.addoption(
+        "--cwl-args",
+        help="arguments to pass first to tool runner",
+        nargs=argparse.REMAINDER,
+    )
+    parser.addoption(
+        "--cwl-basedir", help="Basedir to use for tests", default=os.getcwd()
+    )
 
 
 def pytest_collect_file(

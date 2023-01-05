@@ -14,4 +14,4 @@
   label: cl_optional_bindings_provided
   id: 5
   doc: Test command line with optional input (provided)
-  tags: [ required, command_line_tool ]
+  tags: [ command_line_tool ]

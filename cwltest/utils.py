@@ -41,10 +41,8 @@ class CWLTestConfig(object):
     def __init__(
         self,
         basedir: Optional[str] = None,
-        badgedir: Optional[str] = None,
         outdir: Optional[str] = None,
         classname: Optional[str] = None,
-        tags: Optional[List[str]] = None,
         tool: Optional[str] = None,
         args: Optional[List[str]] = None,
         timeout: Optional[int] = None,
@@ -52,10 +50,8 @@ class CWLTestConfig(object):
     ) -> None:
         """Initialize test configuration."""
         self.basedir: str = basedir or os.getcwd()
-        self.badgedir: Optional[str] = badgedir
         self.outdir: Optional[str] = outdir
         self.classname: str = classname or ""
-        self.tags: List[str] = tags or []
         self.tool: str = tool or "cwl-runner"
         self.args: List[str] = args or []
         self.timeout: Optional[int] = timeout
@@ -309,10 +305,10 @@ def prepare_test_command(
     test_command.extend([f"--outdir={outdir}"])
     if not verbose:
         test_command.extend(["--quiet"])
-    toolpath, jobpath = prepare_test_paths(test, cwd)
-    test_command.extend([os.path.normcase(toolpath)])
-    if jobpath:
-        test_command.append(os.path.normcase(jobpath))
+    processfile, jobfile = prepare_test_paths(test, cwd)
+    test_command.extend([os.path.normcase(processfile)])
+    if jobfile:
+        test_command.append(os.path.normcase(jobfile))
     return test_command
 
 
@@ -322,15 +318,15 @@ def prepare_test_paths(
 ) -> Tuple[str, Optional[str]]:
     """Determine the test path and the tool path."""
     cwd = schema_salad.ref_resolver.file_uri(cwd)
-    toolpath = test["tool"]
-    if toolpath.startswith(cwd):
-        toolpath = toolpath[len(cwd) + 1 :]
+    processfile = test["tool"]
+    if processfile.startswith(cwd):
+        processfile = processfile[len(cwd) + 1 :]
 
-    jobpath = test.get("job")
-    if jobpath:
-        if jobpath.startswith(cwd):
-            jobpath = jobpath[len(cwd) + 1 :]
-    return toolpath, jobpath
+    jobfile = test.get("job")
+    if jobfile:
+        if jobfile.startswith(cwd):
+            jobfile = jobfile[len(cwd) + 1 :]
+    return processfile, jobfile
 
 
 def run_test_plain(
