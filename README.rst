@@ -142,6 +142,12 @@ Rosetta Stone
    * - Tags to be tested
      - ``--tags TAG[,TAG]...``
      - ``--cwl-tags TAG[,TAG]...``
+   * - Tags not to be tested
+     - ``--exclude-tags TAG[,TAG]...``
+     - ``--cwl-exclude-tags TAG[,TAG]...``
+   * - Additional argument given in test cases and required prefix for tool runner
+     - ``--test-arg ARG_NAME==ARG_PREFIX``
+     - ``--cwl-test-arg ARG_NAME==ARG_PREFIX``
    * - Arguments to pass first to tool runner
      - ``cwltest -- ARG [ARG]...``
      - **UNSUPPORTED**
@@ -153,9 +159,6 @@ Rosetta Stone
      - **UNSUPPORTED**
    * - Store more verbose output to JUnit xml file
      - ``--junit-verbose``
-     - **UNSUPPORTED**
-   * - Additional argument given in test cases and required prefix for tool runner
-     - ``--test-arg ARG_NAME==ARG_PREFIX``
      - **UNSUPPORTED**
    * - Specify classname for the Test Suite
      - ``--classname CLASS_NAME``

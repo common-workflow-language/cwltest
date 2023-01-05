@@ -141,6 +141,7 @@ class CWLItem(pytest.Item):
             ),
             tool=self.config.getoption("cwl_runner"),
             args=self.config.getoption("cwl_args"),
+            testargs=self.config.getoption("cwl_test_arg"),
             timeout=self.config.getoption("cwl_timeout"),
             verbose=self.config.getoption("verbose", 0) >= 1,
         )
@@ -247,6 +248,13 @@ def pytest_addoption(parser: "PytestParser") -> None:
         "--cwl-args",
         help="arguments to pass first to tool runner",
         nargs=argparse.REMAINDER,
+    )
+    parser.addoption(
+        "--cwl-test-arg",
+        type=str,
+        help="Additional argument "
+        "given in test cases and required prefix for tool runner.",
+        action="append",
     )
     parser.addoption(
         "--cwl-basedir", help="Basedir to use for tests", default=os.getcwd()

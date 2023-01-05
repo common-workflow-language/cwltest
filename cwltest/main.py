@@ -61,12 +61,11 @@ def _run_test(
         classname=args.classname,
         tool=args.tool,
         args=args.args,
+        testargs=args.testargs,
         timeout=args.timeout,
         verbose=args.verbose,
     )
-    return utils.run_test_plain(
-        config, test, args.testargs, test_number, args.junit_verbose
-    )
+    return utils.run_test_plain(config, test, test_number, args.junit_verbose)
 
 
 def _expand_number_range(nr: str) -> List[int]:

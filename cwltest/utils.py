@@ -45,6 +45,7 @@ class CWLTestConfig(object):
         classname: Optional[str] = None,
         tool: Optional[str] = None,
         args: Optional[List[str]] = None,
+        testargs: Optional[List[str]] = None,
         timeout: Optional[int] = None,
         verbose: Optional[bool] = None,
     ) -> None:
@@ -54,6 +55,7 @@ class CWLTestConfig(object):
         self.classname: str = classname or ""
         self.tool: str = tool or "cwl-runner"
         self.args: List[str] = args or []
+        self.testargs: List[str] = testargs or []
         self.timeout: Optional[int] = timeout
         self.verbose: bool = verbose or False
 
@@ -332,7 +334,6 @@ def prepare_test_paths(
 def run_test_plain(
     config: CWLTestConfig,
     test: Dict[str, str],
-    testargs: Optional[List[str]] = None,
     test_number: Optional[int] = None,
     junit_verbose: Optional[bool] = False,
 ) -> TestResult:
@@ -348,7 +349,7 @@ def run_test_plain(
     try:
         cwd = os.getcwd()
         test_command = prepare_test_command(
-            config.tool, config.args, testargs, test, cwd, junit_verbose
+            config.tool, config.args, config.testargs, test, cwd, junit_verbose
         )
         if config.verbose:
             sys.stderr.write(f"Running: {' '.join(test_command)}\n")
