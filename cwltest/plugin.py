@@ -49,9 +49,9 @@ def _get_comma_separated_option(config: "Config", name: str) -> List[str]:
     if options is None:
         return []
     elif "," in options:
-        return [opt.trim() for opt in options.split(",")]
+        return [opt.strip() for opt in options.split(",")]
     else:
-        return [options]
+        return [options.strip()]
 
 
 def _run_test_hook_or_plain(
@@ -202,6 +202,8 @@ class CWLYamlFile(pytest.File):
 
     def collect(self) -> Iterator[CWLItem]:
         """Load the cwltest file and yield parsed entries."""
+        include: Set[str] = set(_get_comma_separated_option(self.config, "cwl_include"))
+        exclude: Set[str] = set(_get_comma_separated_option(self.config, "cwl_exclude"))
         tags: Set[str] = set(_get_comma_separated_option(self.config, "cwl_tags"))
         exclude_tags: Set[str] = set(
             _get_comma_separated_option(self.config, "cwl_exclude_tags")
@@ -209,13 +211,21 @@ class CWLYamlFile(pytest.File):
         tests, _ = utils.load_and_validate_tests(str(self.path))
         for entry in tests:
             entry_tags = entry.get("tags", [])
-            name = entry.get("label", entry.get("id", entry.get("doc", "")))
+            if "label" in entry:
+                name = entry["label"]
+            elif "id" in entry:
+                name = utils.shortname(entry["id"])
+            else:
+                name = entry.get("doc", "")
             item = CWLItem.from_parent(self, name=name, spec=entry)
-            if (tags and not tags.intersection(entry_tags)) or (
-                exclude_tags and exclude_tags.intersection(entry_tags)
+            if (
+                (include and name not in include)
+                or (exclude and name in exclude)
+                or (tags and not tags.intersection(entry_tags))
+                or (exclude_tags and exclude_tags.intersection(entry_tags))
             ):
                 item.add_marker(
-                    pytest.mark.skip(reason=f"Tags: {', '.join(entry_tags)}")
+                    pytest.mark.skip(reason=f"Name: {name}, Tags: {', '.join(entry_tags)}")
                 )
             yield item
 
@@ -242,6 +252,16 @@ def pytest_addoption(parser: "PytestParser") -> None:
         f"skipped. Defaults to {DEFAULT_TIMEOUT} seconds "
         f"({DEFAULT_TIMEOUT / 60} minutes).",
     )
+    parser.addoption(
+        "--cwl-include",
+        type=str,
+        help="Run specific tests using their short names separated by comma",
+    )
+    parser.addoption(
+        "--cwl-exclude",
+        type=str,
+        help="Exclude specific tests using their short names separated by comma",
+    )
     parser.addoption("--cwl-tags", type=str, help="Tags to be tested.")
     parser.addoption("--cwl-exclude-tags", type=str, help="Tags not to be tested.")
     parser.addoption(
@@ -252,8 +272,7 @@ def pytest_addoption(parser: "PytestParser") -> None:
     parser.addoption(
         "--cwl-test-arg",
         type=str,
-        help="Additional argument "
-        "given in test cases and required prefix for tool runner.",
+        help="Additional argument given in test cases and required prefix for tool runner.",
         action="append",
     )
     parser.addoption(

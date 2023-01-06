@@ -128,23 +128,23 @@ Rosetta Stone
      - ``-l``
      - ``--collect-only``
    * - Run specific tests using their short names
-     - ``-s TEST_NAME[, TEST_NAME]...``
-     - ``-k "TEST_NAME [or TEST_NAME]..."``
+     - ``-s TEST_NAME[,TEST_NAME]...``
+     - ``--cwl-include TEST_NAME[,TEST_NAME]...``
    * - Exclude specific tests by short names
-     - ``-S TEST_NAME[, TEST_NAME]...``
-     - ``-k "not TEST_NAME [and not TEST_NAME]..."``
-   * - Path to JUnit xml file
-     - ``--junit-xml PATH``
-     - ``--junit-xml=PATH``
-   * - More verbose output during test run
-     - ``--verbose``
-     - ``-v[vv]``
+     - ``-S TEST_NAME[,TEST_NAME]...``
+     - ``--cwl-exclude TEST_NAME[,TEST_NAME]...``
    * - Tags to be tested
      - ``--tags TAG[,TAG]...``
      - ``--cwl-tags TAG[,TAG]...``
    * - Tags not to be tested
      - ``--exclude-tags TAG[,TAG]...``
      - ``--cwl-exclude-tags TAG[,TAG]...``
+   * - Path to JUnit xml file
+     - ``--junit-xml PATH``
+     - ``--junit-xml=PATH``
+   * - More verbose output during test run
+     - ``--verbose``
+     - ``-v[vv]``
    * - Additional argument given in test cases and required prefix for tool runner
      - ``--test-arg ARG_NAME==ARG_PREFIX``
      - ``--cwl-test-arg ARG_NAME==ARG_PREFIX``

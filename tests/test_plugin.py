@@ -19,6 +19,31 @@ def _load_v1_0_dir(path: Path) -> None:
     shutil.copy(get_data("tests/test-data/v1.0/args.py"), inner_dir)
 
 
+def test_include(pytester: "Pytester") -> None:
+    """Test the pytest plugin using cwltool as cwl-runner."""
+    path = pytester.copy_example("conformance_test_v1.0.yml")
+    shutil.copy(get_data("tests/test-data/conftest.py"), path.parent)
+    _load_v1_0_dir(path)
+    result = pytester.runpytest(
+        "-k", "conformance_test_v1.0.yml", "--cwl-include", "cl_optional_inputs_missing"
+    )
+    result.assert_outcomes(passed=1, skipped=1)
+
+
+def test_exclude(pytester: "Pytester") -> None:
+    """Test the pytest plugin using cwltool as cwl-runner."""
+    path = pytester.copy_example("conformance_test_v1.0.yml")
+    shutil.copy(get_data("tests/test-data/conftest.py"), path.parent)
+    _load_v1_0_dir(path)
+    result = pytester.runpytest(
+        "-k",
+        "conformance_test_v1.0.yml",
+        "--cwl-exclude",
+        "cl_optional_inputs_missing,cl_optional_bindings_provided",
+    )
+    result.assert_outcomes(passed=0, skipped=2)
+
+
 def test_tags(pytester: "Pytester") -> None:
     """Test the pytest plugin using cwltool as cwl-runner."""
     path = pytester.copy_example("conformance_test_v1.0.yml")
