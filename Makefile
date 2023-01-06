@@ -101,10 +101,10 @@ codespell:
 	codespell -w $(shell git ls-files | grep -v mypy-stubs | grep -v gitignore)
 
 ## format                 : check/fix all code indentation and formatting (runs black)
-format: $(PYSOURCES)
+format: $(PYSOURCES) mypy-stubs
 	black $^
 
-format-check: $(PYSOURCES)
+format-check: $(PYSOURCES) mypy-stubs
 	black --diff --check $^
 
 ## pylint                 : run static code analysis on Python code

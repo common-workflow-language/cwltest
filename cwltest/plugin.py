@@ -209,7 +209,7 @@ class CWLYamlFile(pytest.File):
         tests, _ = utils.load_and_validate_tests(str(self.path))
         for entry in tests:
             entry_tags = entry.get("tags", [])
-            name = entry.get("label", entry["doc"])
+            name = entry.get("label", entry.get("doc", ""))
             item = CWLItem.from_parent(self, name=name, spec=entry)
             if (tags and not tags.intersection(entry_tags)) or (
                 exclude_tags and exclude_tags.intersection(entry_tags)
