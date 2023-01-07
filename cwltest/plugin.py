@@ -143,7 +143,7 @@ class CWLItem(pytest.Item):
             tool=self.config.getoption("cwl_runner"),
             args=self.config.getoption("cwl_args"),
             testargs=self.config.getoption("cwl_test_arg"),
-            timeout=self.config.getoption("cwl_timeout"),
+            timeout=self.config.getoption("timeout", None),
             verbose=self.config.getoption("verbose", 0) >= 1,
             runner_quiet=not self.config.getoption("cwl_runner_verbose", False),
         )
@@ -254,14 +254,6 @@ def pytest_addoption(parser: "PytestParser") -> None:
         "--cwl-badgedir",
         type=str,
         help="Create badge JSON files and store them in this directory.",
-    )
-    parser.addoption(
-        "--cwl-timeout",
-        type=int,
-        default=DEFAULT_TIMEOUT,
-        help="Time of execution in seconds after which the test will be "
-        f"skipped. Defaults to {DEFAULT_TIMEOUT} seconds "
-        f"({DEFAULT_TIMEOUT / 60} minutes).",
     )
     parser.addoption(
         "--cwl-include",

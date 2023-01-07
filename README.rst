@@ -139,7 +139,7 @@ Rosetta Stone
 
        after which the test will be skipped
      - ``--timeout TIMEOUT``
-     - ``--cwl-timeout TIMEOUT``
+     - ``--timeout TIMEOUT`` [#f3]_
    * - List tests then exit
      - ``-l``
      - ``--collect-only``
@@ -185,3 +185,7 @@ Rosetta Stone
 .. [#f1] Requires `pytest-xdist <https://pypi.org/project/pytest-xdist/>`_.
 .. [#f2] ``-s`` is a shortcut for ``--capture=no``, also helps with debugging
          ``cwltest`` or the cwltest plugin to ``pytest``.
+.. [#f3] Requires `pytest-timeout <https://pypi.org/project/pytest-timeout/>`_.
+         Note: even if ``pytest-timeout`` is installed, there is no default
+         timeout. This is different than ``cwltest``'s default timeout of 10
+         minutes.
