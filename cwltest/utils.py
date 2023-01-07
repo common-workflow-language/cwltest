@@ -48,6 +48,7 @@ class CWLTestConfig(object):
         testargs: Optional[List[str]] = None,
         timeout: Optional[int] = None,
         verbose: Optional[bool] = None,
+        runner_quiet: Optional[bool] = None,
     ) -> None:
         """Initialize test configuration."""
         self.basedir: str = basedir or os.getcwd()
@@ -58,6 +59,7 @@ class CWLTestConfig(object):
         self.testargs: List[str] = testargs or []
         self.timeout: Optional[int] = timeout
         self.verbose: bool = verbose or False
+        self.runner_quiet: bool = runner_quiet or True
 
 
 class TestResult:
@@ -279,7 +281,7 @@ def prepare_test_command(
     testargs: Optional[List[str]],
     test: Dict[str, Any],
     cwd: str,
-    verbose: Optional[bool] = False,
+    quiet: Optional[bool] = True,
 ) -> List[str]:
     """Turn the test into a command line."""
     test_command = [tool]
@@ -305,7 +307,7 @@ def prepare_test_command(
         else:
             outdir = tempfile.mkdtemp()
     test_command.extend([f"--outdir={outdir}"])
-    if not verbose:
+    if quiet:
         test_command.extend(["--quiet"])
     processfile, jobfile = prepare_test_paths(test, cwd)
     test_command.extend([os.path.normcase(processfile)])
@@ -335,7 +337,6 @@ def run_test_plain(
     config: CWLTestConfig,
     test: Dict[str, str],
     test_number: Optional[int] = None,
-    junit_verbose: Optional[bool] = False,
 ) -> TestResult:
     """Plain test runner."""
     out: Dict[str, Any] = {}
@@ -349,7 +350,7 @@ def run_test_plain(
     try:
         cwd = os.getcwd()
         test_command = prepare_test_command(
-            config.tool, config.args, config.testargs, test, cwd, junit_verbose
+            config.tool, config.args, config.testargs, test, cwd, config.runner_quiet
         )
         if config.verbose:
             sys.stderr.write(f"Running: {' '.join(test_command)}\n")

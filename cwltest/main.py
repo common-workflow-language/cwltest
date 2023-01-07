@@ -64,8 +64,9 @@ def _run_test(
         testargs=args.testargs,
         timeout=args.timeout,
         verbose=args.verbose,
+        runner_quiet=not args.junit_verbose,
     )
-    return utils.run_test_plain(config, test, test_number, args.junit_verbose)
+    return utils.run_test_plain(config, test, test_number)
 
 
 def _expand_number_range(nr: str) -> List[int]:

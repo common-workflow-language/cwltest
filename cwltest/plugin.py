@@ -145,6 +145,7 @@ class CWLItem(pytest.Item):
             testargs=self.config.getoption("cwl_test_arg"),
             timeout=self.config.getoption("cwl_timeout"),
             verbose=self.config.getoption("verbose", 0) >= 1,
+            runner_quiet=not self.config.getoption("cwl_runner_verbose", False),
         )
         hook = self.config.hook.pytest_cwl_execute_test
         result = _run_test_hook_or_plain(
@@ -243,9 +244,16 @@ def pytest_addoption(parser: "PytestParser") -> None:
         help="Name of the CWL runner to use.",
     )
     parser.addoption(
+        "--cwl-runner-verbose",
+        dest="cwl_runner_verbose",
+        default=False,
+        action="store_true",
+        help="If set, don't pass --quiet to the CWL runner.",
+    )
+    parser.addoption(
         "--cwl-badgedir",
         type=str,
-        help="Directory to store JSON file for badges.",
+        help="Create badge JSON files and store them in this directory.",
     )
     parser.addoption(
         "--cwl-timeout",
@@ -258,12 +266,12 @@ def pytest_addoption(parser: "PytestParser") -> None:
     parser.addoption(
         "--cwl-include",
         type=str,
-        help="Run specific tests using their short names separated by comma",
+        help="Run specific CWL tests using their short names separated by comma",
     )
     parser.addoption(
         "--cwl-exclude",
         type=str,
-        help="Exclude specific tests using their short names separated by comma",
+        help="Exclude specific CWL tests using their short names separated by comma",
     )
     parser.addoption("--cwl-tags", type=str, help="Tags to be tested.")
     parser.addoption("--cwl-exclude-tags", type=str, help="Tags not to be tested.")

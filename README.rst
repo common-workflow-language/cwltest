@@ -177,7 +177,7 @@ Rosetta Stone
      - **UNSUPPORTED**
    * - Store more verbose output to JUnit xml file
      - ``--junit-verbose``
-     - **UNSUPPORTED**
+     - ``--cwl-runner-verbose``
    * - Specify classname for the Test Suite
      - ``--classname CLASS_NAME``
      - **UNSUPPORTED**
