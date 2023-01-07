@@ -20,7 +20,13 @@ def pytest_cwl_execute_test(
     from cwltool.errors import WorkflowException
 
     stdout = StringIO()
-    argsl: List[str] = ["--debug", f"--outdir={config.outdir}", processfile]
+    argsl: List[str] = [f"--outdir={config.outdir}"]
+    if config.runner_quiet:
+        argsl.append("--quiet")
+    elif config.verbose:
+        argsl.append("--debug")
+    argsl.extend(config.testargs)
+    argsl.append(processfile)
     if jobfile:
         argsl.append(jobfile)
     try:

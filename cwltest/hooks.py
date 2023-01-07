@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional, Tuple
 from cwltest import utils
 
 
-def pytest_cwl_execute_test(
+def pytest_cwl_execute_test(  # type: ignore[empty-body]
     config: utils.CWLTestConfig, processfile: str, jobfile: Optional[str]
 ) -> Tuple[int, Optional[Dict[str, Any]]]:
     """
