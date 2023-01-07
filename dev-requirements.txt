@@ -1,0 +1,14 @@
+diff_cover
+black
+pylint
+pep257
+pydocstyle
+flake8
+tox < 4
+tox-pyenv
+isort
+wheel
+autoflake
+flake8-bugbear
+pyupgrade
+bandit

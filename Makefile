@@ -26,15 +26,13 @@ PACKAGE=cwltest
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
-DEVPKGS=diff_cover black pylint pep257 pydocstyle flake8 tox tox-pyenv \
-	isort wheel autoflake flake8-bugbear pyupgrade bandit \
-	-rtest-requirements.txt -rmypy-requirements.txt
+DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt
 DEBDEVPKGS=pep8 python-autopep8 pylint python-coverage pydocstyle sloccount \
 	   python-flake8 python-mock shellcheck
 VERSION=2.2.$(shell TZ=UTC git log --first-parent --max-count=1 \
 	--format=format:%cd --date=format-local:%Y%m%d%H%M%S)
 
-## all         : default task
+## all                    : default task (install in dev mode)
 all: dev
 
 ## help                   : print this help message and exit
@@ -61,13 +59,18 @@ install: FORCE
 
 ## dev                    : install the cwltest package in dev mode
 dev: install-dep
+	pip install -U pip setuptools wheel
 	pip install -e .
 
 ## dist                   : create a module package for distribution
 dist: dist/${MODULE}-$(VERSION).tar.gz
 
 dist/${MODULE}-$(VERSION).tar.gz: $(SOURCES)
-	python setup.py sdist bdist_wheel
+	python -m build
+
+## docs                   : make the docs
+docs: FORCE
+	cd docs && $(MAKE) html
 
 ## clean                  : clean up all temporary / machine-generated files
 clean: FORCE
@@ -141,8 +144,8 @@ diff-cover.html: coverage.xml
 	diff-cover --compare-branch=main $^ --html-report $@
 
 ## test                   : run the cwltest test suite
-test: $(PYSOURCES) all
-	python setup.py test ${PYTEST_EXTRA}
+test: $(PYSOURCES)
+	python -m pytest -rs ${PYTEST_EXTRA}
 
 ## testcov                : run the cwltest test suite and collect coverage
 testcov: $(PYSOURCES)
@@ -160,22 +163,10 @@ list-author-emails:
 	@git log --format='%aN,%aE' | sort -u | grep -v 'root'
 
 mypy3: mypy
-mypy: $(filter-out setup.py,$(PYSOURCES))
-	if ! test -f $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))')/py.typed ; \
-	then \
-		rm -Rf mypy-stubs/ruamel/yaml ; \
-		ln -s $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
-			mypy-stubs/ruamel/ ; \
-	fi  # if minimally required ruamel.yaml version is 0.15.99 or greater, than the above can be removed
+mypy: $(filter-out setup.py gittagger.py,$(PYSOURCES))
 	MYPYPATH=$$MYPYPATH:mypy-stubs mypy $^
 
 mypy_3.6: $(filter-out setup.py gittagger.py,$(PYSOURCES))
-	if ! test -f $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))')/py.typed ; \
-	then \
-		rm -Rf mypy-stubs/ruamel/yaml ; \
-		ln -s $(shell python3 -c 'import ruamel.yaml; import os.path; print(os.path.dirname(ruamel.yaml.__file__))') \
-			mypy-stubs/ruamel/ ; \
-	fi  # if minimally required ruamel.yaml version is 0.15.99 or greater, than the above can be removed
 	MYPYPATH=$$MYPYPATH:mypy-stubs mypy --python-version 3.6 $^
 
 pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
@@ -187,8 +178,8 @@ release-test: FORCE
 
 release: release-test
 	. testenv2/bin/activate && \
-		python testenv2/src/${PACKAGE}/setup.py sdist bdist_wheel
-	. testenv2/bin/activate && \
+		pip install build && \
+		python -m build testenv2/src/${PACKAGE} && \
 		pip install twine && \
 		twine upload testenv2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags
