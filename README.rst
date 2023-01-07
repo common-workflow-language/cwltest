@@ -86,11 +86,11 @@ Here is an example of markdown to add a badge::
 
   ![test result](https://flat.badgen.net/https/path/to/generated/json?icon=commonwl)
 
-Using cwltest as a Pytest plugin
---------------------------------
+Pytest plugin
+-------------
 
-Cwltest can also be used as a Pytest plugin. For the cwltest plugin to pytest to work, the CWL test file must start with ``conformance_test``
-and end with ``.yaml`` or ``.yml``.
+`cwltest` can also be used as a Pytest plugin. The CWL test filename must start
+with ``conformance_test`` and end with ``.yaml`` or ``.yml``.
 
 In this case, the simple command:
 
@@ -110,18 +110,34 @@ Rosetta Stone
    :header-rows: 1
 
    * - Feature
-     - Cwltest
-     - Pytest
+     - ``cwltest``
+     - ``pytest``
    * - YAML file describing test cases
      - ``--test conformance_test_xxx.yml``
      - ``conformance_test_xxx.yml``
    * - CWL runner executable to use
      - ``--tool CWL_RUNNER``
      - ``--cwl-runner CWL_RUNNER``
-   * - Specifies the number of tests to run simultaneously
+   * - Specifies the number of tests
+
+       to run simultaneously
      - ``-j CORES``
-     - ``-n CORES`` [#]_
-   * - Time of execution in seconds after which the test will be skipped
+     - ``-n CORES`` [#f1]_
+   * - Automatically scale the number of tests
+
+       to run simultaneously
+     - **UNSUPPORTED**
+     - ``-n auto`` [#f1]_
+   * - Only run one test at a time
+
+       (good for debugging cwltest itself)
+     - ``-j 1``
+
+       (or leave out ``-j``)
+     - ``-n 0 -s`` [#f1]_
+   * - Time of execution in seconds
+
+       after which the test will be skipped
      - ``--timeout TIMEOUT``
      - ``--cwl-timeout TIMEOUT``
    * - List tests then exit
@@ -145,12 +161,14 @@ Rosetta Stone
    * - More verbose output during test run
      - ``--verbose``
      - ``-v[vv]``
-   * - Additional argument given in test cases and required prefix for tool runner
+   * - Additional argument given in test cases
+
+       and required prefix for tool runner
      - ``--test-arg ARG_NAME==ARG_PREFIX``
      - ``--cwl-test-arg ARG_NAME==ARG_PREFIX``
    * - Arguments to pass first to tool runner
      - ``cwltest -- ARG [ARG]...``
-     - **UNSUPPORTED**
+     - ``--cwl-args``
    * - Only test CommandLineTools
      - ``--only-tools``
      - **UNSUPPORTED**
@@ -164,4 +182,6 @@ Rosetta Stone
      - ``--classname CLASS_NAME``
      - **UNSUPPORTED**
 
-.. [#] Requires `pytest-xdist <https://pypi.org/project/pytest-xdist/>`_.
+.. [#f1] Requires `pytest-xdist <https://pypi.org/project/pytest-xdist/>`_.
+.. [#f2] ``-s`` is a shortcut for ``--capture=no``, also helps with debugging
+         ``cwltest`` or the cwltest plugin to ``pytest``.
