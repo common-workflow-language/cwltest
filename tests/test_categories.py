@@ -1,14 +1,15 @@
-import re
 import os
+import re
 from os import linesep as n
 from os import sep as p
 from pathlib import Path
 from typing import cast
 from xml.etree.ElementTree import Element
 
-from .util import run_with_mock_cwl_runner, get_data
 import defusedxml.ElementTree as ET
 import schema_salad.ref_resolver
+
+from .util import get_data, run_with_mock_cwl_runner
 
 
 def test_unsupported_with_required_tests() -> None:

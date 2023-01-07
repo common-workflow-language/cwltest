@@ -7,13 +7,13 @@ import traceback
 from io import StringIO
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     Iterator,
     List,
     Optional,
     Set,
-    TYPE_CHECKING,
     Tuple,
     Union,
     cast,
@@ -26,12 +26,13 @@ from cwltest import DEFAULT_TIMEOUT, REQUIRED, UNSUPPORTED_FEATURE, logger, util
 from cwltest.compare import CompareFail, compare
 
 if TYPE_CHECKING:
-    from _pytest.config import Config as PytestConfig, Config
-    from _pytest.compat import LEGACY_PATH
     from _pytest._code.code import ExceptionInfo, _TracebackStyle
-    from _pytest.nodes import Node
-    from _pytest.config.argparsing import Parser as PytestParser
+    from _pytest.compat import LEGACY_PATH
+    from _pytest.config import Config
+    from _pytest.config import Config as PytestConfig
     from _pytest.config import PytestPluginManager
+    from _pytest.config.argparsing import Parser as PytestParser
+    from _pytest.nodes import Node
 
 
 class TestRunner(Protocol):
@@ -225,7 +226,9 @@ class CWLYamlFile(pytest.File):
                 or (exclude_tags and exclude_tags.intersection(entry_tags))
             ):
                 item.add_marker(
-                    pytest.mark.skip(reason=f"Name: {name}, Tags: {', '.join(entry_tags)}")
+                    pytest.mark.skip(
+                        reason=f"Name: {name}, Tags: {', '.join(entry_tags)}"
+                    )
                 )
             yield item
 

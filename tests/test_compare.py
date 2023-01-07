@@ -1,7 +1,8 @@
-from cwltest.compare import CompareFail, compare
-from .util import get_data
-
 import pytest
+
+from cwltest.compare import CompareFail, compare
+
+from .util import get_data
 
 
 def test_compare_file() -> None:
