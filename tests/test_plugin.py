@@ -78,6 +78,17 @@ def test_badgedir(pytester: "Pytester") -> None:
     assert os.path.exists("cwl-badges")
 
 
+def test_no_label(pytester: "Pytester") -> None:
+    """Test the pytest plugin correctly extracts test names from the id field when label is missing."""
+    path = pytester.copy_example("conformance_test_v1.2.yaml")
+    shutil.copy(get_data("tests/test-data/conftest.py"), path.parent)
+    _load_v1_0_dir(path)
+    result = pytester.runpytest(
+        "-k", "conformance_test_v1.2.yaml", "--cwl-tags", "required"
+    )
+    result.assert_outcomes(passed=1, skipped=1)
+
+
 def test_cwltool_hook(pytester: "Pytester") -> None:
     """Test the pytest plugin using cwltool as cwl-runner."""
     path = pytester.copy_example("conformance_test_v1.0.yml")
