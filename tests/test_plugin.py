@@ -66,6 +66,18 @@ def test_exclude_tags(pytester: "Pytester") -> None:
     result.assert_outcomes(skipped=2)
 
 
+def test_badgedir(pytester: "Pytester") -> None:
+    """Test the pytest plugin creates the badges directory."""
+    path = pytester.copy_example("conformance_test_v1.0.yml")
+    shutil.copy(get_data("tests/test-data/conftest.py"), path.parent)
+    _load_v1_0_dir(path)
+    assert not os.path.exists("cwl-badges")
+    pytester.runpytest(
+        "-k", "conformance_test_v1.0.yml", "--cwl-badgedir", "cwl-badges"
+    )
+    assert os.path.exists("cwl-badges")
+
+
 def test_cwltool_hook(pytester: "Pytester") -> None:
     """Test the pytest plugin using cwltool as cwl-runner."""
     path = pytester.copy_example("conformance_test_v1.0.yml")
