@@ -21,7 +21,7 @@ pytest_runner = ["pytest < 8", "pytest-runner"] if needs_pytest else []
 
 setup(
     name="cwltest",
-    version="2.2",  # update the VERSION prefix in the Makefile as well 🙂
+    version="2.3",  # update the VERSION prefix in the Makefile as well 🙂
     description="Common Workflow Language testing framework",
     long_description=open(README).read(),
     long_description_content_type="text/x-rst",
