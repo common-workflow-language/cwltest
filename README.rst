@@ -224,12 +224,18 @@ Differences in the XML output
 
 * top-level ``<testsuites>`` element has no attributes
 * singular ``<testsuite>`` sub-element has the same attributes as the ``cwltest``
-  XML version along with
+  XML version along with these additional attributes
 
   * ``name``: default is ``pytest``
     (can be customized with the pytest INI option ``junit_suite_name``)
   * ``timestamp="2023-01-08T11:39:07.425159"``
   * ``hostname``: the hostname of the machine where the tests ran
+* inside the ``<testsuite>`` is a ``<properties>..</properties>`` element
+  with two ``<property name="…" value="…" />`` elements. But this
+  `does not work with pytest-xdist <https://github.com/pytest-dev/pytest/issues/7767>`_.
+
+  * ``runner``: the name of the CWL runner
+  * ``runner_extra_args``: the value of `--cwl-args``
 
 * each ``<testcase>`` element has the following attributes
 

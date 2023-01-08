@@ -203,6 +203,16 @@ class CWLItem(pytest.Item):
 class CWLYamlFile(pytest.File):
     """A CWL test file."""
 
+    def _add_global_properties(self) -> None:
+        from _pytest.junitxml import xml_key
+
+        xml = self.config._store.get(xml_key, None)
+        if xml:
+            xml.add_global_property("runner", self.config.getoption("cwl_runner"))
+            xml.add_global_property(
+                "runner_extra_args", self.config.getoption("cwl_args")
+            )
+
     def collect(self) -> Iterator[CWLItem]:
         """Load the cwltest file and yield parsed entries."""
         include: Set[str] = set(_get_comma_separated_option(self.config, "cwl_include"))
@@ -212,6 +222,7 @@ class CWLYamlFile(pytest.File):
             _get_comma_separated_option(self.config, "cwl_exclude_tags")
         )
         tests, _ = utils.load_and_validate_tests(str(self.path))
+        self._add_global_properties()
         for entry in tests:
             entry_tags = entry.get("tags", [])
             if "label" in entry:

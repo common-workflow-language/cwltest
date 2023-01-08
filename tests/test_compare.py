@@ -3,6 +3,7 @@ from typing import Any, Dict
 import pytest
 
 from cwltest.compare import CompareFail, compare
+
 from .util import get_data
 
 
