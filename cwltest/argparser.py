@@ -7,7 +7,7 @@ import pkg_resources
 from cwltest import DEFAULT_TIMEOUT
 
 
-def arg_parser():  # type: () -> argparse.ArgumentParser
+def arg_parser() -> argparse.ArgumentParser:
     """Generate a command Line argument parser for cwltest."""
     parser = argparse.ArgumentParser(
         description="Common Workflow Language testing framework"

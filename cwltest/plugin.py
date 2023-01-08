@@ -246,53 +246,85 @@ class CWLYamlFile(pytest.File):
             yield item
 
 
+__OPTIONS: List[Tuple[str, Dict[str, Any]]] = [
+    (
+        "--cwl-runner",
+        {
+            "type": str,
+            "dest": "cwl_runner",
+            "default": "cwl-runner",
+            "help": "Name of the CWL runner to use.",
+        },
+    ),
+    (
+        "--cwl-runner-verbose",
+        {
+            "dest": "cwl_runner_verbose",
+            "default": False,
+            "action": "store_true",
+            "help": "If set, don't pass --quiet to the CWL runner.",
+        },
+    ),
+    (
+        "--cwl-badgedir",
+        {
+            "type": str,
+            "help": "Create badge JSON files and store them in this directory.",
+        },
+    ),
+    (
+        "--cwl-include",
+        {
+            "type": str,
+            "help": "Run specific CWL tests using their short names separated by comma",
+        },
+    ),
+    (
+        "--cwl-exclude",
+        {
+            "type": str,
+            "help": "Exclude specific CWL tests using their short names separated by comma",
+        },
+    ),
+    ("--cwl-tags", {"type": str, "help": "Tags to be tested."}),
+    ("--cwl-exclude-tags", {"type": str, "help": "Tags not to be tested."}),
+    (
+        "--cwl-args",
+        {
+            "type": str,
+            "help": "one or more arguments to pass first to tool runner (separated by spaces)",
+        },
+    ),
+    (
+        "--cwl-test-arg",
+        {
+            "type": str,
+            "help": "Additional argument given in test cases and required prefix for tool runner.",
+            "action": "append",
+        },
+    ),
+    (
+        "--cwl-basedir",
+        {
+            "help": "Basedir to use for tests",
+            "default": os.getcwd(),
+        },
+    ),
+]
+
+
 def pytest_addoption(parser: "PytestParser") -> None:
     """Add our options to the pytest command line."""
-    parser.addoption(
-        "--cwl-runner",
-        type=str,
-        dest="cwl_runner",
-        default="cwl-runner",
-        help="Name of the CWL runner to use.",
-    )
-    parser.addoption(
-        "--cwl-runner-verbose",
-        dest="cwl_runner_verbose",
-        default=False,
-        action="store_true",
-        help="If set, don't pass --quiet to the CWL runner.",
-    )
-    parser.addoption(
-        "--cwl-badgedir",
-        type=str,
-        help="Create badge JSON files and store them in this directory.",
-    )
-    parser.addoption(
-        "--cwl-include",
-        type=str,
-        help="Run specific CWL tests using their short names separated by comma",
-    )
-    parser.addoption(
-        "--cwl-exclude",
-        type=str,
-        help="Exclude specific CWL tests using their short names separated by comma",
-    )
-    parser.addoption("--cwl-tags", type=str, help="Tags to be tested.")
-    parser.addoption("--cwl-exclude-tags", type=str, help="Tags not to be tested.")
-    parser.addoption(
-        "--cwl-args",
-        type=str,
-        help="one or more arguments to pass first to tool runner (separated by spaces)",
-    )
-    parser.addoption(
-        "--cwl-test-arg",
-        type=str,
-        help="Additional argument given in test cases and required prefix for tool runner.",
-        action="append",
-    )
-    parser.addoption(
-        "--cwl-basedir", help="Basedir to use for tests", default=os.getcwd()
-    )
+    for entry in __OPTIONS:
+        parser.addoption(entry[0], **entry[1])
+
+
+def _doc_options() -> argparse.ArgumentParser:
+    """Generate a stand-alone ArgumentParser to aid in documention."""
+    parser = argparse.ArgumentParser("cwltest options for pytest.", add_help=False)
+    for entry in __OPTIONS:
+        parser.add_argument(entry[0], **entry[1])
+    return parser
 
 
 def pytest_collect_file(

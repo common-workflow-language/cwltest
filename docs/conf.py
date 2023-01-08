@@ -51,7 +51,9 @@ extensions = [
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "schema_salad": ("https://schema-salad.readthedocs.io/en/stable/", None),
-    "rdflib": ("https://rdflib.readthedocs.io/en/6.2.0/", None),
+    #"rdflib": ("https://rdflib.readthedocs.io/en/6.2.0/", None),
+    #"pytest": ("https://docs.pytest.org/en/7.2.x/", None),
+    "pytest_xdist": ("https://pytest-xdist.readthedocs.io/en/latest/", None),
     #"ruamel.yaml": ("https://yaml.readthedocs.io/en/stable/", None),
 }
 
