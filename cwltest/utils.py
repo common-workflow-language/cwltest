@@ -27,12 +27,12 @@ import ruamel.yaml.scanner
 import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
+from cwltest.compare import CompareFail, compare
 from rdflib import Graph
 from ruamel.yaml.scalarstring import ScalarString
 from schema_salad.exceptions import ValidationException
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
-from cwltest.compare import CompareFail, compare
 
 
 class CWLTestConfig(object):

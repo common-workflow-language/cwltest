@@ -2,16 +2,16 @@
 Pytest plugin
 *************
 
-``cwltest`` can also be used as a Pytest plugin. The CWL test filename must start
-with ``conformance_test`` and end with ``.yaml`` or ``.yml``.
+``cwltest`` can also be used as a Pytest plugin. The CWL test filename must
+end with ``.cwltest.yml`` or ``.cwltest.yaml``.
 
 In this case, the simple command::
 
-  cwltest --test conformance_test_xxx.yml --tool cwl-runner
+  cwltest --test conformance_xxx.cwltest.yml --tool cwl-runner
 
 becomes::
 
-  pytest conformance_test_xxx.yml --cwl-runner cwl-runner
+  pytest conformance_xxx.cwltest.yml --cwl-runner cwl-runner
 
 Command Line Options
 ====================
@@ -32,8 +32,8 @@ The table below details all the available command conversions between the two fo
      - ``cwltest``
      - ``pytest``
    * - YAML file describing test cases
-     - ``--test conformance_test_xxx.yml``
-     - ``conformance_test_xxx.yml``
+     - ``--test conformance_xxx.cwltest.yml``
+     - ``conformance_xxx.cwltest.yml``
    * - CWL runner executable to use
      - ``--tool CWL_RUNNER``
      - :option:`--cwl-runner CWL_RUNNER`
@@ -155,7 +155,7 @@ Differences in the XML output
 
 * each ``<testcase>`` element has the following attributes
 
-  * ``classname``: always the name of the YAML file (``conformance_tests.yaml``)
+  * ``classname``: always the name of the YAML file (``conformance_test_v1.2.cwltest.yaml``)
   * ``name``: the test ID
   * ``time``: the elapsed time
 

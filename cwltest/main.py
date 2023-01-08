@@ -12,11 +12,11 @@ import junit_xml
 import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
+from cwltest.argparser import arg_parser
+from cwltest.utils import CWLTestConfig, TestResult
 from schema_salad.exceptions import ValidationException
 
 from cwltest import logger, utils
-from cwltest.argparser import arg_parser
-from cwltest.utils import CWLTestConfig, TestResult
 
 if sys.stderr.isatty():
     PREFIX = "\r"

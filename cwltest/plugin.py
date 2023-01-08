@@ -20,10 +20,10 @@ from typing import (
 )
 
 import pytest
+from cwltest.compare import CompareFail, compare
 from typing_extensions import Protocol
 
 from cwltest import DEFAULT_TIMEOUT, REQUIRED, UNSUPPORTED_FEATURE, logger, utils
-from cwltest.compare import CompareFail, compare
 
 if TYPE_CHECKING:
     from _pytest._code.code import ExceptionInfo, _TracebackStyle
@@ -347,7 +347,7 @@ def pytest_collect_file(
     """Is this file for us."""
     if (
         file_path.suffix == ".yml" or file_path.suffix == ".yaml"
-    ) and file_path.stem.startswith("conformance_test"):
+    ) and file_path.stem.endswith(".cwltest"):
         return cast(
             Optional[pytest.Collector],
             CWLYamlFile.from_parent(parent, path=file_path),
