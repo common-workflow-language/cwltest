@@ -482,9 +482,7 @@ def run_test_plain(
     )
 
 
-def shortname(
-    name,  # type: str
-):  # type: (...) -> str
+def shortname(name: str) -> str:
     """
     Return the short name of a given name.
 

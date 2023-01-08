@@ -22,7 +22,9 @@ def _load_v1_0_dir(path: Path) -> None:
 def test_include(pytester: "Pytester") -> None:
     """Test the pytest plugin using cwltool as cwl-runner."""
     path = pytester.copy_example("conformance_test_v1.0.yml")
-    shutil.copy(get_data("tests/test-data/cwltool-conftest.py"), path.parent)
+    shutil.copy(
+        get_data("tests/test-data/cwltool-conftest.py"), path.parent / "conftest.py"
+    )
     _load_v1_0_dir(path)
     result = pytester.runpytest(
         "-k", "conformance_test_v1.0.yml", "--cwl-include", "cl_optional_inputs_missing"
@@ -33,7 +35,9 @@ def test_include(pytester: "Pytester") -> None:
 def test_exclude(pytester: "Pytester") -> None:
     """Test the pytest plugin using cwltool as cwl-runner."""
     path = pytester.copy_example("conformance_test_v1.0.yml")
-    shutil.copy(get_data("tests/test-data/cwltool-conftest.py"), path.parent)
+    shutil.copy(
+        get_data("tests/test-data/cwltool-conftest.py"), path.parent / "conftest.py"
+    )
     _load_v1_0_dir(path)
     result = pytester.runpytest(
         "-k",
@@ -47,7 +51,9 @@ def test_exclude(pytester: "Pytester") -> None:
 def test_tags(pytester: "Pytester") -> None:
     """Test the pytest plugin using cwltool as cwl-runner."""
     path = pytester.copy_example("conformance_test_v1.0.yml")
-    shutil.copy(get_data("tests/test-data/cwltool-conftest.py"), path.parent)
+    shutil.copy(
+        get_data("tests/test-data/cwltool-conftest.py"), path.parent / "conftest.py"
+    )
     _load_v1_0_dir(path)
     result = pytester.runpytest(
         "-k", "conformance_test_v1.0.yml", "--cwl-tags", "required"
@@ -58,7 +64,9 @@ def test_tags(pytester: "Pytester") -> None:
 def test_exclude_tags(pytester: "Pytester") -> None:
     """Test the pytest plugin using cwltool as cwl-runner."""
     path = pytester.copy_example("conformance_test_v1.0.yml")
-    shutil.copy(get_data("tests/test-data/cwltool-conftest.py"), path.parent)
+    shutil.copy(
+        get_data("tests/test-data/cwltool-conftest.py"), path.parent / "conftest.py"
+    )
     _load_v1_0_dir(path)
     result = pytester.runpytest(
         "-k", "conformance_test_v1.0.yml", "--cwl-exclude-tags", "command_line_tool"
@@ -69,7 +77,9 @@ def test_exclude_tags(pytester: "Pytester") -> None:
 def test_badgedir(pytester: "Pytester") -> None:
     """Test the pytest plugin creates the badges directory."""
     path = pytester.copy_example("conformance_test_v1.0.yml")
-    shutil.copy(get_data("tests/test-data/cwltool-conftest.py"), path.parent)
+    shutil.copy(
+        get_data("tests/test-data/cwltool-conftest.py"), path.parent / "conftest.py"
+    )
     _load_v1_0_dir(path)
     assert not os.path.exists("cwl-badges")
     pytester.runpytest(
@@ -81,7 +91,9 @@ def test_badgedir(pytester: "Pytester") -> None:
 def test_no_label(pytester: "Pytester") -> None:
     """Test the pytest plugin correctly extracts test names from the id field when label is missing."""
     path = pytester.copy_example("conformance_test_v1.2.yaml")
-    shutil.copy(get_data("tests/test-data/cwltool-conftest.py"), path.parent)
+    shutil.copy(
+        get_data("tests/test-data/cwltool-conftest.py"), path.parent / "conftest.py"
+    )
     _load_v1_0_dir(path)
     result = pytester.runpytest(
         "-k", "conformance_test_v1.2.yaml", "--cwl-tags", "required"
@@ -92,7 +104,9 @@ def test_no_label(pytester: "Pytester") -> None:
 def test_cwltool_hook(pytester: "Pytester") -> None:
     """Test the pytest plugin using cwltool as cwl-runner."""
     path = pytester.copy_example("conformance_test_v1.0.yml")
-    shutil.copy(get_data("tests/test-data/cwltool-conftest.py"), path.parent)
+    shutil.copy(
+        get_data("tests/test-data/cwltool-conftest.py"), path.parent / "conftest.py"
+    )
     _load_v1_0_dir(path)
     result = pytester.runpytest("-k", "conformance_test_v1.0.yml")
     result.assert_outcomes(passed=2)
