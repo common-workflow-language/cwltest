@@ -204,6 +204,7 @@ class CWLYamlFile(pytest.File):
     """A CWL test file."""
 
     def _add_global_properties(self) -> None:
+        """Nonfunctional if xdist is installed and anything besides "-n 0" is used."""
         from _pytest.junitxml import xml_key
 
         xml = self.config._store.get(xml_key, None)
@@ -232,15 +233,28 @@ class CWLYamlFile(pytest.File):
             else:
                 name = entry.get("doc", "")
             item = CWLItem.from_parent(self, name=name, spec=entry)
-            if (
-                (include and name not in include)
-                or (exclude and name in exclude)
-                or (tags and not tags.intersection(entry_tags))
-                or (exclude_tags and exclude_tags.intersection(entry_tags))
-            ):
+            if include and name not in include:
                 item.add_marker(
                     pytest.mark.skip(
-                        reason=f"Name: {name}, Tags: {', '.join(entry_tags)}"
+                        reason=f"Test '{name}' is not in the include list: {','.join(include)}."
+                    )
+                )
+            elif exclude and name in exclude:
+                item.add_marker(
+                    pytest.mark.skip(reason=f"Test '{name}' is in the exclude list.")
+                )
+            elif tags and not tags.intersection(entry_tags):
+                item.add_marker(
+                    pytest.mark.skip(
+                        reason=f"Test '{name}' with tags {','.join(entry_tags)}"
+                        f" doesn't have a tag on the allowed tag list: {','.join(tags)}."
+                    )
+                )
+            elif exclude_tags and exclude_tags.intersection(entry_tags):
+                item.add_marker(
+                    pytest.mark.skip(
+                        reason=f"Test '{name}' has one or more tags on the exclusion "
+                        f" tag list: {','.join(exclude_tags.intersection(entry_tags))}."
                     )
                 )
             yield item
