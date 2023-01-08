@@ -7,23 +7,23 @@ import traceback
 from io import StringIO
 from pathlib import Path
 from typing import (
-    TYPE_CHECKING,
     Any,
     Dict,
     Iterator,
     List,
     Optional,
     Set,
+    TYPE_CHECKING,
     Tuple,
     Union,
     cast,
 )
 
 import pytest
-from cwltest.compare import CompareFail, compare
 from typing_extensions import Protocol
 
-from cwltest import DEFAULT_TIMEOUT, REQUIRED, UNSUPPORTED_FEATURE, logger, utils
+from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, utils
+from cwltest.compare import CompareFail, compare
 
 if TYPE_CHECKING:
     from _pytest._code.code import ExceptionInfo, _TracebackStyle
