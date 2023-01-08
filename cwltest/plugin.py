@@ -133,6 +133,7 @@ class CWLItem(pytest.Item):
 
     def runtest(self) -> None:
         """Execute using cwltest."""
+        cwl_args = self.config.getoption("cwl_args")
         config = utils.CWLTestConfig(
             basedir=self.config.getoption("cwl_basedir"),
             outdir=str(
@@ -141,7 +142,7 @@ class CWLItem(pytest.Item):
                 )
             ),
             tool=self.config.getoption("cwl_runner"),
-            args=self.config.getoption("cwl_args"),
+            args=cwl_args.split(" ") if cwl_args else None,
             testargs=self.config.getoption("cwl_test_arg"),
             timeout=self.config.getoption("timeout", None),
             verbose=self.config.getoption("verbose", 0) >= 1,
@@ -269,8 +270,8 @@ def pytest_addoption(parser: "PytestParser") -> None:
     parser.addoption("--cwl-exclude-tags", type=str, help="Tags not to be tested.")
     parser.addoption(
         "--cwl-args",
-        help="arguments to pass first to tool runner",
-        nargs=argparse.REMAINDER,
+        type=str,
+        help="one or more arguments to pass first to tool runner (separated by spaces)",
     )
     parser.addoption(
         "--cwl-test-arg",

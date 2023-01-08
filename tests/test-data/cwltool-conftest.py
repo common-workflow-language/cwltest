@@ -25,7 +25,7 @@ def pytest_cwl_execute_test(
         argsl.append("--quiet")
     elif config.verbose:
         argsl.append("--debug")
-    argsl.extend(config.testargs)
+    argsl.extend(config.args)
     argsl.append(processfile)
     if jobfile:
         argsl.append(jobfile)
