@@ -154,7 +154,7 @@ def generate_badges(
 def get_test_number_by_key(
     tests: List[Dict[str, str]], key: str, value: str
 ) -> Optional[int]:
-    """Retreive the test index from its name."""
+    """Retrieve the test index from its name."""
     for i, test in enumerate(tests):
         if key in test and test[key] == value:
             return i

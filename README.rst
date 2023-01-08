@@ -1,6 +1,6 @@
-==========================================
+##########################################
 Common Workflow Language testing framework
-==========================================
+##########################################
 
 |Linux Build Status| |Code coverage|
 
@@ -34,8 +34,9 @@ conformance tests.
 
 This is written and tested for Python 3.6, 3.7, 3.8, 3.9, 3.10, and 3.11.
 
+*******
 Install
--------
+*******
 
 Installing the official package from PyPi
 
@@ -56,15 +57,17 @@ Or from source
   git clone https://github.com/common-workflow-language/cwltest.git
   cd cwltest && python setup.py install
 
+***********************
 Run on the command line
------------------------
+***********************
 
 Simple command::
 
   cwltest --test test-descriptions.yml --tool cwl-runner
 
+*****************************************
 Generate conformance badges using cwltest
------------------------------------------
+*****************************************
 
 To make badges that show the results of the conformance test,
 you can generate JSON files for https://badgen.net by using --badgedir option
@@ -86,24 +89,25 @@ Here is an example of markdown to add a badge::
 
   ![test result](https://flat.badgen.net/https/path/to/generated/json?icon=commonwl)
 
+*************
 Pytest plugin
--------------
+*************
 
-`cwltest` can also be used as a Pytest plugin. The CWL test filename must start
+``cwltest`` can also be used as a Pytest plugin. The CWL test filename must start
 with ``conformance_test`` and end with ``.yaml`` or ``.yml``.
 
-In this case, the simple command:
+In this case, the simple command::
 
   cwltest --test conformance_test_xxx.yml --tool cwl-runner
 
-becomes:
+becomes::
 
   pytest conformance_test_xxx.yml --cwl-runner cwl-runner
 
-The table below details all the available command conversions between the two formats.
+Converting ``cwltest`` options to ``pytest`` options
+====================================================
 
-Rosetta Stone
-~~~~~~~~~~~~~
+The table below details all the available command conversions between the two formats.
 
 .. list-table::
    :widths: 40 30 30
@@ -157,7 +161,7 @@ Rosetta Stone
      - ``--cwl-exclude-tags TAG[,TAG]...``
    * - Path to JUnit xml file
      - ``--junit-xml PATH``
-     - ``--junit-xml=PATH``
+     - ``--junit-xml=PATH`` [#f4]_
    * - More verbose output during test run
      - ``--verbose``
      - ``-v[vv]``
@@ -177,7 +181,7 @@ Rosetta Stone
      - **UNSUPPORTED**
    * - Store more verbose output to JUnit xml file
      - ``--junit-verbose``
-     - ``--cwl-runner-verbose``
+     - ``--cwl-runner-verbose`` [#f4]_
    * - Specify classname for the Test Suite
      - ``--classname CLASS_NAME``
      - **UNSUPPORTED**
@@ -189,3 +193,60 @@ Rosetta Stone
          Note: even if ``pytest-timeout`` is installed, there is no default
          timeout. This is different than ``cwltest``'s default timeout of 10
          minutes.
+
+Differences in the XML output
+=============================
+
+``cwltest --junit-xml`` output
+
+* top-level ``<testsuites>`` element has the elapsed time, and counts (errors,
+  failures, skipped, and total)
+* singular ``<testsuite>`` sub-element the same attributes as the top-level
+  ``<testsuites>`` plus ``name`` which is the basename of the YAML test file
+* each ``<testcase>`` element has the follow attributes
+
+  * ``name``: the doc string
+  * ``class``: the tags
+  * ``file``: the test ID
+  * ``url``: like "cwltest:conformance_tests#1"
+    (contains the basename of the YAML test file)
+  * ``time``: the elapsed time
+
+* ``<testcase>`` elements always contain the following sub-elements,
+  regardless of outcome
+
+  * ``<system-out>``: the output object
+  * ``<system-err>``: stderr (docker pull, other warnings, and errors)
+
+* ``<testcase>`` elements for failed test cases do not have a ``<failure>`` sub-element
+
+``pytest`` with ``cwltest`` plugin XML output
+
+* top-level ``<testsuites>`` element has no attributes
+* singular ``<testsuite>`` sub-element has the same attributes as the ``cwltest``
+  XML version along with
+
+  * ``name``: default is ``pytest``
+    (can be customized with the pytest INI option ``junit_suite_name``)
+  * ``timestamp="2023-01-08T11:39:07.425159"``
+  * ``hostname``: the hostname of the machine where the tests ran
+
+* each ``<testcase>`` element has the following attributes
+
+  * ``classname``: always the name of the YAML file (``conformance_tests.yaml``)
+  * ``name``: the test ID
+  * ``time``: the elapsed time
+
+* ``<testcase>`` elements for failed test cases **do** have a ``<failure>`` sub-element
+  with a ``message`` attribute containing the :py:meth:`cwltest.plugin.CWLItem.repr_failure`
+  output. This text is repeated as the content of the ``<failure>`` element.
+  The presensce of ``<system-out>`` and ``<system-err>`` sub-elements varies. [#f4]_
+
+ .. [#f4] Depending on the value of the pytest INI option ``junit_logging``,
+         then ``<system-out>`` and ``<system-err>`` sub-elements will be generated.
+         However the default value for ``junit_logging`` is ``no``, so to get
+         either of these pick one from `the full list
+         <https://docs.pytest.org/en/stable/reference/reference.html#confval-junit_logging>`_.
+         You can set ``junit_logging`` in `a configuration file
+         <https://docs.pytest.org/en/stable/reference/customize.html#configuration-file-formats>`_
+         or on the command line: ``pytest -o junit_logging=out-err``.
