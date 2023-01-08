@@ -1,7 +1,15 @@
+[paths]
+source =
+  cwltest
+  */site-packages/cwltest
+  */cwltest
+
 [run]
 branch = True
-source = cwltest
-omit = tests/*
+source_pkgs = cwltest
+omit =
+  tests/*
+  */site-packages/cwltest/tests/*
 
 [report]
 exclude_lines =
@@ -9,5 +17,9 @@ exclude_lines =
     pragma: no cover
     raise NotImplementedError
     if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    \.\.\.
 ignore_errors = True
-omit = tests/*
+omit =
+  tests/*
+  */site-packages/cwltest/tests/*

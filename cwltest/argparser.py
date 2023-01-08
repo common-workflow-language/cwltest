@@ -7,7 +7,7 @@ import pkg_resources
 from cwltest import DEFAULT_TIMEOUT
 
 
-def arg_parser():  # type: () -> argparse.ArgumentParser
+def arg_parser() -> argparse.ArgumentParser:
     """Generate a command Line argument parser for cwltest."""
     parser = argparse.ArgumentParser(
         description="Common Workflow Language testing framework"
@@ -60,7 +60,8 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument(
         "--junit-verbose",
         action="store_true",
-        help="Store more verbose output to JUnit xml file",
+        help="Store more verbose output to JUnit XML file by not passing "
+        "'--quiet' to the CWL runner.",
     )
     parser.add_argument(
         "--test-arg",
@@ -101,7 +102,9 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
         ),
     )
     parser.add_argument(
-        "--badgedir", type=str, help="Directory that stores JSON files for badges."
+        "--badgedir",
+        type=str,
+        help="Create JSON badges and store them in this directory.",
     )
 
     pkg = pkg_resources.require("cwltest")

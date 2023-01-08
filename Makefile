@@ -76,7 +76,7 @@ docs: FORCE
 clean: FORCE
 	rm -f ${MODILE}/*.pyc tests/*.pyc
 	python setup.py clean --all || true
-	rm -Rf .coverage
+	rm -Rf .coverage\.* .coverage
 	rm -f diff-cover.html
 
 # Linting and code style related targets
@@ -104,11 +104,11 @@ codespell:
 	codespell -w $(shell git ls-files | grep -v mypy-stubs | grep -v gitignore)
 
 ## format                 : check/fix all code indentation and formatting (runs black)
-format:
-	black setup.py setup.py cwltest tests mypy-stubs
+format: $(PYSOURCES) mypy-stubs
+	black $^
 
-format-check:
-	black --diff --check setup.py cwltest tests mypy-stubs
+format-check: $(PYSOURCES) mypy-stubs
+	black --diff --check $^
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -123,7 +123,9 @@ diff_pylint_report: pylint_report.txt
 	diff-quality --compare-branch=main --violations=pylint pylint_report.txt
 
 .coverage: $(PYSOURCES)
-	python setup.py test --addopts "--cov --cov-config=.coveragerc --cov-report= ${PYTEST_EXTRA}"
+	COV_CORE_SOURCE=cwltest COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage \
+		python -m pytest --cov --cov-append --cov-report=
+	# https://pytest-cov.readthedocs.io/en/latest/plugins.html#plugin-coverage
 
 coverage.xml: .coverage
 	coverage xml

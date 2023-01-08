@@ -17,7 +17,7 @@ else
     repo=https://github.com/common-workflow-language/cwltest.git
     HEAD=$(git rev-parse HEAD)
 fi
-run_tests="bin/py.test --pyargs ${module}"
+run_tests="bin/py.test -p pytester --pyargs ${module}"
 pipver=20.3.3  # minimum required version of pip for Python 3.10
 setuptoolsver=50.0.1  # required for Python 3.10
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"

@@ -1,4 +1,4 @@
-"""Common Workflow Language testing framework."""
+"""Run CWL descriptions with a cwl-runner, and look for expected output."""
 
 import logging
 import threading

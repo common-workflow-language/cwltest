@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import os
+import pathlib
 import sys
 
 import setuptools.command.egg_info as egg_info_cmd
 from setuptools import setup
-
-import cwltest
 
 SETUP_DIR = os.path.dirname(__file__)
 README = os.path.join(SETUP_DIR, "README.rst")
@@ -16,12 +15,6 @@ try:
     tagger = gittaggers.EggInfoFromGit
 except ImportError:
     tagger = egg_info_cmd.egg_info
-
-install_requires = [
-    "schema-salad >= 5.0.20200220195218, < 9",
-    "junit-xml >= 1.8",
-    "defusedxml",
-]
 
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
 pytest_runner = ["pytest < 8", "pytest-runner"] if needs_pytest else []
@@ -43,13 +36,25 @@ setup(
     package_dir={"cwltest.tests": "tests"},
     package_data={"cwltest": ["py.typed"], "tests": ["test-data/*"]},
     include_package_data=True,
-    install_requires=install_requires,
+    install_requires=open(
+        os.path.join(pathlib.Path(__file__).parent, "requirements.txt")
+    )
+    .read()
+    .splitlines(),
     test_suite="tests",
-    tests_require=["pytest<8"],
+    tests_require=open(
+        os.path.join(pathlib.Path(__file__).parent, "test-requirements.txt")
+    )
+    .read()
+    .splitlines(),
+    extras_require={"pytest-plugin": ["pytest"]},
     entry_points={
         "console_scripts": [
             "cwltest=cwltest.main:main",
-        ]
+        ],
+        "pytest11": [
+            "cwl = cwltest.plugin [pytest-plugin]",
+        ],
     },
     zip_safe=True,
     cmdclass={"egg_info": tagger},

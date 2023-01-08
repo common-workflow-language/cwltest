@@ -1,6 +1,6 @@
-==========================================
+##########################################
 Common Workflow Language testing framework
-==========================================
+##########################################
 
 |Linux Build Status| |Code coverage|
 
@@ -34,8 +34,12 @@ conformance tests.
 
 This is written and tested for Python 3.6, 3.7, 3.8, 3.9, 3.10, and 3.11.
 
+.. contents:: Table of Contents
+   :local:
+
+*******
 Install
--------
+*******
 
 Installing the official package from PyPi
 
@@ -56,15 +60,17 @@ Or from source
   git clone https://github.com/common-workflow-language/cwltest.git
   cd cwltest && python setup.py install
 
+***********************
 Run on the command line
------------------------
+***********************
 
 Simple command::
 
   cwltest --test test-descriptions.yml --tool cwl-runner
 
+*****************************************
 Generate conformance badges using cwltest
------------------------------------------
+*****************************************
 
 To make badges that show the results of the conformance test,
 you can generate JSON files for https://badgen.net by using --badgedir option
