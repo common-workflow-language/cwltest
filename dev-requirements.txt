@@ -4,7 +4,7 @@ pylint
 pep257
 pydocstyle
 flake8
-tox < 4
+tox < 5
 tox-pyenv
 isort
 wheel
