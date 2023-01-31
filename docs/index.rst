@@ -11,6 +11,7 @@ Command Line Options
    :maxdepth: 2
 
    pytest
+   autoapi/index
 
 ******************
 Indices and tables
