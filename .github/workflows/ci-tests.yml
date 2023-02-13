@@ -27,6 +27,9 @@ jobs:
           - py-ver-major: 3
             py-ver-minor: 6
             step: mypy
+          - py-ver-major: 3
+            py-ver-minor: 6
+            step: lint
 
     env:
       py-semver: ${{ format('{0}.{1}', matrix.py-ver-major, matrix.py-ver-minor) }}
@@ -34,6 +37,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -48,7 +53,7 @@ jobs:
       - name: Upgrade setuptools and install tox
         run: |
           pip install -U pip setuptools wheel
-          pip install tox tox-gh-actions
+          pip install "tox<4" "tox-gh-actions<3"
 
       - name: MyPy cache
         if: ${{ matrix.step == 'mypy' }}
@@ -77,8 +82,8 @@ jobs:
         step: [lintreadme, pydocstyle]
 
     env:
-      py-semver: "3.10"
-      TOXENV: ${{ format('py310-{0}', matrix.step) }}
+      py-semver: "3.11"
+      TOXENV: ${{ format('py311-{0}', matrix.step) }}
 
     steps:
       - uses: actions/checkout@v3
@@ -98,7 +103,7 @@ jobs:
       - name: Upgrade setuptools and install tox
         run: |
           pip install -U pip setuptools wheel
-          pip install tox tox-gh-actions
+          pip install "tox<4" "tox-gh-actions<3"
 
       - if: ${{ matrix.step == 'pydocstyle' && github.event_name == 'pull_request'}}
         name: Create local branch for diff-quality for PRs
@@ -118,7 +123,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"  # quoted, otherwise that turns into the number 3.1
+          python-version: "3.11"
           cache: pip
           cache-dependency-path: |
             requirements.txt
