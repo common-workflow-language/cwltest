@@ -122,7 +122,7 @@ def _clean_ruamel(obj: Any) -> Any:
             return typ(obj)
     if obj is None:
         return None
-    raise Exception(f"Unsupported type {type(obj)} of '{obj}'.")
+    raise Exception(f"Unsupported type {type(obj)} of {obj!r}.")
 
 
 def generate_badges(
@@ -184,9 +184,7 @@ def load_and_validate_tests(path: str) -> Tuple[Any, Dict[str, Any]]:
 
     if not isinstance(avsc_names, schema_salad.avro.schema.Names):
         print(avsc_names)
-        raise ValidationException(
-            f"Wrong instance for avsc_names: {type(avsc_names)}"
-        )
+        raise ValidationException(f"Wrong instance for avsc_names: {type(avsc_names)}")
 
     tests, metadata = schema_salad.schema.load_and_validate(
         document_loader, avsc_names, path, True

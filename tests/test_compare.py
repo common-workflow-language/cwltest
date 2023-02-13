@@ -139,22 +139,26 @@ def test_compare_directory_failure_different_listing() -> None:
                     "basename": "baz.txt",
                     "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
                     "class": "File",
-                    "location": "file:///var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/stuff/baz.txt",
+                    "location": "file:///var/folders/8x/"
+                    "2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/stuff/baz.txt",
                     "path": "/var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/stuff/baz.txt",
                     "size": 0,
                 },
                 {
                     "basename": "foo",
                     "class": "Directory",
-                    "location": "file:///var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/stuff/foo",
+                    "location": "file:///var/folders/8x/"
+                    "2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/stuff/foo",
                     "path": "/var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/stuff/foo",
                     "listing": [
                         {
                             "basename": "bar.txt",
                             "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80775",
                             "class": "File",
-                            "location": "file:///var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/stuff/foo/bar.txt",
-                            "path": "/var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/stuff/foo/bar.txt",
+                            "location": "file:///var/folders/8x/"
+                            "2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/stuff/foo/bar.txt",
+                            "path": "/var/folders/8x/"
+                            "2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/stuff/foo/bar.txt",
                             "size": 0,
                         }
                     ],
@@ -202,7 +206,8 @@ def test_compare_directory_failure_no_listing() -> None:
                     "basename": "baz.txt",
                     "checksum": "sha1$da39a3ee5e6b4b0d3255bfef95601890afd80709",
                     "class": "File",
-                    "location": "file:///var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/stuff/baz.txt",
+                    "location": "file:///var/folders/8x/"
+                    "2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/stuff/baz.txt",
                     "path": "/var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/stuff/baz.txt",
                     "size": 0,
                 },
