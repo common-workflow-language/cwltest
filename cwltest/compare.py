@@ -29,7 +29,7 @@ def _check_keys(
             compare(expected.get(k), actual.get(k))
         except CompareFail as e:
             raise CompareFail.format(
-                expected, actual, f"field '{k}' failed comparison: {str(e)}"
+                expected, actual, f"field {k!r} failed comparison: {str(e)}"
             ) from e
 
 
@@ -54,7 +54,7 @@ def _compare_dict(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
             compare(expected[c], actual.get(c))
         except CompareFail as e:
             raise CompareFail.format(
-                expected, actual, f"failed comparison for key '{c}': {e}"
+                expected, actual, f"failed comparison for key {c!r}: {e}"
             ) from e
     extra_keys = set(actual.keys()).difference(list(expected.keys()))
     for k in extra_keys:

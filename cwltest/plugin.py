@@ -236,24 +236,24 @@ class CWLYamlFile(pytest.File):
             if include and name not in include:
                 item.add_marker(
                     pytest.mark.skip(
-                        reason=f"Test '{name}' is not in the include list: {','.join(include)}."
+                        reason=f"Test {name!r} is not in the include list: {','.join(include)}."
                     )
                 )
             elif exclude and name in exclude:
                 item.add_marker(
-                    pytest.mark.skip(reason=f"Test '{name}' is in the exclude list.")
+                    pytest.mark.skip(reason=f"Test {name!r} is in the exclude list.")
                 )
             elif tags and not tags.intersection(entry_tags):
                 item.add_marker(
                     pytest.mark.skip(
-                        reason=f"Test '{name}' with tags {','.join(entry_tags)}"
+                        reason=f"Test {name!r} with tags {','.join(entry_tags)}"
                         f" doesn't have a tag on the allowed tag list: {','.join(tags)}."
                     )
                 )
             elif exclude_tags and exclude_tags.intersection(entry_tags):
                 item.add_marker(
                     pytest.mark.skip(
-                        reason=f"Test '{name}' has one or more tags on the exclusion "
+                        reason=f"Test {name!r} has one or more tags on the exclusion "
                         f" tag list: {','.join(exclude_tags.intersection(entry_tags))}."
                     )
                 )
