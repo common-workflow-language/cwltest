@@ -1,15 +1,16 @@
 """Compare utilities for CWL objects."""
 
 import json
-from typing import Any, Dict, Set
+from typing import Any, Dict, Optional, Set
 
 
 class CompareFail(Exception):
     """Compared CWL objects are not equal."""
 
     @classmethod
-    def format(cls, expected, actual, cause=None):
-        # type: (Any, Any, Any) -> CompareFail
+    def format(
+        cls, expected: Any, actual: Any, cause: Optional[Any] = None
+    ) -> "CompareFail":
         """Load the difference details into the error message."""
         message = "expected: {}\ngot: {}".format(
             json.dumps(expected, indent=4, sort_keys=True),
@@ -20,8 +21,9 @@ class CompareFail(Exception):
         return cls(message)
 
 
-def _check_keys(keys, expected, actual):
-    # type: (Set[str], Dict[str,Any], Dict[str,Any]) -> None
+def _check_keys(
+    keys: Set[str], expected: Dict[str, Any], actual: Dict[str, Any]
+) -> None:
     for k in keys:
         try:
             compare(expected.get(k), actual.get(k))
@@ -31,8 +33,7 @@ def _check_keys(keys, expected, actual):
             ) from e
 
 
-def _compare_contents(expected, actual):
-    # type: (Dict[str,Any], Dict[str,Any]) -> None
+def _compare_contents(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
     expected_contents = expected["contents"]
     with open(actual["path"]) as f:
         actual_contents = f.read()
@@ -47,8 +48,7 @@ def _compare_contents(expected, actual):
         )
 
 
-def _compare_dict(expected, actual):
-    # type: (Dict[str,Any], Dict[str,Any]) -> None
+def _compare_dict(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
     for c in expected:
         try:
             compare(expected[c], actual.get(c))
@@ -62,8 +62,7 @@ def _compare_dict(expected, actual):
             raise CompareFail.format(expected, actual, "unexpected key '%s'" % k)
 
 
-def _compare_directory(expected, actual):
-    # type: (Dict[str,Any], Dict[str,Any]) -> None
+def _compare_directory(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
     if actual.get("class") != "Directory":
         raise CompareFail.format(
             expected, actual, "expected object with a class 'Directory'"
@@ -90,8 +89,7 @@ def _compare_directory(expected, actual):
     _compare_file(expected, actual)
 
 
-def _compare_file(expected, actual):
-    # type: (Dict[str,Any], Dict[str,Any]) -> None
+def _compare_file(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
     _compare_location(expected, actual)
     if "contents" in expected:
         _compare_contents(expected, actual)
@@ -100,8 +98,7 @@ def _compare_file(expected, actual):
     _check_keys(other_keys, expected, actual)
 
 
-def _compare_location(expected, actual):
-    # type: (Dict[str,Any], Dict[str,Any]) -> None
+def _compare_location(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
     if "path" in expected:
         comp = "path"
         if "path" not in actual:
@@ -126,7 +123,7 @@ def _compare_location(expected, actual):
         )
 
 
-def compare(expected, actual):  # type: (Any, Any) -> None
+def compare(expected: Any, actual: Any) -> None:
     """Compare two CWL objects."""
     if expected == "Any":
         return
