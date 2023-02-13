@@ -144,7 +144,7 @@ def main() -> int:
             logger.warning("The `id` field is missing.")
 
     if args.show_tags:
-        alltags = set()  # type: Set[str]
+        alltags: Set[str] = set()
         for t in tests:
             ts = t.get("tags", [])
             alltags |= set(ts)

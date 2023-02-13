@@ -35,7 +35,7 @@ from schema_salad.exceptions import ValidationException
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
 
 
-class CWLTestConfig(object):
+class CWLTestConfig:
     """Store configuration values for cwltest."""
 
     def __init__(
@@ -173,14 +173,19 @@ def load_and_validate_tests(path: str) -> Tuple[Any, Dict[str, Any]]:
             "utf-8"
         )
     }
-    (document_loader, avsc_names, _, _,) = schema_salad.schema.load_schema(
+    (
+        document_loader,
+        avsc_names,
+        _,
+        _,
+    ) = schema_salad.schema.load_schema(
         "https://w3id.org/cwl/cwltest/cwltest-schema.yml", cache=cache
     )
 
     if not isinstance(avsc_names, schema_salad.avro.schema.Names):
         print(avsc_names)
         raise ValidationException(
-            "Wrong instance for avsc_names: {}".format(type(avsc_names))
+            f"Wrong instance for avsc_names: {type(avsc_names)}"
         )
 
     tests, metadata = schema_salad.schema.load_and_validate(
