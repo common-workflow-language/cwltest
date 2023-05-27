@@ -1,7 +1,10 @@
 """Compare utilities for CWL objects."""
 
+import hashlib
 import json
-from typing import Any, Dict, Optional, Set
+import os.path
+import urllib.parse
+from typing import Any, Callable, Dict, Optional, Set
 
 
 class CompareFail(Exception):
@@ -22,11 +25,11 @@ class CompareFail(Exception):
 
 
 def _check_keys(
-    keys: Set[str], expected: Dict[str, Any], actual: Dict[str, Any]
+    keys: Set[str], expected: Dict[str, Any], actual: Dict[str, Any], skip_details: bool
 ) -> None:
     for k in keys:
         try:
-            compare(expected.get(k), actual.get(k))
+            compare(expected.get(k), actual.get(k), skip_details)
         except CompareFail as e:
             raise CompareFail.format(
                 expected, actual, f"field {k!r} failed comparison: {str(e)}"
@@ -48,10 +51,12 @@ def _compare_contents(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
         )
 
 
-def _compare_dict(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
+def _compare_dict(
+    expected: Dict[str, Any], actual: Dict[str, Any], skip_details: bool
+) -> None:
     for c in expected:
         try:
-            compare(expected[c], actual.get(c))
+            compare(expected[c], actual.get(c), skip_details)
         except CompareFail as e:
             raise CompareFail.format(
                 expected, actual, f"failed comparison for key {c!r}: {e}"
@@ -62,7 +67,9 @@ def _compare_dict(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
             raise CompareFail.format(expected, actual, "unexpected key '%s'" % k)
 
 
-def _compare_directory(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
+def _compare_directory(
+    expected: Dict[str, Any], actual: Dict[str, Any], skip_details: bool
+) -> None:
     if actual.get("class") != "Directory":
         raise CompareFail.format(
             expected, actual, "expected object with a class 'Directory'"
@@ -75,7 +82,7 @@ def _compare_directory(expected: Dict[str, Any], actual: Dict[str, Any]) -> None
         found = False
         for j in actual["listing"]:
             try:
-                compare(i, j)
+                compare(i, j, skip_details)
                 found = True
                 break
             except CompareFail:
@@ -86,19 +93,32 @@ def _compare_directory(expected: Dict[str, Any], actual: Dict[str, Any]) -> None
                 actual,
                 "%s not found" % json.dumps(i, indent=4, sort_keys=True),
             )
-    _compare_file(expected, actual)
+    _compare_file(expected, actual, skip_details)
 
 
-def _compare_file(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
-    _compare_location(expected, actual)
+def _compare_file(
+    expected: Dict[str, Any], actual: Dict[str, Any], skip_details: bool
+) -> None:
+    _compare_location(expected, actual, skip_details)
     if "contents" in expected:
         _compare_contents(expected, actual)
-    other_keys = set(expected.keys()) - {"path", "location", "listing", "contents"}
-    _check_keys(other_keys, expected, actual)
-    _check_keys(other_keys, expected, actual)
+    if actual.get("class") == "File" and not skip_details:
+        _compare_checksum(expected, actual)
+        _compare_size(expected, actual)
+    other_keys = set(expected.keys()) - {
+        "path",
+        "location",
+        "listing",
+        "contents",
+        "checksum",
+        "size",
+    }
+    _check_keys(other_keys, expected, actual, skip_details)
 
 
-def _compare_location(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
+def _compare_location(
+    expected: Dict[str, Any], actual: Dict[str, Any], skip_details: bool
+) -> None:
     if "path" in expected:
         comp = "path"
         if "path" not in actual:
@@ -109,7 +129,19 @@ def _compare_location(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
         return
     if actual.get("class") == "Directory":
         actual[comp] = actual[comp].rstrip("/")
-
+        exist_fun: Callable[[str], bool] = os.path.isdir
+    else:
+        exist_fun = os.path.isfile
+    if "path" in actual:
+        path = urllib.parse.urlparse(actual["path"]).path
+    else:
+        path = urllib.parse.urlparse(actual["location"]).path
+    if not exist_fun(path) and not skip_details:
+        raise CompareFail.format(
+            expected,
+            actual,
+            f"{actual[comp]} does not exist",
+        )
     if expected[comp] != "Any" and (
         not (
             actual[comp].endswith("/" + expected[comp])
@@ -123,7 +155,67 @@ def _compare_location(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
         )
 
 
-def compare(expected: Any, actual: Any) -> None:
+def _compare_checksum(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
+    if "path" in actual:
+        path = urllib.parse.urlparse(actual["path"]).path
+    else:
+        path = urllib.parse.urlparse(actual["location"]).path
+    checksum = hashlib.sha1()  # nosec
+    with open(path, "rb") as f:
+        contents = f.read(1024 * 1024)
+        while contents != b"":
+            checksum.update(contents)
+            contents = f.read(1024 * 1024)
+    actual_checksum_on_disk = f"sha1${checksum.hexdigest()}"
+    if "checksum" in actual:
+        actual_checksum_declared = actual["checksum"]
+        if actual_checksum_on_disk != actual_checksum_declared:
+            raise CompareFail.format(
+                expected,
+                actual,
+                "Output file checksums do not match: actual "
+                f"{actual_checksum_on_disk!r} on disk is not equal to actual "
+                f"{actual_checksum_declared!r} in the output object",
+            )
+    if "checksum" in expected:
+        expected_checksum = expected["checksum"]
+        if expected_checksum != actual_checksum_on_disk:
+            raise CompareFail.format(
+                expected,
+                actual,
+                "Output file checksums do not match: actual "
+                f"{actual_checksum_on_disk!r} is not equal to expected {expected_checksum!r}",
+            )
+
+
+def _compare_size(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
+    if "path" in actual:
+        path = urllib.parse.urlparse(actual["path"]).path
+    else:
+        path = urllib.parse.urlparse(actual["location"]).path
+    actual_size_on_disk = os.path.getsize(path)
+    if "size" in actual:
+        actual_size_declared = actual["size"]
+        if actual_size_on_disk != actual_size_declared:
+            raise CompareFail.format(
+                expected,
+                actual,
+                "Output file sizes do not match: actual "
+                f"{actual_size_on_disk!r} on disk is not equal to actual "
+                f"{actual_size_declared!r}' in the output object",
+            )
+    if "size" in expected:
+        expected_size = expected["size"]
+        if expected_size != actual_size_on_disk:
+            raise CompareFail.format(
+                expected,
+                actual,
+                "Output file sizes do not match: actual "
+                f"{actual_size_on_disk!r} is not equal to expected {expected_size!r}",
+            )
+
+
+def compare(expected: Any, actual: Any, skip_details: bool = False) -> None:
     """Compare two CWL objects."""
     if expected == "Any":
         return
@@ -136,11 +228,11 @@ def compare(expected: Any, actual: Any) -> None:
                 raise CompareFail.format(expected, actual)
 
             if expected.get("class") == "File":
-                _compare_file(expected, actual)
+                _compare_file(expected, actual, skip_details)
             elif expected.get("class") == "Directory":
-                _compare_directory(expected, actual)
+                _compare_directory(expected, actual, skip_details)
             else:
-                _compare_dict(expected, actual)
+                _compare_dict(expected, actual, skip_details)
 
         elif isinstance(expected, list):
             if not isinstance(actual, list):
@@ -150,7 +242,7 @@ def compare(expected: Any, actual: Any) -> None:
                 raise CompareFail.format(expected, actual, "lengths don't match")
             for c in range(0, len(expected)):
                 try:
-                    compare(expected[c], actual[c])
+                    compare(expected[c], actual[c], skip_details)
                 except CompareFail as e:
                     raise CompareFail.format(expected, actual, e) from e
         else:
