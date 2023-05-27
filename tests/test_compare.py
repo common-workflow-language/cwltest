@@ -1,7 +1,9 @@
+import os
+from pathlib import Path
 from typing import Any, Dict
 
 import pytest
-from cwltest.compare import CompareFail, compare
+from cwltest.compare import CompareFail, _compare_directory, _compare_file, compare
 
 from .util import get_data
 
@@ -37,6 +39,7 @@ def test_compare_contents_success() -> None:
         "size": 2,
         "class": "File",
         "contents": "2\n",
+        "checksum": "sha1$7448d8798a4380162d4b56f9b452e2f6f9e24e7a",
     }
     actual = {
         "basename": "cores.txt",
@@ -47,6 +50,120 @@ def test_compare_contents_success() -> None:
         "size": 2,
     }
     compare(expected, actual)
+
+
+def test_compare_contents_not_exist() -> None:
+    expected = {
+        "location": "cores.txt",
+        "class": "File",
+    }
+    actual = {
+        "basename": "cores.txt",
+        "class": "File",
+        "location": "file:///var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/cores.txt",
+        "path": "/none/exist/path/to/cores.txt",
+        "size": 2,
+    }
+    with pytest.raises(CompareFail):
+        _compare_file(expected, actual, False)
+
+
+def test_compare_file_different_size(tmp_path: Path) -> None:
+    expected = {
+        "location": "cores.txt",
+        "size": 2,
+        "class": "File",
+    }
+
+    path = tmp_path / "cores.txt"
+    with open(path, "w") as f:
+        f.write("hello")
+
+    actual = {
+        "basename": "cores.txt",
+        "class": "File",
+        "location": str(path),
+    }
+    with pytest.raises(CompareFail):
+        _compare_file(expected, actual, False)
+
+
+def test_compare_file_different_checksum(tmp_path: Path) -> None:
+    expected = {
+        "location": "cores.txt",
+        "class": "File",
+        "checksum": "sha1$7448d8798a4380162d4b56f9b452e2f6f9e24e7a",
+    }
+
+    path = tmp_path / "cores.txt"
+    with open(path, "w") as f:
+        f.write("hello")
+
+    actual = {
+        "basename": "cores.txt",
+        "class": "File",
+        "location": str(path),
+    }
+    with pytest.raises(CompareFail):
+        _compare_file(expected, actual, False)
+
+
+def test_compare_file_inconsistent_size(tmp_path: Path) -> None:
+    expected = {
+        "location": "cores.txt",
+        "class": "File",
+    }
+
+    path = tmp_path / "cores.txt"
+    with open(path, "w") as f:
+        f.write("hello")
+
+    actual = {
+        "basename": "cores.txt",
+        "class": "File",
+        "location": str(path),
+        "size": 65535,
+    }
+    with pytest.raises(CompareFail):
+        _compare_file(expected, actual, False)
+
+
+def test_compare_file_inconsistent_checksum(tmp_path: Path) -> None:
+    expected = {
+        "location": "cores.txt",
+        "class": "File",
+    }
+
+    path = tmp_path / "cores.txt"
+    with open(path, "w") as f:
+        f.write("hello")
+
+    actual = {
+        "basename": "cores.txt",
+        "checksum": "inconsistent-checksum",
+        "class": "File",
+        "location": str(path),
+    }
+    with pytest.raises(CompareFail):
+        _compare_file(expected, actual, False)
+
+
+def test_compare_directory(tmp_path: Path) -> None:
+    expected = {
+        "location": "dir",
+        "class": "Directory",
+        "listing": [],
+    }
+
+    path = tmp_path / "dir"
+    os.makedirs(path)
+
+    actual = {
+        "class": "Directory",
+        "location": str(path),
+        "listing": [],
+    }
+    _compare_directory(expected, actual, False)
 
 
 def test_compare_directory_success() -> None:
@@ -100,7 +217,7 @@ def test_compare_directory_success() -> None:
             ],
         }
     }
-    compare(expected, actual)
+    compare(expected, actual, skip_details=True)
 
 
 def test_compare_directory_failure_different_listing() -> None:
@@ -270,7 +387,7 @@ def test_compare_file_success() -> None:
         "path": "/var/folders/8x/2df05_7j20j6r8y81w4qf43r0000gn/T/tmpG0EkrS/cores.txt",
         "size": 2,
     }
-    compare(expected, actual)
+    compare(expected, actual, skip_details=True)
 
 
 def test_compare_list_failure_missing() -> None:
