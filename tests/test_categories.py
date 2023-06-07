@@ -14,15 +14,10 @@ from .util import get_data, run_with_mock_cwl_runner
 
 def test_unsupported_with_required_tests() -> None:
     cwl_runner = get_data("tests/test-data/mock_cwl_runner.py")
-    args = [
-        "--test",
-        schema_salad.ref_resolver.file_uri(
-            get_data("tests/test-data/required-unsupported.yml")
-        ),
-    ]
     cwd = os.getcwd()
+    os.chdir(get_data("tests/test-data/"))
+    args = ["--test", "required-unsupported.yml"]
     try:
-        os.chdir(get_data("tests/test-data/"))
         error_code, stdout, stderr = run_with_mock_cwl_runner(args)
     finally:
         os.chdir(cwd)
@@ -35,21 +30,19 @@ def test_unsupported_with_required_tests() -> None:
     else:
         q = ""
     assert (
-        "The `id` field is missing.{n}"
-        "The `id` field is missing.{n}"
-        "Test [1/2] Required test that is unsupported (without tags){n}"
-        "{n}"
-        "Test 1 failed: {cwl_runner} --quiet return-unsupported.cwl {q}v1.0{p}cat-job.json{q}{n}"
-        "Required test that is unsupported (without tags){n}"
-        "Does not support required feature{n}"
-        "Test [2/2] Required test that is unsupported (with tags){n}"
-        "{n}"
-        "Test 2 failed: {cwl_runner} --quiet return-unsupported.cwl {q}v1.0{p}cat-job.json{q}{n}"
-        "Required test that is unsupported (with tags){n}"
-        "Does not support required feature{n}"
-        "0 tests passed, 2 failures, 0 unsupported features{n}".format(
-            cwl_runner=cwl_runner, n=n, p=p, q=q
-        )
+        f"The `id` field is missing.{n}"
+        f"The `id` field is missing.{n}"
+        f"Test [1/2] Required test that is unsupported (without tags){n}"
+        f"{n}"
+        f"Test 1 failed: {cwl_runner} --quiet return-unsupported.cwl {q}v1.0{p}cat-job.json{q}{n}"
+        f"Required test that is unsupported (without tags){n}"
+        f"Does not support required feature{n}"
+        f"Test [2/2] Required test that is unsupported (with tags){n}"
+        f"{n}"
+        f"Test 2 failed: {cwl_runner} --quiet return-unsupported.cwl {q}v1.0{p}cat-job.json{q}{n}"
+        f"Required test that is unsupported (with tags){n}"
+        f"Does not support required feature{n}"
+        f"0 tests passed, 2 failures, 0 unsupported features{n}"
     ) == stderr
 
 
