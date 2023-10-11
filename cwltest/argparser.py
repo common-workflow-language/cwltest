@@ -107,8 +107,7 @@ def arg_parser() -> argparse.ArgumentParser:
         help="Create JSON badges and store them in this directory.",
     )
 
-    pkg = pkg_resources.require("cwltest")
-    if pkg:
+    if pkg := pkg_resources.require("cwltest"):
         ver = f"{sys.argv[0]} {pkg[0].version}"
     else:
         ver = "{} {}".format(sys.argv[0], "unknown version")
