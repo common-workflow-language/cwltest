@@ -37,10 +37,9 @@ def _check_keys(
 
 
 def _compare_contents(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
-    expected_contents = expected["contents"]
     with open(actual["path"]) as f:
         actual_contents = f.read()
-    if expected_contents != actual_contents:
+    if (expected_contents := expected["contents"]) != actual_contents:
         raise CompareFail.format(
             expected,
             actual,

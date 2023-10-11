@@ -12,3 +12,4 @@ autoflake
 flake8-bugbear
 pyupgrade
 bandit
+auto-walrus

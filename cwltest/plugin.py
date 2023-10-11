@@ -13,6 +13,7 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Protocol,
     Set,
     Tuple,
     Union,
@@ -21,7 +22,6 @@ from typing import (
 
 import pytest
 from cwltest.compare import CompareFail, compare
-from typing_extensions import Protocol
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, utils
 
@@ -207,8 +207,7 @@ class CWLYamlFile(pytest.File):
         """Nonfunctional if xdist is installed and anything besides "-n 0" is used."""
         from _pytest.junitxml import xml_key
 
-        xml = self.config._store.get(xml_key, None)
-        if xml:
+        if xml := self.config._store.get(xml_key, None):
             xml.add_global_property("runner", self.config.getoption("cwl_runner"))
             xml.add_global_property(
                 "runner_extra_args", self.config.getoption("cwl_args")
@@ -381,8 +380,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         nunsupported,
         _,
     ) = utils.parse_results(results, tests)
-    cwl_badgedir = session.config.getoption("cwl_badgedir")
-    if cwl_badgedir:
+    if cwl_badgedir := session.config.getoption("cwl_badgedir"):
         utils.generate_badges(cwl_badgedir, ntotal, npassed)
 
 

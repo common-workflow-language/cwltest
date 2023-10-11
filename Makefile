@@ -168,11 +168,9 @@ mypy3: mypy
 mypy: $(filter-out setup.py gittagger.py,$(PYSOURCES))
 	MYPYPATH=$$MYPYPATH:mypy-stubs mypy $^
 
-mypy_3.6: $(filter-out setup.py gittagger.py,$(PYSOURCES))
-	MYPYPATH=$$MYPYPATH:mypy-stubs mypy --python-version 3.6 $^
-
 pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
-	pyupgrade --exit-zero-even-if-changed --py36-plus $^
+	pyupgrade --exit-zero-even-if-changed --py38-plus $^
+	auto-walrus $^
 
 release-test: FORCE
 	git diff-index --quiet HEAD -- || ( echo You have uncommitted changes, please commit them and try again; false )
