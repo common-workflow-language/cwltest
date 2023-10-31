@@ -1,4 +1,4 @@
-include Makefile gittaggers.py test-requirements.txt mypy-requirements.txt requirements.txt tox.ini mypy.ini
+include Makefile test-requirements.txt mypy-requirements.txt requirements.txt tox.ini mypy.ini
 include dev-requirements.txt .flake8 .coveragerc release-test.sh
 include docs/Makefile docs/conf.py docs/requirements.txt docs/_static/favicon.ico docs/*.rst
 include cwltest/*.yml

@@ -29,7 +29,7 @@ PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
 DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt
 DEBDEVPKGS=pep8 python-autopep8 pylint python-coverage pydocstyle sloccount \
 	   python-flake8 python-mock shellcheck
-VERSION=2.3.$(shell TZ=UTC git log --first-parent --max-count=1 \
+VERSION=2.4.$(shell TZ=UTC git log --first-parent --max-count=1 \
 	--format=format:%cd --date=format-local:%Y%m%d%H%M%S)
 
 ## all                    : default task (install in dev mode)
@@ -105,10 +105,10 @@ codespell:
 
 ## format                 : check/fix all code indentation and formatting (runs black)
 format: $(PYSOURCES) mypy-stubs
-	black $^
+	black --exclude cwltest/_version.py $^
 
 format-check: $(PYSOURCES) mypy-stubs
-	black --diff --check $^
+	black --diff --check --exclude cwltest/_version.py $^
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -151,7 +151,7 @@ test: $(PYSOURCES)
 
 ## testcov                : run the cwltest test suite and collect coverage
 testcov: $(PYSOURCES)
-	python setup.py test --addopts "--cov" ${PYTEST_EXTRA}
+	pytest --cov ${PYTEST_EXTRA}
 
 sloccount.sc: $(PYSOURCES) Makefile
 	sloccount --duplicates --wide --details $^ > $@
@@ -165,7 +165,7 @@ list-author-emails:
 	@git log --format='%aN,%aE' | sort -u | grep -v 'root'
 
 mypy3: mypy
-mypy: $(filter-out setup.py gittagger.py,$(PYSOURCES))
+mypy: $(filter-out setup.py,$(PYSOURCES))
 	MYPYPATH=$$MYPYPATH:mypy-stubs mypy $^
 
 pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
@@ -176,7 +176,9 @@ release-test: FORCE
 	git diff-index --quiet HEAD -- || ( echo You have uncommitted changes, please commit them and try again; false )
 	./release-test.sh
 
-release: release-test
+release:
+	export SETUPTOOLS_SCM_PRETEND_VERSION=${VERSION} && \
+	./release-test.sh && \
 	. testenv2/bin/activate && \
 		pip install build && \
 		python -m build testenv2/src/${PACKAGE} && \
@@ -184,8 +186,8 @@ release: release-test
 		twine upload testenv2/src/${PACKAGE}/dist/* && \
 		git tag ${VERSION} && git push --tags
 
-flake8: $(PYSOURCES)
-	flake8 $^
+flake8: FORCE
+	flake8 $(PYSOURCES)
 
 FORCE:
 
