@@ -2,26 +2,18 @@
 import os
 import pathlib
 import sys
+from typing import List
 
-import setuptools.command.egg_info as egg_info_cmd
 from setuptools import setup
 
 SETUP_DIR = os.path.dirname(__file__)
 README = os.path.join(SETUP_DIR, "README.rst")
 
-try:
-    import gittaggers
-
-    tagger = gittaggers.EggInfoFromGit
-except ImportError:
-    tagger = egg_info_cmd.egg_info
-
 needs_pytest = {"pytest", "test", "ptr"}.intersection(sys.argv)
-pytest_runner = ["pytest < 8", "pytest-runner"] if needs_pytest else []
+pytest_runner: List[str] = ["pytest < 8", "pytest-runner"] if needs_pytest else []
 
 setup(
     name="cwltest",
-    version="2.3",  # update the VERSION prefix in the Makefile as well 🙂
     description="Common Workflow Language testing framework",
     long_description=open(README).read(),
     long_description_content_type="text/x-rst",
@@ -30,8 +22,9 @@ setup(
     url="https://github.com/common-workflow-language/cwltest",
     download_url="https://github.com/common-workflow-language/cwltest",
     license="Apache 2.0",
-    python_requires=">=3.8, <4",
-    setup_requires=[] + pytest_runner,
+    python_requires=">=3.8,<3.13",
+    use_scm_version=True,
+    setup_requires=pytest_runner + ["setuptools_scm>=8.0.4,<9"],
     packages=["cwltest", "cwltest.tests"],
     package_dir={"cwltest.tests": "tests"},
     package_data={"cwltest": ["py.typed"], "tests": ["test-data/*"]},
@@ -57,7 +50,6 @@ setup(
         ],
     },
     zip_safe=True,
-    cmdclass={"egg_info": tagger},
     classifiers=[
         "Environment :: Console",
         "License :: OSI Approved :: Apache Software License",
