@@ -82,7 +82,7 @@ def test_compare_file_different_size(tmp_path: Path) -> None:
     actual = {
         "basename": "cores.txt",
         "class": "File",
-        "location": str(path),
+        "location": path.as_uri(),
     }
     with pytest.raises(CompareFail):
         _compare_file(expected, actual, False)
@@ -102,7 +102,7 @@ def test_compare_file_different_checksum(tmp_path: Path) -> None:
     actual = {
         "basename": "cores.txt",
         "class": "File",
-        "location": str(path),
+        "location": path.as_uri(),
     }
     with pytest.raises(CompareFail):
         _compare_file(expected, actual, False)
@@ -121,7 +121,7 @@ def test_compare_file_inconsistent_size(tmp_path: Path) -> None:
     actual = {
         "basename": "cores.txt",
         "class": "File",
-        "location": str(path),
+        "location": path.as_uri(),
         "size": 65535,
     }
     with pytest.raises(CompareFail):
@@ -142,7 +142,7 @@ def test_compare_file_inconsistent_checksum(tmp_path: Path) -> None:
         "basename": "cores.txt",
         "checksum": "inconsistent-checksum",
         "class": "File",
-        "location": str(path),
+        "location": path.as_uri(),
     }
     with pytest.raises(CompareFail):
         _compare_file(expected, actual, False)
@@ -160,7 +160,25 @@ def test_compare_directory(tmp_path: Path) -> None:
 
     actual = {
         "class": "Directory",
-        "location": str(path),
+        "location": path.as_uri(),
+        "listing": [],
+    }
+    _compare_directory(expected, actual, False)
+
+
+def test_compare_directory_path(tmp_path: Path) -> None:
+    expected = {
+        "location": "dir",
+        "class": "Directory",
+        "listing": [],
+    }
+
+    path = tmp_path / "dir"
+    os.makedirs(path)
+
+    actual = {
+        "class": "Directory",
+        "path": str(path),
         "listing": [],
     }
     _compare_directory(expected, actual, False)

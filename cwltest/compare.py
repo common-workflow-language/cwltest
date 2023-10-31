@@ -119,38 +119,42 @@ def _compare_location(
     expected: Dict[str, Any], actual: Dict[str, Any], skip_details: bool
 ) -> None:
     if "path" in expected:
-        comp = "path"
+        expected_comp = "path"
         if "path" not in actual:
             actual["path"] = actual["location"]
     elif "location" in expected:
-        comp = "location"
+        expected_comp = "location"
     else:
         return
+    if "path" in actual:
+        actual_comp = "path"
+    else:
+        actual_comp = "location"
+    path = urllib.parse.urlparse(actual[actual_comp]).path
     if actual.get("class") == "Directory":
-        actual[comp] = actual[comp].rstrip("/")
+        actual[actual_comp] = actual[actual_comp].rstrip("/")
         exist_fun: Callable[[str], bool] = os.path.isdir
     else:
         exist_fun = os.path.isfile
-    if "path" in actual:
-        path = urllib.parse.urlparse(actual["path"]).path
-    else:
-        path = urllib.parse.urlparse(actual["location"]).path
     if not exist_fun(path) and not skip_details:
         raise CompareFail.format(
             expected,
             actual,
-            f"{actual[comp]} does not exist",
+            f"{actual[actual_comp]} does not exist",
         )
-    if expected[comp] != "Any" and (
+    if expected[expected_comp] != "Any" and (
         not (
-            actual[comp].endswith("/" + expected[comp])
-            or ("/" not in actual[comp] and expected[comp] == actual[comp])
+            actual[actual_comp].endswith("/" + expected[expected_comp])
+            or (
+                "/" not in actual[actual_comp]
+                and expected[expected_comp] == actual[actual_comp]
+            )
         )
     ):
         raise CompareFail.format(
             expected,
             actual,
-            f"{actual[comp]} does not end with {expected[comp]}",
+            f"{actual[actual_comp]} does not end with {expected[expected_comp]}",
         )
 
 
