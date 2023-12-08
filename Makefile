@@ -25,7 +25,7 @@ PACKAGE=cwltest
 
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
-PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py) setup.py
+PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py)
 DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt
 DEBDEVPKGS=pep8 python-autopep8 pylint python-coverage pydocstyle sloccount \
 	   python-flake8 python-mock shellcheck
@@ -75,7 +75,6 @@ docs: FORCE
 ## clean                  : clean up all temporary / machine-generated files
 clean: FORCE
 	rm -f ${MODILE}/*.pyc tests/*.pyc
-	python setup.py clean --all || true
 	rm -Rf .coverage\.* .coverage
 	rm -f diff-cover.html
 
@@ -93,7 +92,7 @@ pydocstyle: $(PYSOURCES)
 	pydocstyle --add-ignore=D100,D101,D102,D103 $^ || true
 
 pydocstyle_report.txt: $(PYSOURCES)
-	pydocstyle setup.py $^ > $@ 2>&1 || true
+	pydocstyle $^ > $@ 2>&1 || true
 
 ## diff_pydocstyle_report : check Python docstring style for changed files only
 diff_pydocstyle_report: pydocstyle_report.txt
@@ -104,11 +103,11 @@ codespell:
 	codespell -w $(shell git ls-files | grep -v mypy-stubs | grep -v gitignore)
 
 ## format                 : check/fix all code indentation and formatting (runs black)
-format: $(PYSOURCES) mypy-stubs
-	black --exclude cwltest/_version.py $^
+format: $(filter-out cwltest/_version.py,$(PYSOURCES)) mypy-stubs
+	black $^
 
-format-check: $(PYSOURCES) mypy-stubs
-	black --diff --check --exclude cwltest/_version.py $^
+format-check: $(filter-out cwltest/_version.py,$(PYSOURCES)) mypy-stubs
+	black --diff --check $^
 
 ## pylint                 : run static code analysis on Python code
 pylint: $(PYSOURCES)
@@ -165,7 +164,7 @@ list-author-emails:
 	@git log --format='%aN,%aE' | sort -u | grep -v 'root'
 
 mypy3: mypy
-mypy: $(filter-out setup.py,$(PYSOURCES))
+mypy: $(PYSOURCES)
 	MYPYPATH=$$MYPYPATH:mypy-stubs mypy $^
 
 pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))

@@ -58,7 +58,7 @@ Or from source
 .. code:: bash
 
   git clone https://github.com/common-workflow-language/cwltest.git
-  cd cwltest && python setup.py install
+  cd cwltest && pip install  .
 
 ***********************
 Run on the command line

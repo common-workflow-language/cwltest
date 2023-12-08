@@ -4,8 +4,8 @@ pylint
 pep257
 pydocstyle
 flake8
-tox < 5
-tox-pyenv
+tox >4, < 5
+virtualenv-pyenv
 isort
 wheel
 autoflake
@@ -13,3 +13,4 @@ flake8-bugbear
 pyupgrade
 bandit
 auto-walrus
+build
