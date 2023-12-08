@@ -1,8 +1,7 @@
 """Command line argument parsing for cwltest."""
 import argparse
 import sys
-
-import pkg_resources
+from importlib.metadata import PackageNotFoundError, version
 
 from cwltest import DEFAULT_TIMEOUT
 
@@ -107,10 +106,10 @@ def arg_parser() -> argparse.ArgumentParser:
         help="Create JSON badges and store them in this directory.",
     )
 
-    if pkg := pkg_resources.require("cwltest"):
-        ver = f"{sys.argv[0]} {pkg[0].version}"
-    else:
-        ver = "{} {}".format(sys.argv[0], "unknown version")
-    parser.add_argument("--version", action="version", version=ver)
+    try:
+        ver = version("cwltest")
+    except PackageNotFoundError:
+        ver = "unknown version"
+    parser.add_argument("--version", action="version", version=f"{sys.argv[0]} {ver}")
 
     return parser
