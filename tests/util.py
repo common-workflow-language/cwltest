@@ -1,8 +1,12 @@
+"""Test functions."""
+import atexit
 import os
 import subprocess  # nosec
+from contextlib import ExitStack
+from pathlib import Path
 from typing import List, Tuple
 
-from pkg_resources import Requirement, ResolutionError, resource_filename
+from cwltest.utils import as_file, files
 
 
 def get_data(filename: str) -> str:
@@ -12,12 +16,15 @@ def get_data(filename: str) -> str:
     # joining path
     filepath = None
     try:
-        filepath = resource_filename(Requirement.parse("cwltest"), filename)
-    except ResolutionError:
+        file_manager = ExitStack()
+        atexit.register(file_manager.close)
+        traversable = files("cwltest") / filename
+        filepath = file_manager.enter_context(as_file(traversable))
+    except ModuleNotFoundError:
         pass
     if not filepath or not os.path.isfile(filepath):
-        filepath = os.path.join(os.path.dirname(__file__), os.pardir, filename)
-    return filepath
+        filepath = Path(os.path.dirname(__file__)) / ".." / filename
+    return str(filepath.resolve())
 
 
 def run_with_mock_cwl_runner(args: List[str]) -> Tuple[int, str, str]:

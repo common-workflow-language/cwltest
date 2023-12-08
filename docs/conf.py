@@ -80,9 +80,9 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 
 
-from pkg_resources import get_distribution
+from importlib.metadata import version as metadata_version
 
-release = get_distribution("cwltest").version
+release = metadata_version("cwltest")
 version = ".".join(release.split(".")[:2])
 
 autoapi_dirs = ["../cwltest"]

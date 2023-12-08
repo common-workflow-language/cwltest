@@ -22,7 +22,6 @@ from typing import (
 )
 
 import junit_xml
-import pkg_resources
 import ruamel.yaml.scanner
 import schema_salad.avro
 import schema_salad.ref_resolver
@@ -32,7 +31,14 @@ from rdflib import Graph
 from ruamel.yaml.scalarstring import ScalarString
 from schema_salad.exceptions import ValidationException
 
+if sys.version_info >= (3, 9):
+    from importlib.resources import as_file, files
+else:
+    from importlib_resources import as_file, files
+
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
+
+__all__ = ["files", "as_file"]
 
 
 class CWLTestConfig:
@@ -167,12 +173,11 @@ def load_and_validate_tests(path: str) -> Tuple[Any, Dict[str, Any]]:
 
     This also processes $import directives.
     """
-    schema_resource = pkg_resources.resource_stream(__name__, "cwltest-schema.yml")
-    cache: Optional[Dict[str, Union[str, Graph, bool]]] = {
-        "https://w3id.org/cwl/cwltest/cwltest-schema.yml": schema_resource.read().decode(
-            "utf-8"
-        )
-    }
+    schema_resource = files("cwltest").joinpath("cwltest-schema.yml")
+    with schema_resource.open("r", encoding="utf-8") as fp:
+        cache: Optional[Dict[str, Union[str, Graph, bool]]] = {
+            "https://w3id.org/cwl/cwltest/cwltest-schema.yml": fp.read()
+        }
     (
         document_loader,
         avsc_names,
