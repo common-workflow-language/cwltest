@@ -1,9 +1,71 @@
 [build-system]
 requires = [
-    "setuptools>=45",
-    "setuptools_scm[toml]>=8.0.4,<9",
+    "setuptools>=61.2",
+    "setuptools_scm>=8.0.4,<9",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "cwltest"
+authors = [{name = "Common workflow language working group", email = "common-workflow-language@googlegroups.com"}]
+license = {text = "Apache 2.0"}
+description = "Common Workflow Language testing framework"
+classifiers = [
+    "Environment :: Console",
+    "Framework :: Pytest",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS :: MacOS X",
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+]
+requires-python = ">=3.8,<3.13"
+dynamic = ["version", "dependencies"]
+
+[project.readme]
+file = "README.rst"
+content-type = "text/x-rst"
+
+[project.urls]
+Homepage = "https://github.com/common-workflow-language/cwltest"
+Download = "https://github.com/common-workflow-language/cwltest"
+
+[project.entry-points.pytest11]
+cwl = "cwltest.plugin"
+
+[project.optional-dependencies]
+pytest-plugin = ["pytest"]
+
+[project.scripts]
+cwltest = "cwltest.main:main"
+
+[tool.aliases]
+test = "pytest"
+
+[tool.setuptools]
+package-dir = {"cwltest.tests" = "tests"}
+packages = ["cwltest", "cwltest.tests"]
+zip-safe = true
+include-package-data = true
+
+[tool.setuptools.package-data]
+cwltest = ["py.typed"]
+tests = ["test-data/*"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.isort]
+multi_line_output = "3"
+include_trailing_comma = "True"
+force_grid_wrap = "0"
+use_parentheses = "True"
+line_length = "88"
 
 [tool.setuptools_scm]
 write_to = "cwltest/_version.py"
