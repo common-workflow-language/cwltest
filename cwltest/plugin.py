@@ -33,6 +33,7 @@ if TYPE_CHECKING:
     from _pytest.config import PytestPluginManager
     from _pytest.config.argparsing import Parser as PytestParser
     from _pytest.nodes import Node
+    from pluggy import HookCaller
 
 
 class TestRunner(Protocol):
@@ -58,7 +59,7 @@ def _get_comma_separated_option(config: "Config", name: str) -> List[str]:
 def _run_test_hook_or_plain(
     test: Dict[str, str],
     config: utils.CWLTestConfig,
-    hook: TestRunner,
+    hook: "HookCaller",
 ) -> utils.TestResult:
     """Run tests using a provided pytest_cwl_execute_test hook or the --cwl-runner."""
     processfile, jobfile = utils.prepare_test_paths(test, config.basedir)
