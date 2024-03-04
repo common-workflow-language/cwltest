@@ -1,4 +1,5 @@
 """Command line argument parsing for cwltest."""
+
 import argparse
 import sys
 from importlib.metadata import PackageNotFoundError, version
