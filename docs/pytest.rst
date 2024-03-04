@@ -2,8 +2,8 @@
 Pytest plugin
 *************
 
-``cwltest`` can also be used as a Pytest plugin. The CWL test filename must
-end with ``.cwltest.yml`` or ``.cwltest.yaml``.
+``cwltest`` can also be used as a Pytest 7.x or 8.x plugin. The CWL test
+filename must end with ``.cwltest.yml`` or ``.cwltest.yaml``.
 
 In this case, the simple command::
 

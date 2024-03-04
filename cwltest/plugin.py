@@ -1,4 +1,5 @@
 """Discovers CWL test files and converts them to pytest.Items."""
+
 import argparse
 import json
 import os
@@ -27,7 +28,6 @@ from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, utils
 
 if TYPE_CHECKING:
     from _pytest._code.code import ExceptionInfo, _TracebackStyle
-    from _pytest.compat import LEGACY_PATH
     from _pytest.config import Config
     from _pytest.config import Config as PytestConfig
     from _pytest.config import PytestPluginManager
@@ -198,7 +198,7 @@ class CWLItem(pytest.Item):
 
     def reportinfo(self) -> Tuple[Union["os.PathLike[str]", str], Optional[int], str]:
         """Status report."""
-        return self.fspath, 0, "cwl test: %s" % self.name
+        return self.path, 0, "cwl test: %s" % self.name
 
 
 class CWLYamlFile(pytest.File):
@@ -342,7 +342,7 @@ def _doc_options() -> argparse.ArgumentParser:
 
 
 def pytest_collect_file(
-    file_path: Path, path: "LEGACY_PATH", parent: pytest.Collector
+    file_path: Path, parent: pytest.Collector
 ) -> Optional[pytest.Collector]:
     """Is this file for us."""
     if (

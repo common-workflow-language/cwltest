@@ -1,4 +1,5 @@
 """Test prepare_test_command()"""
+
 import os
 
 from cwltest import utils
