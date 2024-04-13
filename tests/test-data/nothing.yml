@@ -1,0 +1,10 @@
+- job: empty.yml
+  tool: true.cwl
+  output: {}
+  id: do_nothing
+  doc: Example of doing nothing
+- job: empty.yml
+  tool: true.cwl
+  output: {}
+  id: do_nothing2
+  doc: Example of doing nothing more
