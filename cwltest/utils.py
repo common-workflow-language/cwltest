@@ -422,6 +422,23 @@ def run_test_plain(
             " ".join([shlex.quote(tc) for tc in test_command]),
         )
         raise
+    except json.JSONDecodeError:
+        logger.error(
+            """Test %s failed: %s""",
+            number,
+            " ".join([shlex.quote(tc) for tc in test_command]),
+        )
+        logger.error(test.get("doc", "").replace("\n", " ").strip())
+        invalid_json_msg = "Output is not a valid JSON document: '%s'" % outstr
+        logger.error(invalid_json_msg)
+        return TestResult(
+            1,
+            outstr,
+            outerr,
+            duration,
+            config.classname,
+            invalid_json_msg,
+        )
     except subprocess.TimeoutExpired:
         logger.error(
             """Test %s timed out: %s""",
