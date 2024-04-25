@@ -132,7 +132,7 @@ def main() -> int:
     for t in tests:
         if t.get("label"):
             logger.warning("The `label` field is deprecated. Use `id` field instead.")
-            t["short_name"] = t["label"]
+            t["short_name"] = t["label"]  # noqa: B909
         elif t.get("id"):
             if isinstance(t.get("id"), str):
                 t["short_name"] = utils.shortname(t["id"])
