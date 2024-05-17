@@ -1,0 +1,38 @@
+- output: {}
+  job: empty.yml
+  tool: return-0.cwl
+  id: success_w_job
+  doc: Successful test with a job file
+  tags: [ command_line_tool ]
+
+- output: {}
+  tool: return-0.cwl
+  id: success_wo_job
+  doc: Successful test without a job file
+  tags: [ command_line_tool ]
+
+- output: {}
+  job: empty.yml
+  tool: return-1.cwl
+  id: failure_w_job
+  doc: Failed test with a job file
+  tags: [ command_line_tool ]
+
+- output: {}
+  tool: return-1.cwl
+  id: failure_wo_job
+  doc: Failed test without a job file
+  tags: [ command_line_tool ]
+
+- output: {}
+  job: empty.yml
+  tool: return-unsupported.cwl
+  id: unsupported_w_job
+  doc: Unsupported test with a job file
+  tags: [ command_line_tool ]
+
+- output: {}
+  tool: return-unsupported.cwl
+  id: unsupported_wo_job
+  doc: Unsupported test without a job file
+  tags: [ command_line_tool ]

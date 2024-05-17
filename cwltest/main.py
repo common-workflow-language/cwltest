@@ -13,7 +13,7 @@ import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
 from cwltest.argparser import arg_parser
-from cwltest.utils import CWLTestConfig, TestResult
+from cwltest.utils import CWLTestConfig, CWLTestReport, TestResult
 from schema_salad.exceptions import ValidationException
 
 from cwltest import logger, utils
@@ -58,7 +58,11 @@ def _run_test(
     sys.stderr.flush()
     config = CWLTestConfig(
         basedir=args.basedir,
+        test_baseuri=args.baseuri,
+        test_basedir=args.test_basedir,
         classname=args.classname,
+        entry=args.test,
+        entry_line=test["line"],
         tool=args.tool,
         args=args.args,
         testargs=args.testargs,
@@ -96,6 +100,12 @@ def main() -> int:
         arg_parser().print_help()
         return 1
 
+    args.test_basedir = os.path.dirname(utils.absuri(args.test)) + "/"
+    if args.baseuri is None:
+        args.baseuri = "file://" + args.test_basedir
+    if not args.baseuri.endswith("/"):
+        args.baseuri = args.baseuri + "/"
+
     try:
         tests, metadata = utils.load_and_validate_tests(args.test)
     except ValidationException:
@@ -106,8 +116,8 @@ def main() -> int:
     suite_name, _ = os.path.splitext(os.path.basename(args.test))
     report: Optional[junit_xml.TestSuite] = junit_xml.TestSuite(suite_name, [])
 
-    ntotal = defaultdict(int)  # type: Dict[str, int]
-    npassed = defaultdict(int)  # type: Dict[str, int]
+    ntotal: Dict[str, int] = defaultdict(int)
+    npassed: Dict[str, List[CWLTestReport]] = defaultdict(list)
 
     if args.only_tools:
         alltests = tests
@@ -233,7 +243,7 @@ def main() -> int:
             junit_xml.to_xml_report_file(xml, [cast(junit_xml.TestSuite, report)])
 
     if args.badgedir:
-        utils.generate_badges(args.badgedir, ntotal, npassed)
+        utils.generate_badges(args.badgedir, ntotal, npassed, nfailures, nunsupported)
 
     if failures == 0 and unsupported == 0:
         logger.info("All tests passed")

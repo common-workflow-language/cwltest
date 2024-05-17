@@ -20,6 +20,7 @@ from typing import (
     Union,
     cast,
 )
+from urllib.parse import urljoin
 
 import junit_xml
 import ruamel.yaml.scanner
@@ -46,7 +47,11 @@ class CWLTestConfig:
 
     def __init__(
         self,
+        entry: str,
+        entry_line: str,
         basedir: Optional[str] = None,
+        test_baseuri: Optional[str] = None,
+        test_basedir: Optional[str] = None,
         outdir: Optional[str] = None,
         classname: Optional[str] = None,
         tool: Optional[str] = None,
@@ -58,14 +63,33 @@ class CWLTestConfig:
     ) -> None:
         """Initialize test configuration."""
         self.basedir: str = basedir or os.getcwd()
+        self.test_baseuri: str = test_baseuri or "file://" + self.basedir
+        self.test_basedir: str = test_basedir or self.basedir
         self.outdir: Optional[str] = outdir
         self.classname: str = classname or ""
+        self.entry = urljoin(
+            self.test_baseuri, os.path.basename(entry) + f"#L{entry_line}"
+        )
         self.tool: str = tool or "cwl-runner"
         self.args: List[str] = args or []
         self.testargs: List[str] = testargs or []
         self.timeout: Optional[int] = timeout
         self.verbose: bool = verbose or False
         self.runner_quiet: bool = runner_quiet or True
+
+
+class CWLTestReport:
+    """Encapsulate relevant test result data for a markdown report."""
+
+    def __init__(
+        self, id: str, category: List[str], entry: str, tool: str, job: Optional[str]
+    ) -> None:
+        """Initialize a CWLTestReport object."""
+        self.id = id
+        self.category = category
+        self.entry = entry
+        self.tool = tool
+        self.job = job
 
 
 class TestResult:
@@ -78,6 +102,9 @@ class TestResult:
         error_output: str,
         duration: float,
         classname: str,
+        entry: str,
+        tool: str,
+        job: Optional[str],
         message: str = "",
     ) -> None:
         """Initialize a TestResult object."""
@@ -87,6 +114,9 @@ class TestResult:
         self.duration = duration
         self.message = message
         self.classname = classname
+        self.entry = entry
+        self.tool = tool
+        self.job = job
 
     def create_test_case(self, test: Dict[str, Any]) -> junit_xml.TestCase:
         """Create a jUnit XML test case from this test result."""
@@ -107,6 +137,25 @@ class TestResult:
         if self.return_code > 0:
             case.failure_message = self.message
         return case
+
+    def create_report_entry(self, test: Dict[str, Any]) -> CWLTestReport:
+        return CWLTestReport(
+            test.get("id", "no-id"),
+            test.get("tags", ["required"]),
+            self.entry,
+            self.tool,
+            self.job,
+        )
+
+
+def _clean_ruamel_list(obj: List[Any]) -> Any:
+    """Entrypoint to transform roundtrip loaded ruamel.yaml to plain objects."""
+    new_list = []
+    for entry in obj:
+        e: Any = _clean_ruamel(entry)
+        e["line"] = str(entry.lc.line)
+        new_list.append(e)
+    return new_list
 
 
 def _clean_ruamel(obj: Any) -> Any:
@@ -132,13 +181,17 @@ def _clean_ruamel(obj: Any) -> Any:
 
 
 def generate_badges(
-    badgedir: str, ntotal: Dict[str, int], npassed: Dict[str, int]
+    badgedir: str,
+    ntotal: Dict[str, int],
+    npassed: Dict[str, List[CWLTestReport]],
+    nfailures: Dict[str, List[CWLTestReport]],
+    nunsupported: Dict[str, List[CWLTestReport]],
 ) -> None:
     """Generate badges with conformance levels."""
     os.mkdir(badgedir)
     for t, v in ntotal.items():
-        percent = int((npassed[t] / float(v)) * 100)
-        if npassed[t] == v:
+        percent = int((len(npassed[t]) / float(v)) * 100)
+        if len(npassed[t]) == v:
             color = "green"
         elif t == "required":
             color = "red"
@@ -155,6 +208,42 @@ def generate_badges(
                     }
                 )
             )
+
+        with open(f"{badgedir}/{t}.md", "w") as out:
+            print(f"# `{t}` tests", file=out)
+
+            print("## List of passed tests", file=out)
+            for e in npassed[t]:
+                base = f"[{shortname(e.id)}]({e.entry})"
+                tool = f"[tool]({e.tool})"
+                if e.job:
+                    arr = [tool, f"[job]({e.job})"]
+                else:
+                    arr = [tool]
+                args = ", ".join(arr)
+                print(f"- {base} ({args})", file=out)
+
+            print("## List of failed tests", file=out)
+            for e in nfailures[t]:
+                base = f"[{shortname(e.id)}]({e.entry})"
+                tool = f"[tool]({e.tool})"
+                if e.job:
+                    arr = [tool, f"[job]({e.job})"]
+                else:
+                    arr = [tool]
+                args = ", ".join(arr)
+                print(f"- {base} ({args})", file=out)
+
+            print("## List of unsupported tests", file=out)
+            for e in nunsupported[t]:
+                base = f"[{shortname(e.id)}]({e.entry})"
+                tool = f"[tool]({e.tool})"
+                if e.job:
+                    arr = [tool, f"[job]({e.job})"]
+                else:
+                    arr = [tool]
+                args = ", ".join(arr)
+                print(f"- {base} ({args})", file=out)
 
 
 def get_test_number_by_key(
@@ -194,7 +283,7 @@ def load_and_validate_tests(path: str) -> Tuple[Any, Dict[str, Any]]:
     tests, metadata = schema_salad.schema.load_and_validate(
         document_loader, avsc_names, path, True
     )
-    tests = cast(List[Dict[str, Any]], _clean_ruamel(tests))
+    tests = cast(List[Dict[str, Any]], _clean_ruamel_list(tests))
 
     return tests, metadata
 
@@ -209,10 +298,10 @@ def parse_results(
     int,  # passed
     int,  # failures
     int,  # unsupported
-    Dict[str, int],
-    Dict[str, int],
-    Dict[str, int],
-    Dict[str, int],
+    Dict[str, int],  # total for each tag
+    Dict[str, List[CWLTestReport]],  # passed for each tag
+    Dict[str, List[CWLTestReport]],  # failures for each tag
+    Dict[str, List[CWLTestReport]],  # unsupported for each tag
     Optional[junit_xml.TestSuite],
 ]:
     """
@@ -226,12 +315,13 @@ def parse_results(
     failures = 0
     unsupported = 0
     ntotal: Dict[str, int] = defaultdict(int)
-    nfailures: Dict[str, int] = defaultdict(int)
-    nunsupported: Dict[str, int] = defaultdict(int)
-    npassed: Dict[str, int] = defaultdict(int)
+    nfailures: Dict[str, List[CWLTestReport]] = defaultdict(list)
+    nunsupported: Dict[str, List[CWLTestReport]] = defaultdict(list)
+    npassed: Dict[str, List[CWLTestReport]] = defaultdict(list)
 
     for i, test_result in enumerate(results):
         test_case = test_result.create_test_case(tests[i])
+        test_report = test_result.create_report_entry(tests[i])
         test_case.url = (
             f"cwltest:{suite_name}#{i + 1}"
             if suite_name is not None
@@ -247,21 +337,21 @@ def parse_results(
         if return_code == 0:
             passed += 1
             for t in tags:
-                npassed[t] += 1
+                npassed[t].append(test_report)
         elif return_code != 0 and return_code != UNSUPPORTED_FEATURE:
             failures += 1
             for t in tags:
-                nfailures[t] += 1
+                nfailures[t].append(test_report)
             test_case.add_failure_info(output=test_result.message)
         elif return_code == UNSUPPORTED_FEATURE and category == REQUIRED:
             failures += 1
             for t in tags:
-                nfailures[t] += 1
+                nfailures[t].append(test_report)
             test_case.add_failure_info(output=test_result.message)
         elif category != REQUIRED and return_code == UNSUPPORTED_FEATURE:
             unsupported += 1
             for t in tags:
-                nunsupported[t] += 1
+                nunsupported[t].append(test_report)
             test_case.add_skipped_info("Unsupported")
         else:
             raise Exception(
@@ -352,6 +442,15 @@ def run_test_plain(
     test_command: List[str] = []
     duration = 0.0
     number = "?"
+
+    reltool = os.path.relpath(test["tool"], start=config.test_basedir)
+    tooluri = urljoin(config.test_baseuri, reltool)
+    if "job" in test:
+        reljob = os.path.relpath(test["job"], start=config.test_basedir)
+        joburi = urljoin(config.test_baseuri, reljob)
+    else:
+        joburi = None
+
     if test_number is not None:
         number = str(test_number)
     process: Optional[subprocess.Popen[str]] = None
@@ -385,10 +484,26 @@ def run_test_plain(
             "tags", ["required"]
         ):
             return TestResult(
-                UNSUPPORTED_FEATURE, outstr, outerr, duration, config.classname
+                UNSUPPORTED_FEATURE,
+                outstr,
+                outerr,
+                duration,
+                config.classname,
+                config.entry,
+                tooluri,
+                joburi,
             )
         if test.get("should_fail", False):
-            return TestResult(0, outstr, outerr, duration, config.classname)
+            return TestResult(
+                0,
+                outstr,
+                outerr,
+                duration,
+                config.classname,
+                config.entry,
+                tooluri,
+                joburi,
+            )
         if test_number:
             logger.error(
                 """Test %i failed: %s""",
@@ -405,7 +520,17 @@ def run_test_plain(
             logger.error("Does not support required feature")
         else:
             logger.error("Returned non-zero")
-        return TestResult(1, outstr, outerr, duration, config.classname, str(err))
+        return TestResult(
+            1,
+            outstr,
+            outerr,
+            duration,
+            config.classname,
+            config.entry,
+            tooluri,
+            joburi,
+            str(err),
+        )
     except (ruamel.yaml.scanner.ScannerError, TypeError) as err:
         logger.error(
             """Test %s failed: %s""",
@@ -437,6 +562,9 @@ def run_test_plain(
             outerr,
             duration,
             config.classname,
+            config.entry,
+            tooluri,
+            joburi,
             invalid_json_msg,
         )
     except subprocess.TimeoutExpired:
@@ -457,6 +585,9 @@ def run_test_plain(
             outerr,
             float(cast(int, config.timeout)),
             config.classname,
+            config.entry,
+            tooluri,
+            joburi,
             "Test timed out",
         )
     finally:
@@ -480,7 +611,16 @@ def run_test_plain(
         )
         logger.warning(test.get("doc", "").replace("\n", " ").strip())
         logger.warning("Returned zero but it should be non-zero")
-        return TestResult(1, outstr, outerr, duration, config.classname)
+        return TestResult(
+            1,
+            outstr,
+            outerr,
+            duration,
+            config.classname,
+            config.entry,
+            tooluri,
+            joburi,
+        )
 
     try:
         compare(test.get("output"), out)
@@ -503,6 +643,9 @@ def run_test_plain(
         outerr,
         duration,
         config.classname,
+        config.entry,
+        tooluri,
+        joburi,
         fail_message,
     )
 
@@ -514,3 +657,10 @@ def shortname(name: str) -> str:
     It is a workaround of https://github.com/common-workflow-language/schema_salad/issues/511.
     """
     return [n for n in re.split("[/#]", name) if len(n)][-1]
+
+
+def absuri(path: str) -> str:
+    """Return an absolute URI."""
+    if "://" in path:
+        return path
+    return "file://" + os.path.abspath(path)

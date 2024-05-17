@@ -13,6 +13,7 @@ def _load_v1_0_dir(path: Path) -> None:
     inner_dir = os.path.join(path.parent, "v1.0")
     os.mkdir(inner_dir)
     shutil.copy(get_data("tests/test-data/v1.0/cat1-testcli.cwl"), inner_dir)
+    shutil.copy(get_data("tests/test-data/v1.0/null-expression2-tool.cwl"), inner_dir)
     shutil.copy(get_data("tests/test-data/v1.0/cat-job.json"), inner_dir)
     shutil.copy(get_data("tests/test-data/v1.0/cat-n-job.json"), inner_dir)
     shutil.copy(get_data("tests/test-data/v1.0/hello.txt"), inner_dir)
@@ -104,7 +105,7 @@ def test_no_label(pytester: "Pytester") -> None:
     result = pytester.runpytest(
         "-k", "conformance_test_v1.2.cwltest.yaml", "--cwl-tags", "required"
     )
-    result.assert_outcomes(passed=1, skipped=1)
+    result.assert_outcomes(passed=2, skipped=1)
 
 
 def test_cwltool_hook(pytester: "Pytester") -> None:
