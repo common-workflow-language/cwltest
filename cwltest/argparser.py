@@ -18,6 +18,9 @@ def arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--basedir", type=str, help="Basedir to use for tests", default="."
     )
+    parser.add_argument(
+        "--baseuri", type=str, help="Base URI to use links in the report", default=None
+    )
     parser.add_argument("-l", action="store_true", help="List tests then exit")
     parser.add_argument(
         "-n", type=str, default=None, help="Run specific tests, format is 1,3-6,9"

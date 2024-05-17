@@ -15,7 +15,7 @@ TIMEOUT_TOOL = "timeout.cwl"
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("processfile")
-    parser.add_argument("jobfile")
+    parser.add_argument("jobfile", nargs='?', default=None)
     parser.add_argument("--version", action="version", version="%(prog)s 1.0")
     parser.add_argument("--outdir")
     parser.add_argument("--quiet", action="store_true")

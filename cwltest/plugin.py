@@ -20,6 +20,7 @@ from typing import (
     Union,
     cast,
 )
+from urllib.parse import urljoin
 
 import pytest
 from cwltest.compare import CompareFail, compare
@@ -64,6 +65,13 @@ def _run_test_hook_or_plain(
     """Run tests using a provided pytest_cwl_execute_test hook or the --cwl-runner."""
     processfile, jobfile = utils.prepare_test_paths(test, config.basedir)
     start_time = time.time()
+    reltool = os.path.relpath(test["tool"], start=config.test_basedir)
+    tooluri = urljoin(config.test_baseuri, reltool)
+    if "job" in test:
+        reljob = os.path.relpath(test["job"], start=config.test_basedir)
+        joburi = urljoin(config.test_baseuri, reljob)
+    else:
+        joburi = None
     outerr = ""
     hook_out = hook(config=config, processfile=processfile, jobfile=jobfile)
     if not hook_out:
@@ -74,7 +82,14 @@ def _run_test_hook_or_plain(
     if returncode == UNSUPPORTED_FEATURE:
         if REQUIRED not in test.get("tags", ["required"]):
             return utils.TestResult(
-                UNSUPPORTED_FEATURE, outstr, "", duration, config.classname
+                UNSUPPORTED_FEATURE,
+                outstr,
+                "",
+                duration,
+                config.classname,
+                config.entry,
+                tooluri,
+                joburi,
             )
     elif returncode != 0:
         if not bool(test.get("should_fail", False)):
@@ -82,9 +97,26 @@ def _run_test_hook_or_plain(
             logger.warning(test.get("doc"))
             message = "Returned non-zero but it should be zero"
             return utils.TestResult(
-                1, outstr, outerr, duration, config.classname, message
+                1,
+                outstr,
+                outerr,
+                duration,
+                config.classname,
+                config.entry,
+                tooluri,
+                joburi,
+                message,
             )
-        return utils.TestResult(0, outstr, outerr, duration, config.classname)
+        return utils.TestResult(
+            0,
+            outstr,
+            outerr,
+            duration,
+            config.classname,
+            config.entry,
+            tooluri,
+            joburi,
+        )
     if bool(test.get("should_fail", False)):
         return utils.TestResult(
             1,
@@ -92,6 +124,9 @@ def _run_test_hook_or_plain(
             outerr,
             duration,
             config.classname,
+            config.entry,
+            tooluri,
+            joburi,
             "Test should failed, but it did not.",
         )
 
@@ -111,6 +146,9 @@ def _run_test_hook_or_plain(
         outerr,
         duration,
         config.classname,
+        config.entry,
+        tooluri,
+        joburi,
         fail_message,
     )
 
@@ -137,6 +175,10 @@ class CWLItem(pytest.Item):
         cwl_args = self.config.getoption("cwl_args")
         config = utils.CWLTestConfig(
             basedir=self.config.getoption("cwl_basedir"),
+            test_baseuri=self.config.getoption("cwl_basedir"),
+            test_basedir=self.config.getoption("cwl_basedir"),
+            entry="tests.yaml",
+            entry_line="0",
             outdir=str(
                 self.config._tmp_path_factory.mktemp(  # type: ignore[attr-defined]
                     self.spec.get("label", "unlabled_test")
@@ -382,7 +424,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         _,
     ) = utils.parse_results(results, tests)
     if cwl_badgedir := session.config.getoption("cwl_badgedir"):
-        utils.generate_badges(cwl_badgedir, ntotal, npassed)
+        utils.generate_badges(cwl_badgedir, ntotal, npassed, nfailures, nunsupported)
 
 
 def pytest_addhooks(pluginmanager: "PytestPluginManager") -> None:
