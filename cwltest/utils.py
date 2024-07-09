@@ -343,11 +343,6 @@ def parse_results(
             for t in tags:
                 nfailures[t].append(test_report)
             test_case.add_failure_info(output=test_result.message)
-        elif return_code == UNSUPPORTED_FEATURE and category == REQUIRED:
-            failures += 1
-            for t in tags:
-                nfailures[t].append(test_report)
-            test_case.add_failure_info(output=test_result.message)
         elif category != REQUIRED and return_code == UNSUPPORTED_FEATURE:
             unsupported += 1
             for t in tags:
