@@ -183,7 +183,7 @@ release:
 		python -m build testenv2/src/${PACKAGE} && \
 		pip install twine && \
 		twine upload testenv2/src/${PACKAGE}/dist/* && \
-		git tag ${VERSION} && git push --tags
+		git tag --no-sign ${VERSION} && git push --tags
 
 flake8: FORCE
 	flake8 $(PYSOURCES)
