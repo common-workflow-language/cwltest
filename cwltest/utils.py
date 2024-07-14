@@ -440,7 +440,7 @@ def run_test_plain(
 
     reltool = os.path.relpath(test["tool"], start=config.test_basedir)
     tooluri = urljoin(config.test_baseuri, reltool)
-    if "job" in test:
+    if test.get("job", None):
         reljob = os.path.relpath(test["job"], start=config.test_basedir)
         joburi = urljoin(config.test_baseuri, reljob)
     else:
