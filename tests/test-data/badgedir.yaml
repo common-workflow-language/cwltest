@@ -32,6 +32,7 @@
   tags: [ command_line_tool ]
 
 - output: {}
+  job: null
   tool: return-unsupported.cwl
   id: unsupported_wo_job
   doc: Unsupported test without a job file
