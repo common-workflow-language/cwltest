@@ -28,7 +28,7 @@ from cwltest.compare import CompareFail, compare
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, utils
 
 if TYPE_CHECKING:
-    from _pytest._code.code import ExceptionInfo, _TracebackStyle
+    from _pytest._code.code import ExceptionInfo, TracebackStyle
     from _pytest.config import Config
     from _pytest.config import Config as PytestConfig
     from _pytest.config import PytestPluginManager
@@ -207,7 +207,7 @@ class CWLItem(pytest.Item):
     def repr_failure(
         self,
         excinfo: "ExceptionInfo[BaseException]",
-        style: Optional["_TracebackStyle"] = None,
+        style: Optional["TracebackStyle"] = None,
     ) -> str:
         """
         Document failure reason.
