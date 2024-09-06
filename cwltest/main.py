@@ -4,7 +4,7 @@
 import argparse
 import os
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional, Set, cast
 
@@ -116,7 +116,7 @@ def main() -> int:
     suite_name, _ = os.path.splitext(os.path.basename(args.test))
     report: Optional[junit_xml.TestSuite] = junit_xml.TestSuite(suite_name, [])
 
-    ntotal: Dict[str, int] = defaultdict(int)
+    ntotal: Dict[str, int] = Counter()
     npassed: Dict[str, List[CWLTestReport]] = defaultdict(list)
 
     if args.only_tools:
