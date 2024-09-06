@@ -18,10 +18,11 @@ jobs:
     runs-on: ubuntu-20.04  # 22.04 doesn't support Python 3.6
 
     strategy:
+      fail-fast: false
       matrix:
         # The README.rst file mentions the versions tested, please update it as well
         py-ver-major: [3]
-        py-ver-minor: [8, 9, 10, 11, 12]
+        py-ver-minor: [8, 9, 10, 11, 12, 13]
         step: [lint, unit, mypy, bandit]
 
     env:
@@ -37,6 +38,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.py-semver }}
+          allow-prereleases: true
           cache: pip
           cache-dependency-path: |
             requirements.txt
