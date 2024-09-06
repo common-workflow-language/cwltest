@@ -7,7 +7,7 @@ import subprocess  # nosec
 import sys
 import tempfile
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from typing import (
     Any,
     Dict,
@@ -314,7 +314,7 @@ def parse_results(
     passed = 0
     failures = 0
     unsupported = 0
-    ntotal: Dict[str, int] = defaultdict(int)
+    ntotal: Dict[str, int] = Counter()
     nfailures: Dict[str, List[CWLTestReport]] = defaultdict(list)
     nunsupported: Dict[str, List[CWLTestReport]] = defaultdict(list)
     npassed: Dict[str, List[CWLTestReport]] = defaultdict(list)
