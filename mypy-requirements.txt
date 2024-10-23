@@ -1,4 +1,4 @@
-mypy==1.12.1
+mypy==1.13.0
 pytest >= 8.3, < 9
 types-setuptools
 types-requests
