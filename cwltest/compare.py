@@ -60,8 +60,6 @@ def _compare_dict(
         try:
             compare(expected[c], actual.get(c), skip_details)
         except CompareFail as e:
-            import traceback
-            traceback.print_exc()
             raise CompareFail.format(
                 expected, actual, f"failed comparison for key {c!r}: {e}"
             ) from e
@@ -180,7 +178,6 @@ def _compare_checksum(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
     else:
         f = open(path, "rb")
 
-    print("got", f)
     contents = f.read(1024 * 1024)
     while contents != b"":
         checksum.update(contents)

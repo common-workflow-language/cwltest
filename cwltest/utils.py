@@ -677,7 +677,6 @@ class ArvadosFileChecker:
 
         sp = path.split("/", 1)
         p = sp[0]
-        print("wargh", sp)
         if (arvados.util.keep_locator_pattern.match(p) or
             arvados.util.collection_uuid_pattern.match(p)):
             locator = p
@@ -690,9 +689,7 @@ class ArvadosFileChecker:
 
     def arvados_exist_fun(self, path):
         collection, rest = self.get_collection(path)
-        print("QQQ", collection, rest)
         if collection is not None:
-            print("checking for", collection.portable_data_hash(), rest, collection.exists(rest), rest in collection, collection.items())
             return collection.exists(rest)
         else:
             return False
@@ -700,7 +697,6 @@ class ArvadosFileChecker:
     def arvados_open_fun(self, path, mode):
         collection, rest = self.get_collection(path)
         if collection is not None:
-            print("BBB", collection, rest, mode)
             return collection.open(rest, mode)
         else:
             return False
@@ -708,7 +704,6 @@ class ArvadosFileChecker:
     def arvados_size_fun(self, path):
         collection, rest = self.get_collection(path)
         if collection is not None:
-            print("CCC", collection, rest)
             return collection.find(rest).size()
         else:
             return False
