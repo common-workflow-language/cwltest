@@ -663,52 +663,12 @@ def absuri(path: str) -> str:
         return path
     return "file://" + os.path.abspath(path)
 
-class ArvadosFileChecker:
-
-    def __init__(self) -> None:
-        import arvados.api
-
-        self.api_client = arvados.api()
-        self.collection_cache = {}
-
-    def get_collection(self, path):
-        import arvados.collection
-        import arvados.util
-
-        sp = path.split("/", 1)
-        p = sp[0]
-        if (arvados.util.keep_locator_pattern.match(p) or
-            arvados.util.collection_uuid_pattern.match(p)):
-            locator = p
-            rest = os.path.normpath(urllib.parse.unquote(sp[1])) if len(sp) == 2 else None
-            if locator not in self.collection_cache:
-                self.collection_cache[locator] = arvados.collection.CollectionReader(locator, api_client=self.api_client)
-            return (self.collection_cache.get(locator), rest)
-        else:
-            return (None, path)
-
-    def arvados_exist_fun(self, path):
-        collection, rest = self.get_collection(path)
-        if collection is not None:
-            return collection.exists(rest)
-        else:
-            return False
-
-    def arvados_open_fun(self, path, mode):
-        collection, rest = self.get_collection(path)
-        if collection is not None:
-            return collection.open(rest, mode)
-        else:
-            return False
-
-    def arvados_size_fun(self, path):
-        collection, rest = self.get_collection(path)
-        if collection is not None:
-            return collection.find(rest).size()
-        else:
-            return False
 
 def setup_arvados_support():
-    cwltest.compare.arvados_exist_fun = ArvadosFileChecker().arvados_exist_fun
-    cwltest.compare.arvados_open_fun = ArvadosFileChecker().arvados_open_fun
-    cwltest.compare.arvados_size_fun = ArvadosFileChecker().arvados_size_fun
+    try:
+        import arvados
+        import cwltest.arvfsaccess
+        api_client = arvados.api()
+        cwltest.compare.fs_access = cwltest.arvfsaccess.CollectionFsAccess("", cwltest.arvfsaccess.CollectionCache(api_client, api_client.keep, 3))
+    except ModuleNotFoundError:
+        pass

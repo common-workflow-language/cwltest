@@ -5,10 +5,9 @@ import json
 import os.path
 import urllib.parse
 from typing import Any, Callable, Dict, Optional, Set
+import cwltest.stdfsaccess
 
-arvados_exist_fun = None
-arvados_open_fun = None
-arvados_size_fun = None
+fs_access = cwltest.stdfsaccess.StdFsAccess("")
 
 class CompareFail(Exception):
     """Compared CWL objects are not equal."""
@@ -134,17 +133,13 @@ def _compare_location(
     else:
         actual_comp = "location"
 
-    path = urllib.parse.urlparse(actual[actual_comp]).path
     if actual.get("class") == "Directory":
         actual[actual_comp] = actual[actual_comp].rstrip("/")
-        exist_fun: Callable[[str], bool] = os.path.isdir
+        exist_fun: Callable[[str], bool] = fs_access.isdir
     else:
-        exist_fun = os.path.isfile
+        exist_fun = fs_access.isfile
 
-    if actual[actual_comp].startswith("keep:") and arvados_exist_fun is not None:
-        exist_fun = arvados_exist_fun
-
-    if not exist_fun(path) and not skip_details:
+    if not exist_fun(actual[actual_comp]) and not skip_details:
         raise CompareFail.format(
             expected,
             actual,
@@ -168,21 +163,16 @@ def _compare_location(
 
 def _compare_checksum(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
     if "path" in actual:
-        path = urllib.parse.urlparse(actual["path"]).path
+        path = actual["path"]
     else:
-        path = urllib.parse.urlparse(actual["location"]).path
+        path = actual["location"]
     checksum = hashlib.sha1()  # nosec
 
-    if arvados_open_fun is not None:
-        f = arvados_open_fun(path, "rb")
-    else:
-        f = open(path, "rb")
-
-    contents = f.read(1024 * 1024)
-    while contents != b"":
-        checksum.update(contents)
+    with fs_access.open(path, "rb") as f:
         contents = f.read(1024 * 1024)
-    f.close()
+        while contents != b"":
+            checksum.update(contents)
+            contents = f.read(1024 * 1024)
 
     actual_checksum_on_disk = f"sha1${checksum.hexdigest()}"
     if "checksum" in actual:
@@ -208,14 +198,11 @@ def _compare_checksum(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
 
 def _compare_size(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
     if "path" in actual:
-        path = urllib.parse.urlparse(actual["path"]).path
+        path = actual["path"]
     else:
-        path = urllib.parse.urlparse(actual["location"]).path
+        path = actual["location"]
 
-    if arvados_size_fun is not None:
-        actual_size_on_disk = arvados_size_fun(path)
-    else:
-        actual_size_on_disk = os.path.getsize(path)
+    actual_size_on_disk = fs_access.size(path)
 
     if "size" in actual:
         actual_size_declared = actual["size"]

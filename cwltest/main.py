@@ -116,10 +116,7 @@ def main() -> int:
     suite_name, _ = os.path.splitext(os.path.basename(args.test))
     report: Optional[junit_xml.TestSuite] = junit_xml.TestSuite(suite_name, [])
 
-    try:
-        setup_arvados_support()
-    except ModuleNotFoundError:
-        pass
+    setup_arvados_support()
 
     ntotal: Dict[str, int] = Counter()
     npassed: Dict[str, List[CWLTestReport]] = defaultdict(list)
