@@ -51,7 +51,7 @@ class CollectionCache:
         self.min_entries = min_entries
 
     def set_cap(self, cap: int) -> None:
-        """Set the cache cap"""
+        """Set the cache cap."""
         self.cap = cap
 
     def cap_cache(self, required: int) -> None:
@@ -108,14 +108,14 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
 
     def __init__(self, basedir: str, collection_cache: CollectionCache) -> None:
-        """Create Arvados collection access object"""
+        """Create Arvados collection access object."""
         super(CollectionFsAccess, self).__init__(basedir)
         self.collection_cache = collection_cache
 
     def get_collection(
         self, path: str
     ) -> Tuple[Optional[arvados.collection.CollectionReader], Optional[str]]:
-        """If it is a keep: URI, get the collection"""
+        """If it is a keep: URI, get the collection."""
         sp = path.split("/", 1)
         p = sp[0]
         if p.startswith("keep:") and (
@@ -131,7 +131,7 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
             return (None, path)
 
     def open(self, fn: str, mode: str, encoding: Optional[str] = None) -> IO[bytes]:
-        """Open a file from a keep: or file: URI"""
+        """Open a file from a keep: or file: URI."""
         collection, rest = self.get_collection(fn)
         if collection is not None and rest is not None:
             return collection.open(rest, mode, encoding=encoding)

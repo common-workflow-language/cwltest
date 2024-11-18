@@ -8,6 +8,7 @@ from schema_salad.ref_resolver import uri_file_path
 
 
 def abspath(src: str, basedir: str) -> str:
+    """Determine local filesystem absolute path given a basedir, handling both plain paths and URIs."""
     if src.startswith("file://"):
         abpath = uri_file_path(src)
     elif urllib.parse.urlsplit(src).scheme in ["http", "https"]:
@@ -31,7 +32,7 @@ class StdFsAccess:
         return abspath(p, self.basedir)
 
     def open(self, fn: str, mode: str) -> IO[Any]:
-        """Open a file from a file: URI"""
+        """Open a file from a file: URI."""
         return open(self._abs(fn), mode)
 
     def size(self, fn: str) -> int:
