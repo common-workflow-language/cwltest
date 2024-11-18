@@ -10,6 +10,7 @@ import re
 import logging
 import threading
 from collections import OrderedDict
+from typing import IO
 
 import cwltest.stdfsaccess
 
@@ -18,29 +19,32 @@ import arvados.collection
 import arvados.arvfile
 import arvados.errors
 
-from googleapiclient.errors import HttpError
+from apiclient.errors import HttpError
 
 logger = logging.getLogger('arvados.cwl-runner')
 
 pdh_size = re.compile(r'([0-9a-f]{32})\+(\d+)(\+\S+)*')
 
-class CollectionCache(object):
-    def __init__(self, api_client, keep_client, num_retries,
-                 cap=256*1024*1024,
-                 min_entries=2):
+class CollectionCache:
+    def __init__(self,
+                 api_client: arvados.api.ThreadSafeAPIClient,
+                 keep_client: arvados.keep.KeepClient,
+                 num_retries: int,
+                 cap: int = 256*1024*1024,
+                 min_entries: int = 2) -> None:
         self.api_client = api_client
         self.keep_client = keep_client
         self.num_retries = num_retries
-        self.collections = OrderedDict()
+        self.collections: OrderedDict[str, tuple[arvados.collection.CollectionReader, int]] = OrderedDict()
         self.lock = threading.Lock()
         self.total = 0
         self.cap = cap
         self.min_entries = min_entries
 
-    def set_cap(self, cap):
+    def set_cap(self, cap: int) -> None:
         self.cap = cap
 
-    def cap_cache(self, required):
+    def cap_cache(self, required: int) -> None:
         # ordered dict iterates from oldest to newest
         for pdh, v in list(self.collections.items()):
             available = self.cap - self.total
@@ -51,7 +55,7 @@ class CollectionCache(object):
             del self.collections[pdh]
             self.total -= v[1]
 
-    def get(self, locator):
+    def get(self, locator: str) -> arvados.collection.CollectionReader:
         with self.lock:
             if locator not in self.collections:
                 m = pdh_size.match(locator)
@@ -78,11 +82,11 @@ class CollectionCache(object):
 class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
 
-    def __init__(self, basedir, collection_cache=None):
+    def __init__(self, basedir: str, collection_cache: CollectionCache) -> None:
         super(CollectionFsAccess, self).__init__(basedir)
         self.collection_cache = collection_cache
 
-    def get_collection(self, path):
+    def get_collection(self, path: str) -> tuple[arvados.collection.CollectionReader | None, str | None]:
         sp = path.split("/", 1)
         p = sp[0]
         if p.startswith("keep:") and (arvados.util.keep_locator_pattern.match(p[5:]) or
@@ -93,43 +97,14 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
         else:
             return (None, path)
 
-    def _match(self, collection, patternsegments, parent):
-        if not patternsegments:
-            return []
-
-        if not isinstance(collection, arvados.collection.RichCollectionBase):
-            return []
-
-        ret = []
-        # iterate over the files and subcollections in 'collection'
-        for filename in collection:
-            if patternsegments[0] == '.':
-                # Pattern contains something like "./foo" so just shift
-                # past the "./"
-                ret.extend(self._match(collection, patternsegments[1:], parent))
-            elif fnmatch.fnmatch(filename, patternsegments[0]):
-                cur = os.path.join(parent, filename)
-                if len(patternsegments) == 1:
-                    ret.append(cur)
-                else:
-                    ret.extend(self._match(collection[filename], patternsegments[1:], cur))
-        return ret
-
-    def glob(self, pattern):
-        collection, rest = self.get_collection(pattern)
-        if collection is not None and rest in (None, "", "."):
-            return [pattern]
-        patternsegments = rest.split("/")
-        return sorted(self._match(collection, patternsegments, "keep:" + collection.manifest_locator()))
-
-    def open(self, fn, mode, encoding=None):
+    def open(self, fn: str, mode: str, encoding: str | None = None) -> IO[bytes]:
         collection, rest = self.get_collection(fn)
-        if collection is not None:
+        if collection is not None and rest is not None:
             return collection.open(rest, mode, encoding=encoding)
         else:
             return super(CollectionFsAccess, self).open(self._abs(fn), mode)
 
-    def exists(self, fn):
+    def exists(self, fn: str) -> bool:
         try:
             collection, rest = self.get_collection(fn)
         except HttpError as err:
@@ -150,7 +125,7 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
         else:
             return super(CollectionFsAccess, self).exists(fn)
 
-    def size(self, fn):  # type: (unicode) -> bool
+    def size(self, fn: str) -> int:
         collection, rest = self.get_collection(fn)
         if collection is not None:
             if rest:
@@ -161,7 +136,7 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
         else:
             return super(CollectionFsAccess, self).size(fn)
 
-    def isfile(self, fn):  # type: (unicode) -> bool
+    def isfile(self, fn: str) -> bool:
         collection, rest = self.get_collection(fn)
         if collection is not None:
             if rest:
@@ -171,7 +146,7 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
         else:
             return super(CollectionFsAccess, self).isfile(fn)
 
-    def isdir(self, fn):  # type: (unicode) -> bool
+    def isdir(self, fn: str) -> bool:
         collection, rest = self.get_collection(fn)
         if collection is not None:
             if rest:
@@ -180,32 +155,3 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
                 return True
         else:
             return super(CollectionFsAccess, self).isdir(fn)
-
-    def listdir(self, fn):  # type: (unicode) -> List[unicode]
-        collection, rest = self.get_collection(fn)
-        if collection is not None:
-            if rest:
-                dir = collection.find(rest)
-            else:
-                dir = collection
-            if dir is None:
-                raise IOError(errno.ENOENT, "Directory '%s' in '%s' not found" % (rest, collection.portable_data_hash()))
-            if not isinstance(dir, arvados.collection.RichCollectionBase):
-                raise IOError(errno.ENOENT, "Path '%s' in '%s' is not a Directory" % (rest, collection.portable_data_hash()))
-            return [abspath(l, fn) for l in list(dir.keys())]
-        else:
-            return super(CollectionFsAccess, self).listdir(fn)
-
-    def join(self, path, *paths): # type: (unicode, *unicode) -> unicode
-        if paths and paths[-1].startswith("keep:") and arvados.util.keep_locator_pattern.match(paths[-1][5:]):
-            return paths[-1]
-        return os.path.join(path, *paths)
-
-    def realpath(self, path):
-        if path.startswith("$(task.tmpdir)") or path.startswith("$(task.outdir)"):
-            return path
-        collection, rest = self.get_collection(path)
-        if collection is not None:
-            return path
-        else:
-            return os.path.realpath(path)

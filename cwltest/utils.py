@@ -664,11 +664,11 @@ def absuri(path: str) -> str:
     return "file://" + os.path.abspath(path)
 
 
-def setup_arvados_support():
+def setup_arvados_support() -> None:
     try:
-        import arvados
+        import arvados.api
         import cwltest.arvfsaccess
-        api_client = arvados.api()
+        api_client = arvados.api.api()
         cwltest.compare.fs_access = cwltest.arvfsaccess.CollectionFsAccess("", cwltest.arvfsaccess.CollectionCache(api_client, api_client.keep, 3))
     except ModuleNotFoundError:
         pass
