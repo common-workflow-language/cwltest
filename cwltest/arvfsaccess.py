@@ -9,7 +9,7 @@ import re
 import logging
 import threading
 from collections import OrderedDict
-from typing import IO
+from typing import IO, Tuple, Optional
 
 import cwltest.stdfsaccess
 
@@ -38,7 +38,7 @@ class CollectionCache:
         self.keep_client = keep_client
         self.num_retries = num_retries
         self.collections: OrderedDict[
-            str, tuple[arvados.collection.CollectionReader, int]
+            str, Tuple[arvados.collection.CollectionReader, int]
         ] = OrderedDict()
         self.lock = threading.Lock()
         self.total = 0
@@ -105,7 +105,7 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
 
     def get_collection(
         self, path: str
-    ) -> tuple[arvados.collection.CollectionReader | None, str | None]:
+    ) -> Tuple[Optional[arvados.collection.CollectionReader], Optional[str]]:
         sp = path.split("/", 1)
         p = sp[0]
         if p.startswith("keep:") and (
@@ -120,7 +120,7 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
         else:
             return (None, path)
 
-    def open(self, fn: str, mode: str, encoding: str | None = None) -> IO[bytes]:
+    def open(self, fn: str, mode: str, encoding: Optional[str] = None) -> IO[bytes]:
         collection, rest = self.get_collection(fn)
         if collection is not None and rest is not None:
             return collection.open(rest, mode, encoding=encoding)
