@@ -27,13 +27,10 @@ import ruamel.yaml.scanner
 import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
-import cwltest.compare
 from cwltest.compare import CompareFail, compare
 from rdflib import Graph
 from ruamel.yaml.scalarstring import ScalarString
 from schema_salad.exceptions import ValidationException
-import functools
-import urllib.parse
 
 if sys.version_info >= (3, 9):
     from importlib.resources import as_file, files
@@ -668,7 +665,10 @@ def setup_arvados_support() -> None:
     try:
         import arvados.api
         import cwltest.arvfsaccess
+
         api_client = arvados.api.api()
-        cwltest.compare.fs_access = cwltest.arvfsaccess.CollectionFsAccess("", cwltest.arvfsaccess.CollectionCache(api_client, api_client.keep, 3))
+        cwltest.compare.fs_access = cwltest.arvfsaccess.CollectionFsAccess(
+            "", cwltest.arvfsaccess.CollectionCache(api_client, api_client.keep, 3)
+        )
     except ModuleNotFoundError:
         pass

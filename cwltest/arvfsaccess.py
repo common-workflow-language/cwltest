@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import fnmatch
 import os
 import errno
 import urllib.parse
@@ -21,21 +20,26 @@ import arvados.errors
 
 from apiclient.errors import HttpError
 
-logger = logging.getLogger('arvados.cwl-runner')
+logger = logging.getLogger("arvados.cwl-runner")
 
-pdh_size = re.compile(r'([0-9a-f]{32})\+(\d+)(\+\S+)*')
+pdh_size = re.compile(r"([0-9a-f]{32})\+(\d+)(\+\S+)*")
+
 
 class CollectionCache:
-    def __init__(self,
-                 api_client: arvados.api.ThreadSafeAPIClient,
-                 keep_client: arvados.keep.KeepClient,
-                 num_retries: int,
-                 cap: int = 256*1024*1024,
-                 min_entries: int = 2) -> None:
+    def __init__(
+        self,
+        api_client: arvados.api.ThreadSafeAPIClient,
+        keep_client: arvados.keep.KeepClient,
+        num_retries: int,
+        cap: int = 256 * 1024 * 1024,
+        min_entries: int = 2,
+    ) -> None:
         self.api_client = api_client
         self.keep_client = keep_client
         self.num_retries = num_retries
-        self.collections: OrderedDict[str, tuple[arvados.collection.CollectionReader, int]] = OrderedDict()
+        self.collections: OrderedDict[
+            str, tuple[arvados.collection.CollectionReader, int]
+        ] = OrderedDict()
         self.lock = threading.Lock()
         self.total = 0
         self.cap = cap
@@ -51,7 +55,13 @@ class CollectionCache:
             if available >= required or len(self.collections) < self.min_entries:
                 return
             # cut it loose
-            logger.debug("Evicting collection reader %s from cache (cap %s total %s required %s)", pdh, self.cap, self.total, required)
+            logger.debug(
+                "Evicting collection reader %s from cache (cap %s total %s required %s)",
+                pdh,
+                self.cap,
+                self.total,
+                required,
+            )
             del self.collections[pdh]
             self.total -= v[1]
 
@@ -63,11 +73,18 @@ class CollectionCache:
                     self.cap_cache(int(m.group(2)) * 128)
                 logger.debug("Creating collection reader for %s", locator)
                 try:
-                    cr = arvados.collection.CollectionReader(locator, api_client=self.api_client,
-                                                             keep_client=self.keep_client,
-                                                             num_retries=self.num_retries)
+                    cr = arvados.collection.CollectionReader(
+                        locator,
+                        api_client=self.api_client,
+                        keep_client=self.keep_client,
+                        num_retries=self.num_retries,
+                    )
                 except arvados.errors.ApiError as ap:
-                    raise IOError(errno.ENOENT, "Could not access collection '%s': %s" % (locator, str(ap._get_reason())))
+                    raise IOError(
+                        errno.ENOENT,
+                        "Could not access collection '%s': %s"
+                        % (locator, str(ap._get_reason())),
+                    ) from ap
                 sz = len(cr.manifest_text()) * 128
                 self.collections[locator] = (cr, sz)
                 self.total += sz
@@ -86,13 +103,19 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
         super(CollectionFsAccess, self).__init__(basedir)
         self.collection_cache = collection_cache
 
-    def get_collection(self, path: str) -> tuple[arvados.collection.CollectionReader | None, str | None]:
+    def get_collection(
+        self, path: str
+    ) -> tuple[arvados.collection.CollectionReader | None, str | None]:
         sp = path.split("/", 1)
         p = sp[0]
-        if p.startswith("keep:") and (arvados.util.keep_locator_pattern.match(p[5:]) or
-                                      arvados.util.collection_uuid_pattern.match(p[5:])):
+        if p.startswith("keep:") and (
+            arvados.util.keep_locator_pattern.match(p[5:])
+            or arvados.util.collection_uuid_pattern.match(p[5:])
+        ):
             locator = p[5:]
-            rest = os.path.normpath(urllib.parse.unquote(sp[1])) if len(sp) == 2 else None
+            rest = (
+                os.path.normpath(urllib.parse.unquote(sp[1])) if len(sp) == 2 else None
+            )
             return (self.collection_cache.get(locator), rest)
         else:
             return (None, path)
@@ -150,7 +173,9 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
         collection, rest = self.get_collection(fn)
         if collection is not None:
             if rest:
-                return isinstance(collection.find(rest), arvados.collection.RichCollectionBase)
+                return isinstance(
+                    collection.find(rest), arvados.collection.RichCollectionBase
+                )
             else:
                 return True
         else:

@@ -13,7 +13,12 @@ import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
 from cwltest.argparser import arg_parser
-from cwltest.utils import CWLTestConfig, CWLTestReport, TestResult, setup_arvados_support
+from cwltest.utils import (
+    CWLTestConfig,
+    CWLTestReport,
+    TestResult,
+    setup_arvados_support,
+)
 from schema_salad.exceptions import ValidationException
 
 from cwltest import logger, utils

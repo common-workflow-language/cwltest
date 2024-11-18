@@ -2,7 +2,7 @@ import arvados
 from _typeshed import Incomplete
 from typing import Any, Callable, Container, Iterator, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
 HEX_RE: Incomplete
 CR_UNCOMMITTED: str
 CR_COMMITTED: str

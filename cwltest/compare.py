@@ -2,12 +2,11 @@
 
 import hashlib
 import json
-import os.path
-import urllib.parse
 from typing import Any, Callable, Dict, Optional, Set
 import cwltest.stdfsaccess
 
 fs_access = cwltest.stdfsaccess.StdFsAccess("")
+
 
 class CompareFail(Exception):
     """Compared CWL objects are not equal."""
