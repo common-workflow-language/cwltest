@@ -1,3 +1,5 @@
+"""File system interface for accessing Arvados collections."""
+
 # Copyright (C) The Arvados Authors. All rights reserved.
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -26,6 +28,8 @@ pdh_size = re.compile(r"([0-9a-f]{32})\+(\d+)(\+\S+)*")
 
 
 class CollectionCache:
+    """Keeps track of recently used collections to avoid having to reload them over and over."""
+
     def __init__(
         self,
         api_client: arvados.api.ThreadSafeAPIClient,
@@ -34,6 +38,7 @@ class CollectionCache:
         cap: int = 256 * 1024 * 1024,
         min_entries: int = 2,
     ) -> None:
+        """Create a new collection cache."""
         self.api_client = api_client
         self.keep_client = keep_client
         self.num_retries = num_retries
@@ -46,9 +51,11 @@ class CollectionCache:
         self.min_entries = min_entries
 
     def set_cap(self, cap: int) -> None:
+        """Set the cache cap"""
         self.cap = cap
 
     def cap_cache(self, required: int) -> None:
+        """Remove collections until the cache usage is under the cap."""
         # ordered dict iterates from oldest to newest
         for pdh, v in list(self.collections.items()):
             available = self.cap - self.total
@@ -66,6 +73,7 @@ class CollectionCache:
             self.total -= v[1]
 
     def get(self, locator: str) -> arvados.collection.CollectionReader:
+        """Get a collection.  Returns cached version if possible, creates a new reader if not."""
         with self.lock:
             if locator not in self.collections:
                 m = pdh_size.match(locator)
@@ -100,12 +108,14 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
 
     def __init__(self, basedir: str, collection_cache: CollectionCache) -> None:
+        """Create Arvados collection access object"""
         super(CollectionFsAccess, self).__init__(basedir)
         self.collection_cache = collection_cache
 
     def get_collection(
         self, path: str
     ) -> Tuple[Optional[arvados.collection.CollectionReader], Optional[str]]:
+        """If it is a keep: URI, get the collection"""
         sp = path.split("/", 1)
         p = sp[0]
         if p.startswith("keep:") and (
@@ -121,34 +131,15 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
             return (None, path)
 
     def open(self, fn: str, mode: str, encoding: Optional[str] = None) -> IO[bytes]:
+        """Open a file from a keep: or file: URI"""
         collection, rest = self.get_collection(fn)
         if collection is not None and rest is not None:
             return collection.open(rest, mode, encoding=encoding)
         else:
             return super(CollectionFsAccess, self).open(self._abs(fn), mode)
 
-    def exists(self, fn: str) -> bool:
-        try:
-            collection, rest = self.get_collection(fn)
-        except HttpError as err:
-            if err.resp.status == 404:
-                return False
-            else:
-                raise
-        except IOError as err:
-            if err.errno == errno.ENOENT:
-                return False
-            else:
-                raise
-        if collection is not None:
-            if rest:
-                return collection.exists(rest)
-            else:
-                return True
-        else:
-            return super(CollectionFsAccess, self).exists(fn)
-
     def size(self, fn: str) -> int:
+        """Get the size of the file resource pointed to by a URI."""
         collection, rest = self.get_collection(fn)
         if collection is not None:
             if rest:
@@ -160,6 +151,7 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
             return super(CollectionFsAccess, self).size(fn)
 
     def isfile(self, fn: str) -> bool:
+        """Determine if a resource pointed to by a URI represents a file."""
         collection, rest = self.get_collection(fn)
         if collection is not None:
             if rest:
@@ -170,6 +162,7 @@ class CollectionFsAccess(cwltest.stdfsaccess.StdFsAccess):
             return super(CollectionFsAccess, self).isfile(fn)
 
     def isdir(self, fn: str) -> bool:
+        """Determine if a resource pointed to by a URI represents a directory."""
         collection, rest = self.get_collection(fn)
         if collection is not None:
             if rest:

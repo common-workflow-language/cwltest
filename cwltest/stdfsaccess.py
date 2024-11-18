@@ -1,11 +1,10 @@
 """Abstracted IO access."""
 
-import glob
 import os
 import urllib
-from typing import IO, Any, List
+from typing import IO, Any
 
-from schema_salad.ref_resolver import file_uri, uri_file_path
+from schema_salad.ref_resolver import uri_file_path
 
 
 def abspath(src: str, basedir: str) -> str:
@@ -31,34 +30,18 @@ class StdFsAccess:
     def _abs(self, p: str) -> str:
         return abspath(p, self.basedir)
 
-    def glob(self, pattern: str) -> List[str]:
-        return [
-            file_uri(str(self._abs(line))) for line in glob.glob(self._abs(pattern))
-        ]
-
     def open(self, fn: str, mode: str) -> IO[Any]:
+        """Open a file from a file: URI"""
         return open(self._abs(fn), mode)
 
-    def exists(self, fn: str) -> bool:
-        return os.path.exists(self._abs(fn))
-
     def size(self, fn: str) -> int:
+        """Get the size of the file resource pointed to by a URI."""
         return os.stat(self._abs(fn)).st_size
 
     def isfile(self, fn: str) -> bool:
+        """Determine if a resource pointed to by a URI represents a file."""
         return os.path.isfile(self._abs(fn))
 
     def isdir(self, fn: str) -> bool:
+        """Determine if a resource pointed to by a URI represents a directory."""
         return os.path.isdir(self._abs(fn))
-
-    def listdir(self, fn: str) -> List[str]:
-        return [
-            abspath(urllib.parse.quote(entry), fn)
-            for entry in os.listdir(self._abs(fn))
-        ]
-
-    def join(self, path, *paths):  # type: (str, *str) -> str
-        return os.path.join(path, *paths)
-
-    def realpath(self, path: str) -> str:
-        return os.path.realpath(path)
