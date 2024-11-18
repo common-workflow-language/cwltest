@@ -20,8 +20,6 @@ import arvados.collection
 import arvados.arvfile
 import arvados.errors
 
-from apiclient.errors import HttpError
-
 logger = logging.getLogger("arvados.cwl-runner")
 
 pdh_size = re.compile(r"([0-9a-f]{32})\+(\d+)(\+\S+)*")
