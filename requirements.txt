@@ -3,3 +3,4 @@ junit-xml >= 1.8
 pytest >= 7, < 9
 defusedxml
 importlib_resources>=1.4;python_version<'3.9'
+importlib_metadata>=1.4;python_version<'3.9'
