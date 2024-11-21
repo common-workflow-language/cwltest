@@ -98,15 +98,15 @@ Custom file access module
 
 If your CWL implementation does not write output files to a local file
 system location but instead to some other remote storage system, you
-can provide an alternate implementation of the `StdFsAccess` object
+can provide an alternate implementation of the *StdFsAccess* object
 that is able to access your storage system.
 
 Step 1:
 
 Implement your own class with the same public interface of the
-`StdFsAccess` object in `cwltest/stdfsaccess.py` (as of this writing,
-the methods are `open`, `size`, `isfile` and `isdir`).  These methods
-should expect to be called with URIs from the `location` field of the
+*StdFsAccess* object in *cwltest/stdfsaccess.py* (as of this writing,
+the methods are *open*, *size*, *isfile* and *isdir*).  These methods
+should expect to be called with URIs from the *location* field of the
 outputs of test cases.
 
 Define a function that, when called, returns a new instance of your object.
@@ -117,31 +117,31 @@ Create a Python package containing your class (or add it to an
 existing one).
 
 In the package metadata, add an entry point that declares the module
-(in this example, `my_cwl_runner.fsaccess`) containing the function
-(in this example, `get_fsaccess`) that `cwltest` will invoke to get an
-object implementing the `StdFsAccess` interface.
+(in this example, *my_cwl_runner.fsaccess*) containing the function
+(in this example, *get_fsaccess*) that *cwltest* will invoke to get an
+object implementing the *StdFsAccess* interface.
 
-.  In `setup.py` this looks like:
+In *setup.py* this looks like:
 
-```
-setup(
-  ...
-  entry_points={"cwltest.fsaccess": ["fsaccess=my_cwl_runner.fsaccess:get_fsaccess"]}},
-  ...
+.. code:: python
+
+  setup(
+    ...
+    entry_points={"cwltest.fsaccess": ["fsaccess=my_cwl_runner.fsaccess:get_fsaccess"]}},
+    ...
   )
-```
 
-In `pyproject.toml` it looks like:
+In *pyproject.toml* it looks like:
 
-```
-[project.entry-points.'cwltest.fsaccess']
-fsaccess = 'my_cwl_runner.fsaccess:get_fsaccess'
+.. code::
 
-```
+  [project.entry-points.'cwltest.fsaccess']
+  fsaccess = 'my_cwl_runner.fsaccess:get_fsaccess'
+
 
 Step 3:
 
 Install your package in the same Python environemnt as the
-installation of `cwltest`. When invoked, `cwltest` will query Python
-package metadata for a package with the `cwltest.fsaccess` entry point
+installation of *cwltest*. When invoked, *cwltest* will query Python
+package metadata for a package with the *cwltest.fsaccess* entry point
 and call it to get back a custom filesystem access object.
