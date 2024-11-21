@@ -676,7 +676,12 @@ def load_optional_fsaccess_plugin() -> None:
     checking test output.
     """
     fsaccess_eps: List[EntryPoint]
-    fsaccess_eps = entry_points().get("cwltest.fsaccess", [])
+
+    try:
+        fsaccess_eps = entry_points()["cwltest.fsaccess"]
+    except KeyError:
+        return
+
     if len(fsaccess_eps) == 0:
         return
 
