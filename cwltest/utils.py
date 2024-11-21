@@ -41,7 +41,7 @@ else:
 
 # available since Python 3.8 (minimum version supports as of this
 # writing) so we don't need to fuss with backports
-from importlib.metadata import entry_points
+from importlib.metadata import entry_points, EntryPoint
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
 
@@ -668,14 +668,14 @@ def absuri(path: str) -> str:
 
 
 def load_optional_fsaccess_plugin() -> None:
-    """Load optional fsaccess plugin.
+    """
+    Load optional fsaccess plugin.
 
     Looks for a package with cwltest.fsaccess entry point and if so,
     use that to get a filesystem access object that will be used for
     checking test output.
-
     """
-
+    fsaccess_eps: List[EntryPoint]
     fsaccess_eps = entry_points().get("cwltest.fsaccess", [])
     if len(fsaccess_eps) == 0:
         return
