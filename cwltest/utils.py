@@ -668,7 +668,10 @@ def absuri(path: str) -> str:
 def load_optional_fsaccess_plugin() -> None:
     from importlib.metadata import entry_points
     fsaccess_eps = entry_points(group='cwltest.fsaccess')
-    try:
-        cwltest.compare.fs_access = fsaccess_eps[0].load()
-    except IndexError:
-        pass
+    if len(fsaccess_eps) == 0:
+        return
+
+    if len(fsaccess_eps) > 1:
+        logger.warn('More than one cwltest.fsaccess entry point found, selected %s', fsaccess_eps[0])
+
+    cwltest.compare.fs_access = fsaccess_eps[0].load()()
