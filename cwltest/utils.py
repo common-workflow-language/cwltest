@@ -19,7 +19,6 @@ from typing import (
     Tuple,
     Union,
     cast,
-    Sequence,
 )
 from urllib.parse import urljoin
 
@@ -680,11 +679,11 @@ def load_optional_fsaccess_plugin() -> None:
 
     try:
         # The interface to importlib.metadata.entry_points() changed
-        # several times between Python 3.8 and 3.13 which makes it
-        # difficult or impossible to have a Mypy annotation that works
-        # for all of them, despite the fact that the actual code works
-        # just fine.
-        fsaccess_eps = entry_points()["cwltest.fsaccess"]  # type: ignore
+        # several times between Python 3.8 and 3.13; the code below
+        # actually works fine on all of them but there's no single
+        # mypy annotation that works across of them.  Explicitly cast
+        # it to a consistent type to make mypy shut up.
+        fsaccess_eps = cast(List[EntryPoint], entry_points()["cwltest.fsaccess"])
     except KeyError:
         return
 
