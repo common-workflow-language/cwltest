@@ -668,7 +668,9 @@ def absuri(path: str) -> str:
 
 
 def load_optional_fsaccess_plugin() -> None:
-    """Look for a package with cwltest.fsaccess entry point and if so,
+    """Load optional fsaccess plugin.
+
+    Looks for a package with cwltest.fsaccess entry point and if so,
     use that to get a filesystem access object that will be used for
     checking test output.
 
