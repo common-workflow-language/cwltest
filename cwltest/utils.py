@@ -683,7 +683,7 @@ def load_optional_fsaccess_plugin() -> None:
         # actually works fine on all of them but there's no single
         # mypy annotation that works across of them.  Explicitly cast
         # it to a consistent type to make mypy shut up.
-        fsaccess_eps = cast(List[EntryPoint], entry_points()["cwltest.fsaccess"])  # type: ignore [redundant-cast]
+        fsaccess_eps = cast(List[EntryPoint], entry_points()["cwltest.fsaccess"])  # type: ignore [redundant-cast, unused-ignore]
     except KeyError:
         return
 
