@@ -19,6 +19,7 @@ from typing import (
     Tuple,
     Union,
     cast,
+    Sequence,
 )
 from urllib.parse import urljoin
 
@@ -678,7 +679,12 @@ def load_optional_fsaccess_plugin() -> None:
     fsaccess_eps: List[EntryPoint]
 
     try:
-        fsaccess_eps = entry_points()["cwltest.fsaccess"]
+        # The interface to importlib.metadata.entry_points() changed
+        # several times between Python 3.8 and 3.13 which makes it
+        # difficult or impossible to have a Mypy annotation that works
+        # for all of them, despite the fact that the actual code works
+        # just fine.
+        fsaccess_eps = entry_points()["cwltest.fsaccess"]  # type: ignore
     except KeyError:
         return
 
