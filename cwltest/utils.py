@@ -36,10 +36,12 @@ from schema_salad.exceptions import ValidationException
 
 if sys.version_info >= (3, 9):
     from importlib.resources import as_file, files
-    from importlib.metadata import entry_points
 else:
     from importlib_resources import as_file, files
-    from importlib_metadata import entry_points
+
+# available since Python 3.8 (minimum version supports as of this
+# writing) so we don't need to fuss with backports
+from importlib.metadata import entry_points
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
 
