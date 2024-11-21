@@ -674,7 +674,7 @@ def load_optional_fsaccess_plugin() -> None:
 
     """
 
-    fsaccess_eps = entry_points().get("cwltest.fsaccess")
+    fsaccess_eps = entry_points().get("cwltest.fsaccess", [])
     if len(fsaccess_eps) == 0:
         return
 
