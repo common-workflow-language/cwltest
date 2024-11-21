@@ -27,6 +27,8 @@ import ruamel.yaml.scanner
 import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
+import cwltest.compare
+import cwltest.stdfsaccess
 from cwltest.compare import CompareFail, compare
 from rdflib import Graph
 from ruamel.yaml.scalarstring import ScalarString
@@ -34,8 +36,10 @@ from schema_salad.exceptions import ValidationException
 
 if sys.version_info >= (3, 9):
     from importlib.resources import as_file, files
+    from importlib.metadata import entry_points
 else:
     from importlib_resources import as_file, files
+    from importlib_metadata import entry_points
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
 
@@ -661,14 +665,10 @@ def absuri(path: str) -> str:
     return "file://" + os.path.abspath(path)
 
 
-def setup_arvados_support() -> None:
+def load_optional_fsaccess_plugin() -> None:
+    from importlib.metadata import entry_points
+    fsaccess_eps = entry_points(group='cwltest.fsaccess')
     try:
-        import arvados.api
-        import cwltest.arvfsaccess
-
-        api_client = arvados.api.api()
-        cwltest.compare.fs_access = cwltest.arvfsaccess.CollectionFsAccess(
-            "", cwltest.arvfsaccess.CollectionCache(api_client, api_client.keep, 3)
-        )
-    except ModuleNotFoundError:
+        cwltest.compare.fs_access = fsaccess_eps[0].load()
+    except IndexError:
         pass

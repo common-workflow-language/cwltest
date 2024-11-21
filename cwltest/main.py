@@ -17,7 +17,7 @@ from cwltest.utils import (
     CWLTestConfig,
     CWLTestReport,
     TestResult,
-    setup_arvados_support,
+    load_optional_fsaccess_plugin
 )
 from schema_salad.exceptions import ValidationException
 
@@ -121,7 +121,7 @@ def main() -> int:
     suite_name, _ = os.path.splitext(os.path.basename(args.test))
     report: Optional[junit_xml.TestSuite] = junit_xml.TestSuite(suite_name, [])
 
-    setup_arvados_support()
+    load_optional_fsaccess_plugin()
 
     ntotal: Dict[str, int] = Counter()
     npassed: Dict[str, List[CWLTestReport]] = defaultdict(list)
