@@ -41,7 +41,6 @@ cwl = "cwltest.plugin"
 
 [project.optional-dependencies]
 pytest-plugin = ["pytest"]
-arvados = ["arvados-python-client"]
 
 [project.scripts]
 cwltest = "cwltest.main:main"
