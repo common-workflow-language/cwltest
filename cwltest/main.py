@@ -17,7 +17,7 @@ from cwltest.utils import (
     CWLTestConfig,
     CWLTestReport,
     TestResult,
-    load_optional_fsaccess_plugin
+    load_optional_fsaccess_plugin,
 )
 from schema_salad.exceptions import ValidationException
 
