@@ -13,7 +13,12 @@ import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
 from cwltest.argparser import arg_parser
-from cwltest.utils import CWLTestConfig, CWLTestReport, TestResult
+from cwltest.utils import (
+    CWLTestConfig,
+    CWLTestReport,
+    TestResult,
+    load_optional_fsaccess_plugin,
+)
 from schema_salad.exceptions import ValidationException
 
 from cwltest import logger, utils
@@ -115,6 +120,8 @@ def main() -> int:
     unsupported = 0
     suite_name, _ = os.path.splitext(os.path.basename(args.test))
     report: Optional[junit_xml.TestSuite] = junit_xml.TestSuite(suite_name, [])
+
+    load_optional_fsaccess_plugin()
 
     ntotal: Dict[str, int] = Counter()
     npassed: Dict[str, List[CWLTestReport]] = defaultdict(list)

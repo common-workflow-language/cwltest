@@ -27,6 +27,8 @@ import ruamel.yaml.scanner
 import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
+import cwltest.compare
+import cwltest.stdfsaccess
 from cwltest.compare import CompareFail, compare
 from rdflib import Graph
 from ruamel.yaml.scalarstring import ScalarString
@@ -36,6 +38,10 @@ if sys.version_info >= (3, 9):
     from importlib.resources import as_file, files
 else:
     from importlib_resources import as_file, files
+
+# available since Python 3.8 (minimum version supports as of this
+# writing) so we don't need to fuss with backports
+from importlib.metadata import entry_points, EntryPoint
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
 
@@ -659,3 +665,35 @@ def absuri(path: str) -> str:
     if "://" in path:
         return path
     return "file://" + os.path.abspath(path)
+
+
+def load_optional_fsaccess_plugin() -> None:
+    """
+    Load optional fsaccess plugin.
+
+    Looks for a package with cwltest.fsaccess entry point and if so,
+    use that to get a filesystem access object that will be used for
+    checking test output.
+    """
+    fsaccess_eps: List[EntryPoint]
+
+    try:
+        # The interface to importlib.metadata.entry_points() changed
+        # several times between Python 3.8 and 3.13; the code below
+        # actually works fine on all of them but there's no single
+        # mypy annotation that works across of them.  Explicitly cast
+        # it to a consistent type to make mypy shut up.
+        fsaccess_eps = cast(List[EntryPoint], entry_points()["cwltest.fsaccess"])  # type: ignore [redundant-cast, unused-ignore]
+    except KeyError:
+        return
+
+    if len(fsaccess_eps) == 0:
+        return
+
+    if len(fsaccess_eps) > 1:
+        logger.warn(
+            "More than one cwltest.fsaccess entry point found, selected %s",
+            fsaccess_eps[0],
+        )
+
+    cwltest.compare.fs_access = fsaccess_eps[0].load()()

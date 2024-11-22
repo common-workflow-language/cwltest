@@ -2,9 +2,10 @@
 
 import hashlib
 import json
-import os.path
-import urllib.parse
 from typing import Any, Callable, Dict, Optional, Set
+import cwltest.stdfsaccess
+
+fs_access = cwltest.stdfsaccess.StdFsAccess("")
 
 
 class CompareFail(Exception):
@@ -130,13 +131,14 @@ def _compare_location(
         actual_comp = "path"
     else:
         actual_comp = "location"
-    path = urllib.parse.urlparse(actual[actual_comp]).path
+
     if actual.get("class") == "Directory":
         actual[actual_comp] = actual[actual_comp].rstrip("/")
-        exist_fun: Callable[[str], bool] = os.path.isdir
+        exist_fun: Callable[[str], bool] = fs_access.isdir
     else:
-        exist_fun = os.path.isfile
-    if not exist_fun(path) and not skip_details:
+        exist_fun = fs_access.isfile
+
+    if not exist_fun(actual[actual_comp]) and not skip_details:
         raise CompareFail.format(
             expected,
             actual,
@@ -160,15 +162,17 @@ def _compare_location(
 
 def _compare_checksum(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
     if "path" in actual:
-        path = urllib.parse.urlparse(actual["path"]).path
+        path = actual["path"]
     else:
-        path = urllib.parse.urlparse(actual["location"]).path
+        path = actual["location"]
     checksum = hashlib.sha1()  # nosec
-    with open(path, "rb") as f:
+
+    with fs_access.open(path, "rb") as f:
         contents = f.read(1024 * 1024)
         while contents != b"":
             checksum.update(contents)
             contents = f.read(1024 * 1024)
+
     actual_checksum_on_disk = f"sha1${checksum.hexdigest()}"
     if "checksum" in actual:
         actual_checksum_declared = actual["checksum"]
@@ -193,10 +197,12 @@ def _compare_checksum(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
 
 def _compare_size(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
     if "path" in actual:
-        path = urllib.parse.urlparse(actual["path"]).path
+        path = actual["path"]
     else:
-        path = urllib.parse.urlparse(actual["location"]).path
-    actual_size_on_disk = os.path.getsize(path)
+        path = actual["location"]
+
+    actual_size_on_disk = fs_access.size(path)
+
     if "size" in actual:
         actual_size_declared = actual["size"]
         if actual_size_on_disk != actual_size_declared:
