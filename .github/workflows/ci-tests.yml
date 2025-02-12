@@ -15,7 +15,7 @@ jobs:
   tox:
     name: CI tests via Tox
 
-    runs-on: ubuntu-20.04  # 22.04 doesn't support Python 3.6
+    runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
