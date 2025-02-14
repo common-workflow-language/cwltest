@@ -399,27 +399,29 @@ def pytest_configure(config: pytest.Config) -> None:
     config.cwl_results = cwl_results  # type: ignore[attr-defined]
 
 
-def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+def pytest_terminal_summary(
+    terminalreporter: Any, exitstatus: pytest.ExitCode, config: pytest.Config
+) -> None:
     """Generate badges."""
     cwl_results = cast(
         List[Tuple[Dict[str, Any], utils.TestResult]],
-        getattr(session.config, "cwl_results", None),
+        getattr(config, "cwl_results", None),
     )
     if not cwl_results:
         return
-    tests, results = (list(item) for item in zip(*cwl_results))
-    (
-        total,
-        passed,
-        failures,
-        unsupported,
-        ntotal,
-        npassed,
-        nfailures,
-        nunsupported,
-        _,
-    ) = utils.parse_results(results, tests)
-    if cwl_badgedir := session.config.getoption("cwl_badgedir"):
+    if cwl_badgedir := config.getoption("cwl_badgedir"):
+        tests, results = (list(item) for item in zip(*cwl_results))
+        (
+            total,
+            passed,
+            failures,
+            unsupported,
+            ntotal,
+            npassed,
+            nfailures,
+            nunsupported,
+            _,
+        ) = utils.parse_results(results, tests)
         utils.generate_badges(cwl_badgedir, ntotal, npassed, nfailures, nunsupported)
 
 
