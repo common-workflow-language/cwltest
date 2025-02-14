@@ -12,6 +12,9 @@ import junit_xml
 import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
+from schema_salad.exceptions import ValidationException
+
+from cwltest import logger, utils
 from cwltest.argparser import arg_parser
 from cwltest.utils import (
     CWLTestConfig,
@@ -19,9 +22,6 @@ from cwltest.utils import (
     TestResult,
     load_optional_fsaccess_plugin,
 )
-from schema_salad.exceptions import ValidationException
-
-from cwltest import logger, utils
 
 if sys.stderr.isatty():
     PREFIX = "\r"

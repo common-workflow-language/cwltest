@@ -23,16 +23,12 @@ from typing import (
 from urllib.parse import urljoin
 
 import pytest
-from cwltest.compare import CompareFail, compare
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, utils
+from cwltest.compare import CompareFail, compare
 
 if TYPE_CHECKING:
-    from _pytest._code.code import ExceptionInfo, TracebackStyle
-    from _pytest.config import Config
-    from _pytest.config import Config as PytestConfig
-    from _pytest.config import PytestPluginManager
-    from _pytest.config.argparsing import Parser as PytestParser
+    from _pytest._code.code import TracebackStyle
     from _pytest.nodes import Node
     from pluggy import HookCaller
 
@@ -47,7 +43,7 @@ class TestRunner(Protocol):
         ...
 
 
-def _get_comma_separated_option(config: "Config", name: str) -> List[str]:
+def _get_comma_separated_option(config: pytest.Config, name: str) -> List[str]:
     options = config.getoption(name)
     if options is None:
         return []
@@ -206,7 +202,7 @@ class CWLItem(pytest.Item):
 
     def repr_failure(
         self,
-        excinfo: "ExceptionInfo[BaseException]",
+        excinfo: pytest.ExceptionInfo[BaseException],
         style: Optional["TracebackStyle"] = None,
     ) -> str:
         """
@@ -369,7 +365,7 @@ __OPTIONS: List[Tuple[str, Dict[str, Any]]] = [
 ]
 
 
-def pytest_addoption(parser: "PytestParser") -> None:
+def pytest_addoption(parser: pytest.Parser) -> None:
     """Add our options to the pytest command line."""
     for entry in __OPTIONS:
         parser.addoption(entry[0], **entry[1])
@@ -397,37 +393,39 @@ def pytest_collect_file(
     return None
 
 
-def pytest_configure(config: "PytestConfig") -> None:
+def pytest_configure(config: pytest.Config) -> None:
     """Store the raw tests and the test results."""
     cwl_results: List[Tuple[Dict[str, Any], utils.TestResult]] = []
     config.cwl_results = cwl_results  # type: ignore[attr-defined]
 
 
-def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+def pytest_terminal_summary(
+    terminalreporter: Any, exitstatus: pytest.ExitCode, config: pytest.Config
+) -> None:
     """Generate badges."""
     cwl_results = cast(
         List[Tuple[Dict[str, Any], utils.TestResult]],
-        getattr(session.config, "cwl_results", None),
+        getattr(config, "cwl_results", None),
     )
     if not cwl_results:
         return
-    tests, results = (list(item) for item in zip(*cwl_results))
-    (
-        total,
-        passed,
-        failures,
-        unsupported,
-        ntotal,
-        npassed,
-        nfailures,
-        nunsupported,
-        _,
-    ) = utils.parse_results(results, tests)
-    if cwl_badgedir := session.config.getoption("cwl_badgedir"):
+    if cwl_badgedir := config.getoption("cwl_badgedir"):
+        tests, results = (list(item) for item in zip(*cwl_results))
+        (
+            total,
+            passed,
+            failures,
+            unsupported,
+            ntotal,
+            npassed,
+            nfailures,
+            nunsupported,
+            _,
+        ) = utils.parse_results(results, tests)
         utils.generate_badges(cwl_badgedir, ntotal, npassed, nfailures, nunsupported)
 
 
-def pytest_addhooks(pluginmanager: "PytestPluginManager") -> None:
+def pytest_addhooks(pluginmanager: pytest.PytestPluginManager) -> None:
     """Register our cwl hooks."""
     from cwltest import hooks
 

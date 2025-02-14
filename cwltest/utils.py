@@ -27,12 +27,13 @@ import ruamel.yaml.scanner
 import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
-import cwltest.compare
-import cwltest.stdfsaccess
-from cwltest.compare import CompareFail, compare
 from rdflib import Graph
 from ruamel.yaml.scalarstring import ScalarString
 from schema_salad.exceptions import ValidationException
+
+import cwltest.compare
+import cwltest.stdfsaccess
+from cwltest.compare import CompareFail, compare
 
 if sys.version_info >= (3, 9):
     from importlib.resources import as_file, files
@@ -41,7 +42,7 @@ else:
 
 # available since Python 3.8 (minimum version supports as of this
 # writing) so we don't need to fuss with backports
-from importlib.metadata import entry_points, EntryPoint
+from importlib.metadata import EntryPoint, entry_points
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
 
@@ -88,7 +89,12 @@ class CWLTestReport:
     """Encapsulate relevant test result data for a markdown report."""
 
     def __init__(
-        self, id: str, category: List[str], entry: str, tool: str, job: Optional[str]
+        self,
+        id: Union[int, str],
+        category: List[str],
+        entry: str,
+        tool: str,
+        job: Optional[str],
     ) -> None:
         """Initialize a CWLTestReport object."""
         self.id = id
@@ -217,10 +223,9 @@ def generate_badges(
 
         with open(f"{badgedir}/{t}.md", "w") as out:
             print(f"# `{t}` tests", file=out)
-
             print("## List of passed tests", file=out)
             for e in npassed[t]:
-                base = f"[{shortname(e.id)}]({e.entry})"
+                base = f"[{shortname(str(e.id))}]({e.entry})"
                 tool = f"[tool]({e.tool})"
                 if e.job:
                     arr = [tool, f"[job]({e.job})"]
@@ -231,7 +236,7 @@ def generate_badges(
 
             print("## List of failed tests", file=out)
             for e in nfailures[t]:
-                base = f"[{shortname(e.id)}]({e.entry})"
+                base = f"[{shortname(str(e.id))}]({e.entry})"
                 tool = f"[tool]({e.tool})"
                 if e.job:
                     arr = [tool, f"[job]({e.job})"]
@@ -242,7 +247,7 @@ def generate_badges(
 
             print("## List of unsupported tests", file=out)
             for e in nunsupported[t]:
-                base = f"[{shortname(e.id)}]({e.entry})"
+                base = f"[{shortname(str(e.id))}]({e.entry})"
                 tool = f"[tool]({e.tool})"
                 if e.job:
                     arr = [tool, f"[job]({e.job})"]
