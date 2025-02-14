@@ -27,12 +27,13 @@ import ruamel.yaml.scanner
 import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
-import cwltest.compare
-import cwltest.stdfsaccess
-from cwltest.compare import CompareFail, compare
 from rdflib import Graph
 from ruamel.yaml.scalarstring import ScalarString
 from schema_salad.exceptions import ValidationException
+
+import cwltest.compare
+import cwltest.stdfsaccess
+from cwltest.compare import CompareFail, compare
 
 if sys.version_info >= (3, 9):
     from importlib.resources import as_file, files
@@ -41,7 +42,7 @@ else:
 
 # available since Python 3.8 (minimum version supports as of this
 # writing) so we don't need to fuss with backports
-from importlib.metadata import entry_points, EntryPoint
+from importlib.metadata import EntryPoint, entry_points
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
 

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 import pytest
+
 from cwltest.compare import CompareFail, _compare_directory, _compare_file, compare
 
 from .util import get_data

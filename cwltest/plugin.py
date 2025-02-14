@@ -23,9 +23,9 @@ from typing import (
 from urllib.parse import urljoin
 
 import pytest
-from cwltest.compare import CompareFail, compare
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, utils
+from cwltest.compare import CompareFail, compare
 
 if TYPE_CHECKING:
     from _pytest._code.code import ExceptionInfo, TracebackStyle
