@@ -86,11 +86,16 @@ def test_badgedir(pytester: pytest.Pytester) -> None:
         get_data("tests/test-data/cwltool-conftest.py"), path.parent / "conftest.py"
     )
     _load_v1_0_dir(path)
-    assert not os.path.exists("cwl-badges")
+    badge_path = path.parent / "cwl-badges"
+    assert not badge_path.exists()
     pytester.runpytest(
-        "-k", "conformance_test_v1.0.cwltest.yml", "--cwl-badgedir", "cwl-badges"
+        "-k", "conformance_test_v1.0.cwltest.yml", "--cwl-badgedir", str(badge_path)
     )
-    assert os.path.exists("cwl-badges")
+    assert badge_path.exists()
+    assert (badge_path / "command_line_tool.json").exists()
+    assert (badge_path / "command_line_tool.md").exists()
+    assert (badge_path / "required.json").exists()
+    assert (badge_path / "required.md").exists()
 
 
 def test_no_label(pytester: pytest.Pytester) -> None:

@@ -69,7 +69,12 @@ class CWLTestReport:
     """Encapsulate relevant test result data for a markdown report."""
 
     def __init__(
-        self, id: str, category: list[str], entry: str, tool: str, job: Optional[str]
+        self,
+        id: Union[int, str],
+        category: list[str],
+        entry: str,
+        tool: str,
+        job: Optional[str],
     ) -> None:
         """Initialize a CWLTestReport object."""
         self.id = id
@@ -199,10 +204,9 @@ def generate_badges(
 
         with open(f"{badgedir}/{t}.md", "w") as out:
             print(f"# `{t}` tests", file=out)
-
             print("## List of passed tests", file=out)
             for e in npassed[t]:
-                base = f"[{shortname(e.id)}]({e.entry})"
+                base = f"[{shortname(str(e.id))}]({e.entry})"
                 tool = f"[tool]({e.tool})"
                 if e.job:
                     arr = [tool, f"[job]({e.job})"]
@@ -213,7 +217,7 @@ def generate_badges(
 
             print("## List of failed tests", file=out)
             for e in nfailures[t]:
-                base = f"[{shortname(e.id)}]({e.entry})"
+                base = f"[{shortname(str(e.id))}]({e.entry})"
                 tool = f"[tool]({e.tool})"
                 if e.job:
                     arr = [tool, f"[job]({e.job})"]
@@ -224,7 +228,7 @@ def generate_badges(
 
             print("## List of unsupported tests", file=out)
             for e in nunsupported[t]:
-                base = f"[{shortname(e.id)}]({e.entry})"
+                base = f"[{shortname(str(e.id))}]({e.entry})"
                 tool = f"[tool]({e.tool})"
                 if e.job:
                     arr = [tool, f"[job]({e.job})"]
