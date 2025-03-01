@@ -88,9 +88,35 @@ def test_badgedir(pytester: pytest.Pytester) -> None:
     _load_v1_0_dir(path)
     badge_path = path.parent / "cwl-badges"
     assert not badge_path.exists()
-    pytester.runpytest(
+    result = pytester.runpytest_inprocess(
         "-k", "conformance_test_v1.0.cwltest.yml", "--cwl-badgedir", str(badge_path)
     )
+    result.assert_outcomes(passed=2)
+    assert badge_path.exists()
+    assert (badge_path / "command_line_tool.json").exists()
+    assert (badge_path / "command_line_tool.md").exists()
+    assert (badge_path / "required.json").exists()
+    assert (badge_path / "required.md").exists()
+
+
+def test_badgedir_xdist(pytester: pytest.Pytester) -> None:
+    """Test the pytest plugin creates the badges directory even with xdist."""
+    path = pytester.copy_example("conformance_test_v1.0.cwltest.yml")
+    shutil.copy(
+        get_data("tests/test-data/cwltool-conftest.py"), path.parent / "conftest.py"
+    )
+    _load_v1_0_dir(path)
+    badge_path = path.parent / "cwl-badges"
+    assert not badge_path.exists()
+    result = pytester.runpytest_inprocess(
+        "-n",
+        "2",
+        "-k",
+        "conformance_test_v1.0.cwltest.yml",
+        "--cwl-badgedir",
+        str(badge_path),
+    )
+    result.assert_outcomes(passed=2)
     assert badge_path.exists()
     assert (badge_path / "command_line_tool.json").exists()
     assert (badge_path / "command_line_tool.md").exists()

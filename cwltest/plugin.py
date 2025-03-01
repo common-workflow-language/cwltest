@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import pickle  # nosec
 import time
 import traceback
 from collections.abc import Iterator
@@ -389,15 +390,59 @@ def pytest_configure(config: pytest.Config) -> None:
     config.cwl_results = cwl_results  # type: ignore[attr-defined]
 
 
-def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+def _zip_results(
+    cwl_results: list[tuple[dict[str, Any], utils.TestResult]],
+) -> tuple[list[dict[str, Any]], list[utils.TestResult]]:
+    tests, results = (list(item) for item in zip(*cwl_results))
+    return tests, results
+
+
+def pytest_sessionfinish(session: pytest.Session) -> None:
     """Generate badges."""
+    cwl_badgedir = session.config.getoption("cwl_badgedir")
+    if not cwl_badgedir:
+        return
+
     cwl_results = cast(
         list[tuple[dict[str, Any], utils.TestResult]],
-        getattr(session.config, "cwl_results", None),
+        session.config.cwl_results,  # type: ignore[attr-defined]
     )
-    if not cwl_results:
-        return
-    tests, results = (list(item) for item in zip(*cwl_results))
+
+    if session.config.pluginmanager.has_plugin("xdist"):
+        import xdist  # type: ignore[import-untyped]
+
+        directory = cast(
+            pytest.TempPathFactory,
+            session.config._tmp_path_factory,  # type: ignore[attr-defined]
+        ).getbasetemp()
+        if xdist.is_xdist_worker(session):
+            if not cwl_results:
+                return
+            pickle_filename = f"cwltest_{xdist.get_xdist_worker_id(session)}.pickle"
+            with (directory.parent / pickle_filename).open("wb") as handle:
+                pickle.dump(
+                    _zip_results(cwl_results), handle, protocol=pickle.HIGHEST_PROTOCOL
+                )
+            return
+
+        if xdist.is_xdist_controller(session):
+            tests: list[dict[str, Any]] = []
+            results: list[utils.TestResult] = []
+            for pickle_filepath in directory.glob("cwltest_*"):
+                with pickle_filepath.open("rb") as handle:
+                    new_tests, new_results = pickle.load(handle)  # nosec
+                tests.extend(new_tests)
+                results.extend(new_results)
+        else:
+            if not cwl_results:
+                return
+            tests, results = _zip_results(cwl_results)
+
+    else:
+        if not cwl_results:
+            return
+        tests, results = _zip_results(cwl_results)
+
     (
         total,
         passed,
@@ -409,8 +454,8 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         nunsupported,
         _,
     ) = utils.parse_results(results, tests)
-    if cwl_badgedir := session.config.getoption("cwl_badgedir"):
-        utils.generate_badges(cwl_badgedir, ntotal, npassed, nfailures, nunsupported)
+
+    utils.generate_badges(cwl_badgedir, ntotal, npassed, nfailures, nunsupported)
 
 
 def pytest_addhooks(pluginmanager: pytest.PytestPluginManager) -> None:
