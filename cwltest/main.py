@@ -165,7 +165,7 @@ def main() -> int:
         for t in tests:
             ts = t.get("tags", [])
             alltags |= set(ts)
-        for tag in alltags:
+        for tag in sorted(alltags):
             print(tag)
         return 0
 
