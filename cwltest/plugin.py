@@ -5,27 +5,16 @@ import json
 import os
 import time
 import traceback
+from collections.abc import Iterator
 from io import StringIO
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Protocol,
-    Set,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Optional, Protocol, Union, cast
 from urllib.parse import urljoin
 
 import pytest
-from cwltest.compare import CompareFail, compare
 
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, utils
+from cwltest.compare import CompareFail, compare
 
 if TYPE_CHECKING:
     from _pytest._code.code import ExceptionInfo, TracebackStyle
@@ -42,12 +31,12 @@ class TestRunner(Protocol):
 
     def __call__(
         self, config: utils.CWLTestConfig, processfile: str, jobfile: Optional[str]
-    ) -> List[Optional[Dict[str, Any]]]:
+    ) -> list[Optional[dict[str, Any]]]:
         """Type signature for pytest_cwl_execute_test hook results."""
         ...
 
 
-def _get_comma_separated_option(config: "Config", name: str) -> List[str]:
+def _get_comma_separated_option(config: "Config", name: str) -> list[str]:
     options = config.getoption(name)
     if options is None:
         return []
@@ -58,7 +47,7 @@ def _get_comma_separated_option(config: "Config", name: str) -> List[str]:
 
 
 def _run_test_hook_or_plain(
-    test: Dict[str, str],
+    test: dict[str, str],
     config: utils.CWLTestConfig,
     hook: "HookCaller",
 ) -> utils.TestResult:
@@ -76,7 +65,7 @@ def _run_test_hook_or_plain(
     hook_out = hook(config=config, processfile=processfile, jobfile=jobfile)
     if not hook_out:
         return utils.run_test_plain(config, test)
-    returncode, out = cast(Tuple[int, Optional[Dict[str, Any]]], hook_out[0])
+    returncode, out = cast(tuple[int, Optional[dict[str, Any]]], hook_out[0])
     duration = time.time() - start_time
     outstr = json.dumps(out) if out is not None else "{}"
     if returncode == UNSUPPORTED_FEATURE:
@@ -164,7 +153,7 @@ class CWLItem(pytest.Item):
         self,
         name: str,
         parent: Optional["Node"],
-        spec: Dict[str, Any],
+        spec: dict[str, Any],
     ) -> None:
         """Initialize this CWLItem."""
         super().__init__(name, parent)
@@ -198,7 +187,7 @@ class CWLItem(pytest.Item):
             hook,
         )
         cwl_results = self.config.cwl_results  # type: ignore[attr-defined]
-        cast(List[Tuple[Dict[str, Any], utils.TestResult]], cwl_results).append(
+        cast(list[tuple[dict[str, Any], utils.TestResult]], cwl_results).append(
             (self.spec, result)
         )
         if result.return_code != 0:
@@ -238,7 +227,7 @@ class CWLItem(pytest.Item):
                 )
             )
 
-    def reportinfo(self) -> Tuple[Union["os.PathLike[str]", str], Optional[int], str]:
+    def reportinfo(self) -> tuple[Union["os.PathLike[str]", str], Optional[int], str]:
         """Status report."""
         return self.path, 0, "cwl test: %s" % self.name
 
@@ -258,10 +247,10 @@ class CWLYamlFile(pytest.File):
 
     def collect(self) -> Iterator[CWLItem]:
         """Load the cwltest file and yield parsed entries."""
-        include: Set[str] = set(_get_comma_separated_option(self.config, "cwl_include"))
-        exclude: Set[str] = set(_get_comma_separated_option(self.config, "cwl_exclude"))
-        tags: Set[str] = set(_get_comma_separated_option(self.config, "cwl_tags"))
-        exclude_tags: Set[str] = set(
+        include: set[str] = set(_get_comma_separated_option(self.config, "cwl_include"))
+        exclude: set[str] = set(_get_comma_separated_option(self.config, "cwl_exclude"))
+        tags: set[str] = set(_get_comma_separated_option(self.config, "cwl_tags"))
+        exclude_tags: set[str] = set(
             _get_comma_separated_option(self.config, "cwl_exclude_tags")
         )
         tests, _ = utils.load_and_validate_tests(str(self.path))
@@ -302,7 +291,7 @@ class CWLYamlFile(pytest.File):
             yield item
 
 
-__OPTIONS: List[Tuple[str, Dict[str, Any]]] = [
+__OPTIONS: list[tuple[str, dict[str, Any]]] = [
     (
         "--cwl-runner",
         {
@@ -400,14 +389,14 @@ def pytest_collect_file(
 
 def pytest_configure(config: "PytestConfig") -> None:
     """Store the raw tests and the test results."""
-    cwl_results: List[Tuple[Dict[str, Any], utils.TestResult]] = []
+    cwl_results: list[tuple[dict[str, Any], utils.TestResult]] = []
     config.cwl_results = cwl_results  # type: ignore[attr-defined]
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     """Generate badges."""
     cwl_results = cast(
-        List[Tuple[Dict[str, Any], utils.TestResult]],
+        list[tuple[dict[str, Any], utils.TestResult]],
         getattr(session.config, "cwl_results", None),
     )
     if not cwl_results:

@@ -22,11 +22,8 @@ jobs:
       matrix:
         # The README.rst file mentions the versions tested, please update it as well
         py-ver-major: [3]
-        py-ver-minor: [8, 9, 10, 11, 12, 13]
+        py-ver-minor: [9, 10, 11, 12, 13]
         step: [lint, unit, mypy, bandit]
-        exclude:
-          - step: mypy
-            py-ver-minor: 8
 
     env:
       py-semver: ${{ format('{0}.{1}', matrix.py-ver-major, matrix.py-ver-minor) }}

@@ -2,7 +2,8 @@
 
 import hashlib
 import json
-from typing import Any, Callable, Dict, Optional, Set
+from typing import Any, Callable, Optional
+
 import cwltest.stdfsaccess
 
 fs_access = cwltest.stdfsaccess.StdFsAccess("")
@@ -26,7 +27,7 @@ class CompareFail(Exception):
 
 
 def _check_keys(
-    keys: Set[str], expected: Dict[str, Any], actual: Dict[str, Any], skip_details: bool
+    keys: set[str], expected: dict[str, Any], actual: dict[str, Any], skip_details: bool
 ) -> None:
     for k in keys:
         try:
@@ -37,7 +38,7 @@ def _check_keys(
             ) from e
 
 
-def _compare_contents(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
+def _compare_contents(expected: dict[str, Any], actual: dict[str, Any]) -> None:
     with open(actual["path"]) as f:
         actual_contents = f.read()
     if (expected_contents := expected["contents"]) != actual_contents:
@@ -52,7 +53,7 @@ def _compare_contents(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
 
 
 def _compare_dict(
-    expected: Dict[str, Any], actual: Dict[str, Any], skip_details: bool
+    expected: dict[str, Any], actual: dict[str, Any], skip_details: bool
 ) -> None:
     for c in expected:
         try:
@@ -68,7 +69,7 @@ def _compare_dict(
 
 
 def _compare_directory(
-    expected: Dict[str, Any], actual: Dict[str, Any], skip_details: bool
+    expected: dict[str, Any], actual: dict[str, Any], skip_details: bool
 ) -> None:
     if actual.get("class") != "Directory":
         raise CompareFail.format(
@@ -97,7 +98,7 @@ def _compare_directory(
 
 
 def _compare_file(
-    expected: Dict[str, Any], actual: Dict[str, Any], skip_details: bool
+    expected: dict[str, Any], actual: dict[str, Any], skip_details: bool
 ) -> None:
     _compare_location(expected, actual, skip_details)
     if "contents" in expected:
@@ -117,7 +118,7 @@ def _compare_file(
 
 
 def _compare_location(
-    expected: Dict[str, Any], actual: Dict[str, Any], skip_details: bool
+    expected: dict[str, Any], actual: dict[str, Any], skip_details: bool
 ) -> None:
     if "path" in expected:
         expected_comp = "path"
@@ -160,7 +161,7 @@ def _compare_location(
         )
 
 
-def _compare_checksum(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
+def _compare_checksum(expected: dict[str, Any], actual: dict[str, Any]) -> None:
     if "path" in actual:
         path = actual["path"]
     else:
@@ -195,7 +196,7 @@ def _compare_checksum(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
             )
 
 
-def _compare_size(expected: Dict[str, Any], actual: Dict[str, Any]) -> None:
+def _compare_size(expected: dict[str, Any], actual: dict[str, Any]) -> None:
     if "path" in actual:
         path = actual["path"]
     else:

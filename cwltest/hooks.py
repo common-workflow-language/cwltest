@@ -1,13 +1,13 @@
 """Hooks for pytest-cwl users."""
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 from cwltest import utils
 
 
 def pytest_cwl_execute_test(  # type: ignore[empty-body]
     config: utils.CWLTestConfig, processfile: str, jobfile: Optional[str]
-) -> Tuple[int, Optional[Dict[str, Any]]]:
+) -> tuple[int, Optional[dict[str, Any]]]:
     """
     Execute CWL test using a Python function instead of a command line runner.
 
