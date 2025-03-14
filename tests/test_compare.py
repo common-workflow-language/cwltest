@@ -1,8 +1,9 @@
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import pytest
+
 from cwltest.compare import CompareFail, _compare_directory, _compare_file, compare
 
 from .util import get_data
@@ -10,7 +11,7 @@ from .util import get_data
 
 def test_compare_any_success() -> None:
     expected = "Any"
-    actual: Dict[str, Any] = {}
+    actual: dict[str, Any] = {}
     compare(expected, actual)
 
 
@@ -385,7 +386,7 @@ def test_compare_file_failure_none() -> None:
         "class": "File",
         "checksum": "sha1$7448d8798a4380162d4b56f9b452e2f6f9e24e7b",
     }
-    actual: Dict[str, Any] = {}
+    actual: dict[str, Any] = {}
     with pytest.raises(CompareFail):
         compare(expected, actual)
 
@@ -554,7 +555,7 @@ def test_compare_list_failure_type() -> None:
             "10",
         ]
     }
-    actual: Dict[str, Any] = {"args": {}}
+    actual: dict[str, Any] = {"args": {}}
     with pytest.raises(CompareFail):
         compare(expected, actual)
 

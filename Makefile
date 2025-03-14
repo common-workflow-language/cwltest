@@ -168,7 +168,7 @@ mypy: $(PYSOURCES)
 	MYPYPATH=$$MYPYPATH:mypy-stubs mypy $^
 
 pyupgrade: $(filter-out schema_salad/metaschema.py,$(PYSOURCES))
-	pyupgrade --exit-zero-even-if-changed --py38-plus $^
+	pyupgrade --exit-zero-even-if-changed --py39-plus $^
 	auto-walrus $^
 
 release-test: FORCE

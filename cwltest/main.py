@@ -6,12 +6,15 @@ import os
 import sys
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, List, Optional, Set, cast
+from typing import Optional, cast
 
 import junit_xml
 import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
+from schema_salad.exceptions import ValidationException
+
+from cwltest import logger, utils
 from cwltest.argparser import arg_parser
 from cwltest.utils import (
     CWLTestConfig,
@@ -19,9 +22,6 @@ from cwltest.utils import (
     TestResult,
     load_optional_fsaccess_plugin,
 )
-from schema_salad.exceptions import ValidationException
-
-from cwltest import logger, utils
 
 if sys.stderr.isatty():
     PREFIX = "\r"
@@ -33,7 +33,7 @@ else:
 
 def _run_test(
     args: argparse.Namespace,
-    test: Dict[str, str],
+    test: dict[str, str],
     test_number: int,
     total_tests: int,
 ) -> TestResult:
@@ -78,8 +78,8 @@ def _run_test(
     return utils.run_test_plain(config, test, test_number)
 
 
-def _expand_number_range(nr: str) -> List[int]:
-    result: List[int] = []
+def _expand_number_range(nr: str) -> list[int]:
+    result: list[int] = []
     for s in nr.split(","):
         sp = s.split("-")
         if len(sp) == 2:
@@ -123,8 +123,8 @@ def main() -> int:
 
     load_optional_fsaccess_plugin()
 
-    ntotal: Dict[str, int] = Counter()
-    npassed: Dict[str, List[CWLTestReport]] = defaultdict(list)
+    ntotal: dict[str, int] = Counter()
+    npassed: dict[str, list[CWLTestReport]] = defaultdict(list)
 
     if args.only_tools:
         alltests = tests
@@ -161,7 +161,7 @@ def main() -> int:
             logger.warning("The `id` field is missing.")
 
     if args.show_tags:
-        alltags: Set[str] = set()
+        alltags: set[str] = set()
         for t in tests:
             ts = t.get("tags", [])
             alltags |= set(ts)

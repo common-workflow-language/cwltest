@@ -8,18 +8,10 @@ import sys
 import tempfile
 import time
 from collections import Counter, defaultdict
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    MutableMapping,
-    MutableSequence,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from collections.abc import Iterable, MutableMapping, MutableSequence
+from importlib.metadata import EntryPoint, entry_points
+from importlib.resources import files
+from typing import Any, Optional, Union, cast
 from urllib.parse import urljoin
 
 import junit_xml
@@ -27,25 +19,14 @@ import ruamel.yaml.scanner
 import schema_salad.avro
 import schema_salad.ref_resolver
 import schema_salad.schema
-import cwltest.compare
-import cwltest.stdfsaccess
-from cwltest.compare import CompareFail, compare
 from rdflib import Graph
 from ruamel.yaml.scalarstring import ScalarString
 from schema_salad.exceptions import ValidationException
 
-if sys.version_info >= (3, 9):
-    from importlib.resources import as_file, files
-else:
-    from importlib_resources import as_file, files
-
-# available since Python 3.8 (minimum version supports as of this
-# writing) so we don't need to fuss with backports
-from importlib.metadata import entry_points, EntryPoint
-
+import cwltest.compare
+import cwltest.stdfsaccess
 from cwltest import REQUIRED, UNSUPPORTED_FEATURE, logger, templock
-
-__all__ = ["files", "as_file"]
+from cwltest.compare import CompareFail, compare
 
 
 class CWLTestConfig:
@@ -61,8 +42,8 @@ class CWLTestConfig:
         outdir: Optional[str] = None,
         classname: Optional[str] = None,
         tool: Optional[str] = None,
-        args: Optional[List[str]] = None,
-        testargs: Optional[List[str]] = None,
+        args: Optional[list[str]] = None,
+        testargs: Optional[list[str]] = None,
         timeout: Optional[int] = None,
         verbose: Optional[bool] = None,
         runner_quiet: Optional[bool] = None,
@@ -77,8 +58,8 @@ class CWLTestConfig:
             self.test_baseuri, os.path.basename(entry) + f"#L{entry_line}"
         )
         self.tool: str = tool or "cwl-runner"
-        self.args: List[str] = args or []
-        self.testargs: List[str] = testargs or []
+        self.args: list[str] = args or []
+        self.testargs: list[str] = testargs or []
         self.timeout: Optional[int] = timeout
         self.verbose: bool = verbose or False
         self.runner_quiet: bool = runner_quiet or True
@@ -88,7 +69,7 @@ class CWLTestReport:
     """Encapsulate relevant test result data for a markdown report."""
 
     def __init__(
-        self, id: str, category: List[str], entry: str, tool: str, job: Optional[str]
+        self, id: str, category: list[str], entry: str, tool: str, job: Optional[str]
     ) -> None:
         """Initialize a CWLTestReport object."""
         self.id = id
@@ -124,7 +105,7 @@ class TestResult:
         self.tool = tool
         self.job = job
 
-    def create_test_case(self, test: Dict[str, Any]) -> junit_xml.TestCase:
+    def create_test_case(self, test: dict[str, Any]) -> junit_xml.TestCase:
         """Create a jUnit XML test case from this test result."""
         doc = test.get("doc", "N/A").strip()
         if test.get("tags"):
@@ -144,7 +125,8 @@ class TestResult:
             case.failure_message = self.message
         return case
 
-    def create_report_entry(self, test: Dict[str, Any]) -> CWLTestReport:
+    def create_report_entry(self, test: dict[str, Any]) -> CWLTestReport:
+        """Package test result into a CWLTestReport."""
         return CWLTestReport(
             test.get("id", "no-id"),
             test.get("tags", ["required"]),
@@ -154,7 +136,7 @@ class TestResult:
         )
 
 
-def _clean_ruamel_list(obj: List[Any]) -> Any:
+def _clean_ruamel_list(obj: list[Any]) -> Any:
     """Entrypoint to transform roundtrip loaded ruamel.yaml to plain objects."""
     new_list = []
     for entry in obj:
@@ -188,10 +170,10 @@ def _clean_ruamel(obj: Any) -> Any:
 
 def generate_badges(
     badgedir: str,
-    ntotal: Dict[str, int],
-    npassed: Dict[str, List[CWLTestReport]],
-    nfailures: Dict[str, List[CWLTestReport]],
-    nunsupported: Dict[str, List[CWLTestReport]],
+    ntotal: dict[str, int],
+    npassed: dict[str, list[CWLTestReport]],
+    nfailures: dict[str, list[CWLTestReport]],
+    nunsupported: dict[str, list[CWLTestReport]],
 ) -> None:
     """Generate badges with conformance levels."""
     os.mkdir(badgedir)
@@ -253,7 +235,7 @@ def generate_badges(
 
 
 def get_test_number_by_key(
-    tests: List[Dict[str, str]], key: str, value: str
+    tests: list[dict[str, str]], key: str, value: str
 ) -> Optional[int]:
     """Retrieve the test index from its name."""
     for i, test in enumerate(tests):
@@ -262,7 +244,7 @@ def get_test_number_by_key(
     return None
 
 
-def load_and_validate_tests(path: str) -> Tuple[Any, Dict[str, Any]]:
+def load_and_validate_tests(path: str) -> tuple[Any, dict[str, Any]]:
     """
     Load and validate the given test file against the cwltest schema.
 
@@ -270,7 +252,7 @@ def load_and_validate_tests(path: str) -> Tuple[Any, Dict[str, Any]]:
     """
     schema_resource = files("cwltest").joinpath("cwltest-schema.yml")
     with schema_resource.open("r", encoding="utf-8") as fp:
-        cache: Optional[Dict[str, Union[str, Graph, bool]]] = {
+        cache: Optional[dict[str, Union[str, Graph, bool]]] = {
             "https://w3id.org/cwl/cwltest/cwltest-schema.yml": fp.read()
         }
     (
@@ -289,25 +271,25 @@ def load_and_validate_tests(path: str) -> Tuple[Any, Dict[str, Any]]:
     tests, metadata = schema_salad.schema.load_and_validate(
         document_loader, avsc_names, path, True
     )
-    tests = cast(List[Dict[str, Any]], _clean_ruamel_list(tests))
+    tests = cast(list[dict[str, Any]], _clean_ruamel_list(tests))
 
     return tests, metadata
 
 
 def parse_results(
     results: Iterable[TestResult],
-    tests: List[Dict[str, Any]],
+    tests: list[dict[str, Any]],
     suite_name: Optional[str] = None,
     report: Optional[junit_xml.TestSuite] = None,
-) -> Tuple[
+) -> tuple[
     int,  # total
     int,  # passed
     int,  # failures
     int,  # unsupported
-    Dict[str, int],  # total for each tag
-    Dict[str, List[CWLTestReport]],  # passed for each tag
-    Dict[str, List[CWLTestReport]],  # failures for each tag
-    Dict[str, List[CWLTestReport]],  # unsupported for each tag
+    dict[str, int],  # total for each tag
+    dict[str, list[CWLTestReport]],  # passed for each tag
+    dict[str, list[CWLTestReport]],  # failures for each tag
+    dict[str, list[CWLTestReport]],  # unsupported for each tag
     Optional[junit_xml.TestSuite],
 ]:
     """
@@ -323,10 +305,10 @@ def parse_results(
     passed = 0
     failures = 0
     unsupported = 0
-    ntotal: Dict[str, int] = Counter()
-    nfailures: Dict[str, List[CWLTestReport]] = defaultdict(list)
-    nunsupported: Dict[str, List[CWLTestReport]] = defaultdict(list)
-    npassed: Dict[str, List[CWLTestReport]] = defaultdict(list)
+    ntotal: dict[str, int] = Counter()
+    nfailures: dict[str, list[CWLTestReport]] = defaultdict(list)
+    nunsupported: dict[str, list[CWLTestReport]] = defaultdict(list)
+    npassed: dict[str, list[CWLTestReport]] = defaultdict(list)
 
     for i, test_result in enumerate(results):
         test_case = test_result.create_test_case(tests[i])
@@ -379,12 +361,12 @@ def parse_results(
 
 def prepare_test_command(
     tool: str,
-    args: List[str],
-    testargs: Optional[List[str]],
-    test: Dict[str, Any],
+    args: list[str],
+    testargs: Optional[list[str]],
+    test: dict[str, Any],
     cwd: str,
     quiet: Optional[bool] = True,
-) -> List[str]:
+) -> list[str]:
     """Turn the test into a command line."""
     test_command = [tool]
     test_command.extend(args)
@@ -419,9 +401,9 @@ def prepare_test_command(
 
 
 def prepare_test_paths(
-    test: Dict[str, str],
+    test: dict[str, str],
     cwd: str,
-) -> Tuple[str, Optional[str]]:
+) -> tuple[str, Optional[str]]:
     """Determine the test path and the tool path."""
     cwd = schema_salad.ref_resolver.file_uri(cwd)
     processfile = test["tool"]
@@ -437,13 +419,13 @@ def prepare_test_paths(
 
 def run_test_plain(
     config: CWLTestConfig,
-    test: Dict[str, str],
+    test: dict[str, str],
     test_number: Optional[int] = None,
 ) -> TestResult:
     """Plain test runner."""
-    out: Dict[str, Any] = {}
+    out: dict[str, Any] = {}
     outstr = outerr = ""
-    test_command: List[str] = []
+    test_command: list[str] = []
     duration = 0.0
     number = "?"
 
@@ -512,12 +494,12 @@ def run_test_plain(
             logger.error(
                 """Test %i failed: %s""",
                 test_number,
-                " ".join([shlex.quote(tc) for tc in test_command]),
+                shlex.join(test_command),
             )
         else:
             logger.error(
                 """Test failed: %s""",
-                " ".join([shlex.quote(tc) for tc in test_command]),
+                shlex.join(test_command),
             )
         logger.error(test.get("doc", "").replace("\n", " ").strip())
         if err.returncode == UNSUPPORTED_FEATURE:
@@ -539,7 +521,7 @@ def run_test_plain(
         logger.error(
             """Test %s failed: %s""",
             number,
-            " ".join([shlex.quote(tc) for tc in test_command]),
+            shlex.join(test_command),
         )
         logger.error(outstr)
         logger.error("Parse error %s", str(err))
@@ -548,14 +530,14 @@ def run_test_plain(
         logger.error(
             """Test %s interrupted: %s""",
             number,
-            " ".join([shlex.quote(tc) for tc in test_command]),
+            shlex.join(test_command),
         )
         raise
     except json.JSONDecodeError:
         logger.error(
             """Test %s failed: %s""",
             number,
-            " ".join([shlex.quote(tc) for tc in test_command]),
+            shlex.join(test_command),
         )
         logger.error(test.get("doc", "").replace("\n", " ").strip())
         invalid_json_msg = "Output is not a valid JSON document: '%s'" % outstr
@@ -575,7 +557,7 @@ def run_test_plain(
         logger.error(
             """Test %s timed out: %s""",
             number,
-            " ".join([shlex.quote(tc) for tc in test_command]),
+            shlex.join(test_command),
         )
         logger.error(test.get("doc", "").replace("\n", " ").strip())
         # Kill and re-communicate to get the logs and reap the child, as
@@ -611,7 +593,7 @@ def run_test_plain(
         logger.warning(
             """Test %s failed: %s""",
             number,
-            " ".join([shlex.quote(tc) for tc in test_command]),
+            shlex.join(test_command),
         )
         logger.warning(test.get("doc", "").replace("\n", " ").strip())
         logger.warning("Returned zero but it should be non-zero")
@@ -632,7 +614,7 @@ def run_test_plain(
         logger.warning(
             """Test %s failed: %s""",
             number,
-            " ".join([shlex.quote(tc) for tc in test_command]),
+            shlex.join(test_command),
         )
         logger.warning(test.get("doc", "").replace("\n", " ").strip())
         logger.warning("Compare failure %s", ex)
@@ -678,15 +660,15 @@ def load_optional_fsaccess_plugin() -> None:
     use that to get a filesystem access object that will be used for
     checking test output.
     """
-    fsaccess_eps: List[EntryPoint]
+    fsaccess_eps: list[EntryPoint]
 
     try:
         # The interface to importlib.metadata.entry_points() changed
-        # several times between Python 3.8 and 3.13; the code below
+        # several times between Python 3.9 and 3.13; the code below
         # actually works fine on all of them but there's no single
         # mypy annotation that works across of them.  Explicitly cast
         # it to a consistent type to make mypy shut up.
-        fsaccess_eps = cast(List[EntryPoint], entry_points()["cwltest.fsaccess"])  # type: ignore [redundant-cast, unused-ignore]
+        fsaccess_eps = cast(list[EntryPoint], entry_points()["cwltest.fsaccess"])  # type: ignore [redundant-cast, unused-ignore]
     except KeyError:
         return
 
