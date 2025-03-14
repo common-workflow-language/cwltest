@@ -313,6 +313,9 @@ def parse_results(
     """
     Parse the results and return statistics and an optional report.
 
+    An additional tag named "all" will be computed, containing all the test
+    results.
+
     Returns the total number of tests, dictionary of test counts
     (total, passed, failed, unsupported) by tag, and a jUnit XML report.
     """
@@ -334,7 +337,7 @@ def parse_results(
             else "cwltest:#{i + 1}"
         )
         total += 1
-        tags = tests[i].get("tags", [])
+        tags = tests[i].get("tags", []) + ["all"]
         for t in tags:
             ntotal[t] += 1
 

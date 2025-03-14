@@ -53,6 +53,15 @@ def test_badgedir(tmp_path: Path) -> None:
         assert obj.get("color", "") == "yellow"
     assert (badgedir / "command_line_tool.md").exists()
 
+    all_tests = badgedir / "all.json"
+    assert all_tests.exists()
+    with open(all_tests) as file:
+        obj = json.load(file)
+        assert obj.get("subject", "") == "all"
+        assert obj.get("status", "") == "0%"
+        assert obj.get("color", "") == "yellow"
+    assert (badgedir / "all.md").exists()
+
 
 def test_badgedir_report_with_baseuri(tmp_path: Path) -> None:
     badgedir = tmp_path / "badgedir"

@@ -107,7 +107,8 @@ def arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--badgedir",
         type=str,
-        help="Create JSON badges and store them in this directory.",
+        help="Create JSON badges, one for each tag (plus a computed 'all' tag) "
+        " and store them in this directory.",
     )
 
     try:
