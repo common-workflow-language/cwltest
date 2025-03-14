@@ -325,7 +325,8 @@ __OPTIONS: List[Tuple[str, Dict[str, Any]]] = [
         "--cwl-badgedir",
         {
             "type": str,
-            "help": "Create badge JSON files and store them in this directory.",
+            "help": "Create badge JSON files, one for each tag (plus a computed "
+            "'all' tag), and store them in this directory.",
         },
     ),
     (
