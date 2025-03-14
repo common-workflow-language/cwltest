@@ -93,3 +93,23 @@ def test_category_in_junit_xml(tmp_path: Path) -> None:
         Element, cast(Element, root.find("testsuite")).find("testcase")
     ).attrib["class"]
     assert category == "js, init_work_dir"
+
+
+def test_list_all_tags() -> None:
+    args = [
+        "--test",
+        schema_salad.ref_resolver.file_uri(
+            get_data("tests/test-data/conformance_test_v1.2.cwltest.yaml")
+        ),
+        "--show-tags",
+    ]
+    error_code, stdout, stderr = run_with_mock_cwl_runner(args)
+    assert error_code == 0, stderr
+    assert (
+        stdout
+        == """command_line_tool
+expression_tool
+inline_javascript
+required
+"""
+    )
