@@ -3,8 +3,6 @@ import re
 from os import linesep as n
 from os import sep as p
 from pathlib import Path
-from typing import cast
-from xml.etree.ElementTree import Element
 
 import defusedxml.ElementTree as ET
 import schema_salad.ref_resolver
@@ -88,10 +86,10 @@ def test_category_in_junit_xml(tmp_path: Path) -> None:
     ]
     run_with_mock_cwl_runner(args)
     tree = ET.parse(junit_xml_report)
-    root = tree.getroot()
-    category = cast(
-        Element, cast(Element, root.find("testsuite")).find("testcase")
-    ).attrib["class"]
+    assert (root := tree.getroot()) is not None
+    assert (testsuite_el := root.find("testsuite")) is not None
+    assert (testcase_el := testsuite_el.find("testcase")) is not None
+    category = testcase_el.attrib["class"]
     assert category == "js, init_work_dir"
 
 
