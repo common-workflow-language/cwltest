@@ -22,7 +22,7 @@ jobs:
       matrix:
         # The README.rst file mentions the versions tested, please update it as well
         py-ver-major: [3]
-        py-ver-minor: [9, 10, 11, 12, 13]
+        py-ver-minor: [9, 10, 11, 12, 13, 14]
         step: [lint, unit, mypy, bandit]
 
     env:
@@ -50,6 +50,9 @@ jobs:
           pip install -U pip setuptools wheel
           pip install "tox>4,<5" "tox-gh-actions>3"
 
+      - name: install dev libraries
+        run: sudo apt-get install -y libxml2-dev libxslt-dev
+
       - name: MyPy cache
         if: ${{ matrix.step == 'mypy' }}
         uses: actions/cache@v4
@@ -70,15 +73,15 @@ jobs:
   tox-style:
     name: CI linters via Tox
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
         step: [lintreadme, pydocstyle]
 
     env:
-      py-semver: "3.12"
-      TOXENV: ${{ format('py312-{0}', matrix.step) }}
+      py-semver: "3.13"
+      TOXENV: ${{ format('py313-{0}', matrix.step) }}
 
     steps:
       - uses: actions/checkout@v5
@@ -110,7 +113,7 @@ jobs:
   release_test:
     name: cwltest release test
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v5
@@ -118,7 +121,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
           cache: pip
           cache-dependency-path: |
             requirements.txt
