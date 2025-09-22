@@ -1,5 +1,5 @@
 diff_cover
-black ~= 25.1
+black ~= 25.9
 pylint
 pep257
 pydocstyle
