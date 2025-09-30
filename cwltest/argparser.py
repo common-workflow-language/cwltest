@@ -110,6 +110,14 @@ def arg_parser() -> argparse.ArgumentParser:
         help="Create JSON badges, one for each tag (plus a computed 'all' tag) "
         " and store them in this directory.",
     )
+    parser.add_argument(
+        "--parse-inputs-only",
+        action="store_true",
+        help="Only run the supplied tool, don't compare the output. Tests "
+        "tagged with 'inputs_should_parse' will also be expected to pass, "
+        "even if marked with 'should_fail: True'. Primirily intended to test "
+        "cwl-inputs-schema-gen.",
+    )
 
     try:
         ver = version("cwltest")
