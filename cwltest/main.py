@@ -74,6 +74,7 @@ def _run_test(
         timeout=args.timeout,
         verbose=args.verbose,
         runner_quiet=not args.junit_verbose,
+        parse_inputs_only=args.parse_inputs_only,
     )
     return utils.run_test_plain(config, test, test_number)
 

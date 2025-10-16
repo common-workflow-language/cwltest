@@ -47,6 +47,7 @@ class CWLTestConfig:
         timeout: Optional[int] = None,
         verbose: Optional[bool] = None,
         runner_quiet: Optional[bool] = None,
+        parse_inputs_only: Optional[bool] = None,
     ) -> None:
         """Initialize test configuration."""
         self.basedir: str = basedir or os.getcwd()
@@ -63,6 +64,7 @@ class CWLTestConfig:
         self.timeout: Optional[int] = timeout
         self.verbose: bool = verbose or False
         self.runner_quiet: bool = runner_quiet or True
+        self.parse_inputs_only: bool = parse_inputs_only or False
 
 
 class CWLTestReport:
@@ -468,7 +470,7 @@ def run_test_plain(
             raise subprocess.CalledProcessError(return_code, " ".join(test_command))
 
         logger.debug('outstr: "%s".', outstr)
-        out = json.loads(outstr) if outstr else {}
+        out = json.loads(outstr) if not config.parse_inputs_only and outstr else {}
     except subprocess.CalledProcessError as err:
         if err.returncode == UNSUPPORTED_FEATURE and REQUIRED not in test.get(
             "tags", ["required"]
@@ -593,7 +595,9 @@ def run_test_plain(
 
     fail_message = ""
 
-    if test.get("should_fail", False):
+    if test.get("should_fail", False) and not (
+        config.parse_inputs_only and "inputs_should_parse" in test.get("tags", [])
+    ):
         logger.warning(
             """Test %s failed: %s""",
             number,
@@ -612,17 +616,18 @@ def run_test_plain(
             joburi,
         )
 
-    try:
-        compare(test.get("output"), out)
-    except CompareFail as ex:
-        logger.warning(
-            """Test %s failed: %s""",
-            number,
-            shlex.join(test_command),
-        )
-        logger.warning(test.get("doc", "").replace("\n", " ").strip())
-        logger.warning("Compare failure %s", ex)
-        fail_message = str(ex)
+    if not config.parse_inputs_only:
+        try:
+            compare(test.get("output"), out)
+        except CompareFail as ex:
+            logger.warning(
+                """Test %s failed: %s""",
+                number,
+                shlex.join(test_command),
+            )
+            logger.warning(test.get("doc", "").replace("\n", " ").strip())
+            logger.warning("Compare failure %s", ex)
+            fail_message = str(ex)
 
     if config.outdir:
         shutil.rmtree(config.outdir, True)
