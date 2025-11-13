@@ -668,7 +668,7 @@ def load_optional_fsaccess_plugin() -> None:
 
     try:
         # The interface to importlib.metadata.entry_points() changed
-        # several times between Python 3.9 and 3.13; the code below
+        # several times between Python 3.10 and 3.13; the code below
         # actually works fine on all of them but there's no single
         # mypy annotation that works across of them.  Explicitly cast
         # it to a consistent type to make mypy shut up.

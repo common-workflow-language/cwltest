@@ -2,8 +2,7 @@
 ignore = E203,W503
 max-line-length = 100
 select = B,C,E,F,W,T4
-extend-ignore = E501,B905
-# when Python 3.10 is the minimum version, re-enable check B905 for zip + strict
+extend-ignore = E501
 extend-select = B9
 per-file-ignores=
     ./tests/test_badgedir.py:B950

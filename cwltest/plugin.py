@@ -393,7 +393,7 @@ def pytest_configure(config: pytest.Config) -> None:
 def _zip_results(
     cwl_results: list[tuple[dict[str, Any], utils.TestResult]],
 ) -> tuple[list[dict[str, Any]], list[utils.TestResult]]:
-    tests, results = (list(item) for item in zip(*cwl_results))
+    tests, results = (list(item) for item in zip(*cwl_results, strict=True))
     return tests, results
 
 
