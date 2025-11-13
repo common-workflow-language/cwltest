@@ -11,7 +11,7 @@ from collections import Counter, defaultdict
 from collections.abc import Iterable, MutableMapping, MutableSequence
 from importlib.metadata import EntryPoint, entry_points
 from importlib.resources import files
-from typing import Any, Optional, Union, cast
+from typing import Any, cast
 from urllib.parse import urljoin
 
 import junit_xml
@@ -36,23 +36,23 @@ class CWLTestConfig:
         self,
         entry: str,
         entry_line: str,
-        basedir: Optional[str] = None,
-        test_baseuri: Optional[str] = None,
-        test_basedir: Optional[str] = None,
-        outdir: Optional[str] = None,
-        classname: Optional[str] = None,
-        tool: Optional[str] = None,
-        args: Optional[list[str]] = None,
-        testargs: Optional[list[str]] = None,
-        timeout: Optional[int] = None,
-        verbose: Optional[bool] = None,
-        runner_quiet: Optional[bool] = None,
+        basedir: str | None = None,
+        test_baseuri: str | None = None,
+        test_basedir: str | None = None,
+        outdir: str | None = None,
+        classname: str | None = None,
+        tool: str | None = None,
+        args: list[str] | None = None,
+        testargs: list[str] | None = None,
+        timeout: int | None = None,
+        verbose: bool | None = None,
+        runner_quiet: bool | None = None,
     ) -> None:
         """Initialize test configuration."""
         self.basedir: str = basedir or os.getcwd()
         self.test_baseuri: str = test_baseuri or "file://" + self.basedir
         self.test_basedir: str = test_basedir or self.basedir
-        self.outdir: Optional[str] = outdir
+        self.outdir: str | None = outdir
         self.classname: str = classname or ""
         self.entry = urljoin(
             self.test_baseuri, os.path.basename(entry) + f"#L{entry_line}"
@@ -60,7 +60,7 @@ class CWLTestConfig:
         self.tool: str = tool or "cwl-runner"
         self.args: list[str] = args or []
         self.testargs: list[str] = testargs or []
-        self.timeout: Optional[int] = timeout
+        self.timeout: int | None = timeout
         self.verbose: bool = verbose or False
         self.runner_quiet: bool = runner_quiet or True
 
@@ -70,11 +70,11 @@ class CWLTestReport:
 
     def __init__(
         self,
-        id: Union[int, str],
+        id: int | str,
         category: list[str],
         entry: str,
         tool: str,
-        job: Optional[str],
+        job: str | None,
     ) -> None:
         """Initialize a CWLTestReport object."""
         self.id = id
@@ -96,7 +96,7 @@ class TestResult:
         classname: str,
         entry: str,
         tool: str,
-        job: Optional[str],
+        job: str | None,
         message: str = "",
     ) -> None:
         """Initialize a TestResult object."""
@@ -240,7 +240,7 @@ def generate_badges(
 
 def get_test_number_by_key(
     tests: list[dict[str, str]], key: str, value: str
-) -> Optional[int]:
+) -> int | None:
     """Retrieve the test index from its name."""
     for i, test in enumerate(tests):
         if key in test and test[key] == value:
@@ -256,7 +256,7 @@ def load_and_validate_tests(path: str) -> tuple[Any, dict[str, Any]]:
     """
     schema_resource = files("cwltest").joinpath("cwltest-schema.yml")
     with schema_resource.open("r", encoding="utf-8") as fp:
-        cache: Optional[dict[str, Union[str, Graph, bool]]] = {
+        cache: dict[str, str | Graph | bool] | None = {
             "https://w3id.org/cwl/cwltest/cwltest-schema.yml": fp.read()
         }
     (
@@ -283,8 +283,8 @@ def load_and_validate_tests(path: str) -> tuple[Any, dict[str, Any]]:
 def parse_results(
     results: Iterable[TestResult],
     tests: list[dict[str, Any]],
-    suite_name: Optional[str] = None,
-    report: Optional[junit_xml.TestSuite] = None,
+    suite_name: str | None = None,
+    report: junit_xml.TestSuite | None = None,
 ) -> tuple[
     int,  # total
     int,  # passed
@@ -294,7 +294,7 @@ def parse_results(
     dict[str, list[CWLTestReport]],  # passed for each tag
     dict[str, list[CWLTestReport]],  # failures for each tag
     dict[str, list[CWLTestReport]],  # unsupported for each tag
-    Optional[junit_xml.TestSuite],
+    junit_xml.TestSuite | None,
 ]:
     """
     Parse the results and return statistics and an optional report.
@@ -366,10 +366,10 @@ def parse_results(
 def prepare_test_command(
     tool: str,
     args: list[str],
-    testargs: Optional[list[str]],
+    testargs: list[str] | None,
     test: dict[str, Any],
     cwd: str,
-    quiet: Optional[bool] = True,
+    quiet: bool | None = True,
 ) -> list[str]:
     """Turn the test into a command line."""
     test_command = [tool]
@@ -407,7 +407,7 @@ def prepare_test_command(
 def prepare_test_paths(
     test: dict[str, str],
     cwd: str,
-) -> tuple[str, Optional[str]]:
+) -> tuple[str, str | None]:
     """Determine the test path and the tool path."""
     cwd = schema_salad.ref_resolver.file_uri(cwd)
     processfile = test["tool"]
@@ -424,7 +424,7 @@ def prepare_test_paths(
 def run_test_plain(
     config: CWLTestConfig,
     test: dict[str, str],
-    test_number: Optional[int] = None,
+    test_number: int | None = None,
 ) -> TestResult:
     """Plain test runner."""
     out: dict[str, Any] = {}
@@ -443,7 +443,7 @@ def run_test_plain(
 
     if test_number is not None:
         number = str(test_number)
-    process: Optional[subprocess.Popen[str]] = None
+    process: subprocess.Popen[str] | None = None
     try:
         cwd = os.getcwd()
         test_command = prepare_test_command(

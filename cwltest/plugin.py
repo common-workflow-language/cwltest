@@ -27,8 +27,8 @@ class TestRunner(Protocol):
     """Protocol to type-check test runner functions via the pluggy hook."""
 
     def __call__(
-        self, config: utils.CWLTestConfig, processfile: str, jobfile: Optional[str]
-    ) -> list[Optional[dict[str, Any]]]:
+        self, config: utils.CWLTestConfig, processfile: str, jobfile: str | None
+    ) -> list[dict[str, Any] | None]:
         """Type signature for pytest_cwl_execute_test hook results."""
         ...
 
@@ -224,7 +224,7 @@ class CWLItem(pytest.Item):
                 )
             )
 
-    def reportinfo(self) -> tuple[Union["os.PathLike[str]", str], Optional[int], str]:
+    def reportinfo(self) -> tuple[Union["os.PathLike[str]", str], int | None, str]:
         """Status report."""
         return self.path, 0, "cwl test: %s" % self.name
 
@@ -372,7 +372,7 @@ def _doc_options() -> argparse.ArgumentParser:
 
 def pytest_collect_file(
     file_path: Path, parent: pytest.Collector
-) -> Optional[pytest.Collector]:
+) -> pytest.Collector | None:
     """Is this file for us."""
     if (
         file_path.suffix == ".yml" or file_path.suffix == ".yaml"

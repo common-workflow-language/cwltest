@@ -22,7 +22,7 @@ jobs:
       matrix:
         # The README.rst file mentions the versions tested, please update it as well
         py-ver-major: [3]
-        py-ver-minor: [9, 10, 11, 12, 13, 14]
+        py-ver-minor: [10, 11, 12, 13, 14]
         step: [lint, unit, mypy, bandit]
 
     env:

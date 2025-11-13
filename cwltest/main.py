@@ -6,7 +6,7 @@ import os
 import sys
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional, cast
+from typing import cast
 
 import junit_xml
 import schema_salad.avro
@@ -119,7 +119,7 @@ def main() -> int:
     failures = 0
     unsupported = 0
     suite_name, _ = os.path.splitext(os.path.basename(args.test))
-    report: Optional[junit_xml.TestSuite] = junit_xml.TestSuite(suite_name, [])
+    report: junit_xml.TestSuite | None = junit_xml.TestSuite(suite_name, [])
 
     load_optional_fsaccess_plugin()
 
