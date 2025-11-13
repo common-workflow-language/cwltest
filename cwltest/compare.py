@@ -2,7 +2,8 @@
 
 import hashlib
 import json
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 import cwltest.stdfsaccess
 
@@ -14,7 +15,7 @@ class CompareFail(Exception):
 
     @classmethod
     def format(
-        cls, expected: Any, actual: Any, cause: Optional[Any] = None
+        cls, expected: Any, actual: Any, cause: Any | None = None
     ) -> "CompareFail":
         """Load the difference details into the error message."""
         message = "expected: {}\ngot: {}".format(
@@ -197,10 +198,7 @@ def _compare_checksum(expected: dict[str, Any], actual: dict[str, Any]) -> None:
 
 
 def _compare_size(expected: dict[str, Any], actual: dict[str, Any]) -> None:
-    if "path" in actual:
-        path = actual["path"]
-    else:
-        path = actual["location"]
+    path = actual.get("path", actual["location"])
 
     actual_size_on_disk = fs_access.size(path)
 
@@ -233,31 +231,32 @@ def compare(expected: Any, actual: Any, skip_details: bool = False) -> None:
         raise CompareFail.format(expected, actual)
 
     try:
-        if isinstance(expected, dict):
-            if not isinstance(actual, dict):
-                raise CompareFail.format(expected, actual)
+        match expected:
+            case dict():
+                if not isinstance(actual, dict):
+                    raise CompareFail.format(expected, actual)
 
-            if expected.get("class") == "File":
-                _compare_file(expected, actual, skip_details)
-            elif expected.get("class") == "Directory":
-                _compare_directory(expected, actual, skip_details)
-            else:
-                _compare_dict(expected, actual, skip_details)
+                match expected.get("class"):
+                    case "File":
+                        _compare_file(expected, actual, skip_details)
+                    case "Directory":
+                        _compare_directory(expected, actual, skip_details)
+                    case _:
+                        _compare_dict(expected, actual, skip_details)
+            case list():
+                if not isinstance(actual, list):
+                    raise CompareFail.format(expected, actual)
 
-        elif isinstance(expected, list):
-            if not isinstance(actual, list):
-                raise CompareFail.format(expected, actual)
-
-            if len(expected) != len(actual):
-                raise CompareFail.format(expected, actual, "lengths don't match")
-            for c in range(0, len(expected)):
-                try:
-                    compare(expected[c], actual[c], skip_details)
-                except CompareFail as e:
-                    raise CompareFail.format(expected, actual, e) from e
-        else:
-            if expected != actual:
-                raise CompareFail.format(expected, actual)
+                if len(expected) != len(actual):
+                    raise CompareFail.format(expected, actual, "lengths don't match")
+                for c in range(0, len(expected)):
+                    try:
+                        compare(expected[c], actual[c], skip_details)
+                    except CompareFail as e:
+                        raise CompareFail.format(expected, actual, e) from e
+            case _:
+                if expected != actual:
+                    raise CompareFail.format(expected, actual)
 
     except Exception as e:
         raise CompareFail(str(e)) from e

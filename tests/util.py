@@ -6,7 +6,6 @@ import subprocess  # nosec
 from contextlib import ExitStack
 from importlib.resources import as_file, files
 from pathlib import Path
-from typing import Optional
 
 
 def get_data(filename: str) -> str:
@@ -28,7 +27,7 @@ def get_data(filename: str) -> str:
 
 
 def run_with_mock_cwl_runner(
-    args: list[str], cwl_runner: Optional[str] = None
+    args: list[str], cwl_runner: str | None = None
 ) -> tuple[int, str, str]:
     """Bind a mock cwlref-runner implementation to cwltest."""
     if cwl_runner is None:
