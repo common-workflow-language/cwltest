@@ -1,5 +1,4 @@
 cwlref-runner
 cwltool
-pytest >= 7, < 9
 pytest-cov
 pytest-xdist
