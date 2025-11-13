@@ -1,5 +1,4 @@
 mypy==1.18.2
-pytest >= 8.3, < 9
 types-setuptools
 types-requests
 types-PyYAML
