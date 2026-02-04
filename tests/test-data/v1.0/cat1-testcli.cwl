@@ -6,7 +6,7 @@
     "hints": [
         {
             "class": "DockerRequirement",
-            "dockerPull": "python:2-slim"
+            "dockerPull": "python:3-slim"
         },
         {
             "class": "ResourceRequirement",
@@ -40,6 +40,6 @@
       }
     ],
     "outputs": [{"id": "args", "type": "string[]"}],
-    "baseCommand": "python",
+    "baseCommand": "python3",
     "arguments": ["cat"]
 }
