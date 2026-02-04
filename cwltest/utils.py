@@ -378,7 +378,7 @@ def prepare_test_command(
     # Add additional arguments given in test case
     if testargs is not None:
         for testarg in testargs:
-            (test_case_name, prefix) = testarg.split("==")
+            test_case_name, prefix = testarg.split("==")
             if test_case_name in test:
                 test_command.extend([prefix, test[test_case_name]])
 
