@@ -1,7 +1,7 @@
 [build-system]
 requires = [
     "setuptools>=61.2",
-    "setuptools_scm>=8.0.4,<10",
+    "setuptools_scm[simple]>=8.0.4,<10",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -66,6 +66,3 @@ include_trailing_comma = "True"
 force_grid_wrap = "0"
 use_parentheses = "True"
 line_length = "88"
-
-[tool.setuptools_scm]
-write_to = "cwltest/_version.py"
