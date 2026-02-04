@@ -46,8 +46,8 @@ cleanup: sort_imports format flake8 diff_pydocstyle_report
 install-dep: install-dependencies
 
 install-dependencies: FORCE
-	pip install --upgrade $(DEVPKGS)
-	pip install -r requirements.txt
+	python3 -m pip install --upgrade $(DEVPKGS)
+	python3 -m pip install -r requirements.txt
 
 ## install-deb-dep        : install most of the dev dependencies via apt-get
 install-deb-dep:
@@ -55,18 +55,18 @@ install-deb-dep:
 
 ## install                : install the cwltest package and cwltest script
 install: FORCE
-	pip install .
+	python3 -m pip install .
 
 ## dev                    : install the cwltest package in dev mode
 dev: install-dep
-	pip install -U pip setuptools wheel
-	pip install -e .
+	python3 -m pip install -U pip setuptools wheel
+	python3 -m pip install -e .
 
 ## dist                   : create a module package for distribution
 dist: dist/${MODULE}-$(VERSION).tar.gz
 
 dist/${MODULE}-$(VERSION).tar.gz: $(SOURCES)
-	python -m build
+	python3 -m build
 
 ## docs                   : make the docs
 docs: FORCE
@@ -123,7 +123,7 @@ diff_pylint_report: pylint_report.txt
 
 .coverage: $(PYSOURCES)
 	COV_CORE_SOURCE=cwltest COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage \
-		python -m pytest --cov --cov-append --cov-report=
+		python3 -m pytest --cov --cov-append --cov-report=
 	# https://pytest-cov.readthedocs.io/en/latest/plugins.html#plugin-coverage
 
 coverage.xml: .coverage
@@ -146,7 +146,7 @@ diff-cover.html: coverage.xml
 
 ## test                   : run the cwltest test suite
 test: $(PYSOURCES)
-	python -m pytest -rs ${PYTEST_EXTRA}
+	python3 -m pytest -rs ${PYTEST_EXTRA}
 
 ## testcov                : run the cwltest test suite and collect coverage
 testcov: $(PYSOURCES)
@@ -179,9 +179,9 @@ release:
 	export SETUPTOOLS_SCM_PRETEND_VERSION=${VERSION} && \
 	./release-test.sh && \
 	. testenv2/bin/activate && \
-		pip install build && \
-		python -m build testenv2/src/${PACKAGE} && \
-		pip install twine && \
+		python3 -m pip install build && \
+		python3 -m build testenv2/src/${PACKAGE} && \
+		python3 -m pip install twine && \
 		twine upload testenv2/src/${PACKAGE}/dist/* && \
 		git tag --no-sign ${VERSION} && git push --tags
 
