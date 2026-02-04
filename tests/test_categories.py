@@ -103,11 +103,8 @@ def test_list_all_tags() -> None:
     ]
     error_code, stdout, stderr = run_with_mock_cwl_runner(args)
     assert error_code == 0, stderr
-    assert (
-        stdout
-        == """command_line_tool
+    assert stdout == """command_line_tool
 expression_tool
 inline_javascript
 required
 """
-    )

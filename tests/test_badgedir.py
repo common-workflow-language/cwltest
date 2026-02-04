@@ -91,8 +91,7 @@ def test_badgedir_report_with_baseuri(tmp_path: Path) -> None:
 
 
 def markdown_report_with(baseuri: str) -> str:
-    return dedent(
-        f"""
+    return dedent(f"""
         # `command_line_tool` tests
         ## List of passed tests
         - [success_w_job]({baseuri}/badgedir.yaml#L0) ([tool]({baseuri}/return-0.cwl), [job]({baseuri}/empty.yml))
@@ -103,5 +102,4 @@ def markdown_report_with(baseuri: str) -> str:
         ## List of unsupported tests
         - [unsupported_w_job]({baseuri}/badgedir.yaml#L26) ([tool]({baseuri}/return-unsupported.cwl), [job]({baseuri}/empty.yml))
         - [unsupported_wo_job]({baseuri}/badgedir.yaml#L33) ([tool]({baseuri}/return-unsupported.cwl))
-        """
-    )[1:]
+        """)[1:]
