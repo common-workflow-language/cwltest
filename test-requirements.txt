@@ -2,3 +2,4 @@ cwlref-runner
 cwltool
 pytest-cov
 pytest-xdist
+defusedxml

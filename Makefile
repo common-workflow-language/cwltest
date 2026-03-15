@@ -26,7 +26,7 @@ PACKAGE=cwltest
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py)
-DEVPKGS=-rdev-requirements.txt -rtest-requirements.txt -rmypy-requirements.txt
+DEVPKGS=-rtest-requirements.txt -rdev-requirements.txt -rmypy-requirements.txt
 DEBDEVPKGS=pep8 python-autopep8 pylint python-coverage pydocstyle sloccount \
 	   python-flake8 python-mock shellcheck
 VERSION=2.6.$(shell TZ=UTC git log --first-parent --max-count=1 \
@@ -47,7 +47,6 @@ install-dep: install-dependencies
 
 install-dependencies: FORCE
 	python3 -m pip install --upgrade $(DEVPKGS)
-	python3 -m pip install -r requirements.txt
 
 ## install-deb-dep        : install most of the dev dependencies via apt-get
 install-deb-dep:
