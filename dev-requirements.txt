@@ -1,11 +1,9 @@
-diff_cover
 black ~= 26.3
 pylint
 pep257
 pydocstyle
 flake8
 tox >4, < 5
-virtualenv-pyenv
 isort
 wheel
 autoflake
