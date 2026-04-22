@@ -1,2 +1,2 @@
-schema-salad >= 5.0.20200220195218, < 9
+schema-salad >= 8.9.20260417192335, < 9
 junit-xml >= 1.8
