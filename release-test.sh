@@ -17,7 +17,7 @@ else
     repo=https://github.com/common-workflow-language/cwltest.git
     HEAD=$(git rev-parse HEAD)
 fi
-run_tests="bin/py.test -p pytester --pyargs ${module}"
+run_tests="python -m pytest -p pytester --pyargs ${module}"
 pipver=23.1  # minimum required version of pip for Python 3.12
 setuptoolsver=67.6.1  # required for Python 3.12
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
@@ -40,12 +40,7 @@ then
 	make test
 	pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
 	pip show cwltest | grep Version | grep -v -q 0.0.0
-	mkdir testenv1/not-${module}
-	# if there is a subdir named '${module}' py.test will execute tests
-	# there instead of the installed module's tests
-	pushd testenv1/not-${module}
-	# shellcheck disable=SC2086
-	../${run_tests}; popd
+	${run_tests}
 fi
 
 python3 -m venv testenv2
@@ -102,10 +97,7 @@ pip show cwltest | grep Version | grep -v -q 0.0.0
 make mypy
 pip uninstall -y ${package} || true; pip uninstall -y ${package} || true; make install
 pip show cwltest | grep Version | grep -v -q 0.0.0
-mkdir ../not-${module}
-pushd ../not-${module}
-# shellcheck disable=SC2086
-../../${run_tests}; popd
+${run_tests}
 popd
 popd
 
@@ -120,8 +112,5 @@ rm -f lib/python-wheels/setuptools* \
 pip install "$(ls ${module}*.whl)${extras}"
 pip show cwltest | grep Version | grep -v -q 0.0.0
 pip install "-r${DIR}/test-requirements.txt"
-mkdir not-${module}
-pushd not-${module}
-# shellcheck disable=SC2086
-../${run_tests}; popd
+${run_tests}
 popd

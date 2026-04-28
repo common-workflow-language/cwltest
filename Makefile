@@ -25,7 +25,7 @@ PACKAGE=cwltest
 
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
-PYSOURCES=$(wildcard ${MODULE}/**.py tests/*.py)
+PYSOURCES=$(wildcard src/${MODULE}/**.py tests/*.py)
 DEVPKGS=-rtest-requirements.txt -rdev-requirements.txt -rmypy-requirements.txt
 DEBDEVPKGS=pep8 python-autopep8 pylint python-coverage pydocstyle sloccount \
 	   python-flake8 python-mock shellcheck
@@ -73,7 +73,7 @@ docs: FORCE
 
 ## clean                  : clean up all temporary / machine-generated files
 clean: FORCE
-	rm -f ${MODILE}/*.pyc tests/*.pyc
+	find src -name '*.pyc' -delete
 	rm -Rf .coverage\.* .coverage
 	rm -f diff-cover.html
 
@@ -121,7 +121,7 @@ diff_pylint_report: pylint_report.txt
 	diff-quality --compare-branch=main --violations=pylint pylint_report.txt
 
 .coverage: $(PYSOURCES)
-	COV_CORE_SOURCE=cwltest COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage \
+	COV_CORE_SOURCE=src/cwltest COV_CORE_CONFIG=.coveragerc COV_CORE_DATAFILE=.coverage \
 		python3 -m pytest --cov --cov-append --cov-report=
 	# https://pytest-cov.readthedocs.io/en/latest/plugins.html#plugin-coverage
 
