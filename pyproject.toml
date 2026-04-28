@@ -33,7 +33,6 @@ content-type = "text/x-rst"
 
 [project.urls]
 Homepage = "https://github.com/common-workflow-language/cwltest"
-Download = "https://github.com/common-workflow-language/cwltest"
 
 [project.entry-points.pytest11]
 cwl = "cwltest.plugin"
@@ -48,7 +47,7 @@ cwltest = "cwltest.main:main"
 test = "pytest"
 
 [tool.setuptools]
-package-dir = {"cwltest.tests" = "tests"}
+package-dir = {"cwltest" = "src/cwltest", "cwltest.tests" = "tests"}
 packages = ["cwltest", "cwltest.tests"]
 zip-safe = true
 include-package-data = true

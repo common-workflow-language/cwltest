@@ -85,7 +85,7 @@ from importlib.metadata import version as metadata_version
 release = metadata_version("cwltest")
 version = ".".join(release.split(".")[:2])
 
-autoapi_dirs = ["../cwltest"]
+autoapi_dirs = ["../src/cwltest"]
 autodoc_typehints = "description"
 autoapi_keep_files = True
 autoapi_ignore = ["*.pyi"]
