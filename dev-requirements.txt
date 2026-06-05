@@ -3,7 +3,7 @@ pylint
 pep257
 pydocstyle
 flake8
-tox >4, < 5
+tox >= 4.55.0, < 5
 isort
 wheel
 autoflake
