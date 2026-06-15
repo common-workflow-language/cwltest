@@ -1,4 +1,4 @@
-black ~= 26.3
+black ~= 26.5
 pylint
 pep257
 pydocstyle
