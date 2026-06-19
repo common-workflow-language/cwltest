@@ -154,3 +154,11 @@ def test_no_hook(pytester: pytest.Pytester) -> None:
     _load_v1_0_dir(path)
     result = pytester.runpytest("-k", "conformance_test_v1.0.cwltest.yml")
     result.assert_outcomes(passed=2)
+
+
+def test_integer_id(pytester: pytest.Pytester) -> None:
+    """Test that the pytest plugin supports integer ids."""
+    path = pytester.copy_example("integer-id.cwltest.yml")
+    _load_v1_0_dir(path)
+    result = pytester.runpytest("-k", "integer-id.cwltest.yml")
+    result.assert_outcomes(passed=1)
