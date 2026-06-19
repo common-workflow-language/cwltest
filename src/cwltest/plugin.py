@@ -257,7 +257,7 @@ class CWLYamlFile(pytest.File):
             if "label" in entry:
                 name = entry["label"]
             elif "id" in entry:
-                name = utils.shortname(entry["id"])
+                name = utils.shortname(str(entry["id"]))
             else:
                 name = entry.get("doc", "")
             item = CWLItem.from_parent(self, name=name, spec=entry)

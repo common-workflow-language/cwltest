@@ -1,0 +1,7 @@
+- output:
+    args: [cat, hello.txt]
+  job: v1.0/cat-job.json
+  tool: v1.0/cat1-testcli.cwl
+  id: 4
+  doc: Test command line with optional input (missing)
+  tags: [ required, command_line_tool ]
