@@ -664,9 +664,7 @@ def load_optional_fsaccess_plugin() -> None:
     use that to get a filesystem access object that will be used for
     checking test output.
     """
-    fsaccess_eps: tuple[EntryPoint] = tuple(
-        entry_points(group="cwltest.fsaccess")
-    )
+    fsaccess_eps: tuple[EntryPoint, ...] = tuple(entry_points(group="cwltest.fsaccess"))
 
     if len(fsaccess_eps) == 0:
         return
