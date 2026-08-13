@@ -53,4 +53,4 @@ def test_load_fsaccess(n: int) -> None:
 
         import cwltest.compare
 
-        assert cwltest.compare.fs_access == sentinel.custom_fs_access
+        assert cwltest.compare.fs_access is sentinel.custom_fs_access
