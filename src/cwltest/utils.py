@@ -670,7 +670,7 @@ def load_optional_fsaccess_plugin() -> None:
         return
 
     if len(fsaccess_eps) > 1:
-        logger.warn(
+        logger.warning(
             "More than one cwltest.fsaccess entry point found, selected %s",
             fsaccess_eps[0],
         )
