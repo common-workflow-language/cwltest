@@ -29,7 +29,7 @@ PYSOURCES=$(wildcard src/${MODULE}/**.py tests/*.py)
 DEVPKGS=-rtest-requirements.txt -rdev-requirements.txt -rmypy-requirements.txt
 DEBDEVPKGS=pep8 python-autopep8 pylint python-coverage pydocstyle sloccount \
 	   python-flake8 python-mock shellcheck
-VERSION=2.6.$(shell TZ=UTC git log --first-parent --max-count=1 \
+VERSION=2.7.$(shell TZ=UTC git log --first-parent --max-count=1 \
 	--format=format:%cd --date=format-local:%Y%m%d%H%M%S)
 
 ## all                    : default task (install in dev mode)
