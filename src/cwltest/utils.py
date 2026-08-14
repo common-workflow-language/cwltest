@@ -664,23 +664,13 @@ def load_optional_fsaccess_plugin() -> None:
     use that to get a filesystem access object that will be used for
     checking test output.
     """
-    fsaccess_eps: list[EntryPoint]
-
-    try:
-        # The interface to importlib.metadata.entry_points() changed
-        # several times between Python 3.10 and 3.13; the code below
-        # actually works fine on all of them but there's no single
-        # mypy annotation that works across of them.  Explicitly cast
-        # it to a consistent type to make mypy shut up.
-        fsaccess_eps = cast(list[EntryPoint], entry_points()["cwltest.fsaccess"])  # type: ignore [redundant-cast, unused-ignore]
-    except KeyError:
-        return
+    fsaccess_eps: tuple[EntryPoint, ...] = tuple(entry_points(group="cwltest.fsaccess"))
 
     if len(fsaccess_eps) == 0:
         return
 
     if len(fsaccess_eps) > 1:
-        logger.warn(
+        logger.warning(
             "More than one cwltest.fsaccess entry point found, selected %s",
             fsaccess_eps[0],
         )
