@@ -114,6 +114,7 @@ def main() -> int:
     try:
         tests, metadata = utils.load_and_validate_tests(args.test)
     except ValidationException:
+        logger.error(f"Failed validating test file: {args.test}", exc_info=args.verbose)
         return 1
 
     failures = 0
