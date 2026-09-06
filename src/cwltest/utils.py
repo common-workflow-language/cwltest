@@ -370,6 +370,7 @@ def prepare_test_command(
     test: dict[str, Any],
     cwd: str,
     quiet: bool | None = True,
+    outdir: str | None = None,
 ) -> list[str]:
     """Turn the test into a command line."""
     test_command = [tool]
@@ -382,18 +383,22 @@ def prepare_test_command(
             if test_case_name in test:
                 test_command.extend([prefix, test[test_case_name]])
 
-    # Add prefixes if running on MacOSX so that boot2docker writes to /Users
-    with templock:
-        if "darwin" in sys.platform and tool.endswith("cwltool"):
-            outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
-            test_command.extend(
-                [
-                    f"--tmp-outdir-prefix={outdir}",
-                    f"--tmpdir-prefix={outdir}",
-                ]
-            )
-        else:
-            outdir = tempfile.mkdtemp()
+    if outdir:
+        os.makedirs(outdir, exist_ok=True)
+        outdir = tempfile.mkdtemp(dir=outdir)
+    else:
+        # Add prefixes if running on MacOSX so that boot2docker writes to /Users
+        with templock:
+            if "darwin" in sys.platform and tool.endswith("cwltool"):
+                outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
+                test_command.extend(
+                    [
+                        f"--tmp-outdir-prefix={outdir}",
+                        f"--tmpdir-prefix={outdir}",
+                    ]
+                )
+            else:
+                outdir = tempfile.mkdtemp()
     test_command.extend([f"--outdir={outdir}"])
     if quiet:
         test_command.extend(["--quiet"])
@@ -447,7 +452,13 @@ def run_test_plain(
     try:
         cwd = os.getcwd()
         test_command = prepare_test_command(
-            config.tool, config.args, config.testargs, test, cwd, config.runner_quiet
+            config.tool,
+            config.args,
+            config.testargs,
+            test,
+            cwd,
+            config.runner_quiet,
+            config.outdir,
         )
         if config.verbose:
             sys.stderr.write(f"Running: {' '.join(test_command)}\n")
