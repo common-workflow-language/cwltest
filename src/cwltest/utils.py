@@ -371,7 +371,7 @@ def prepare_test_command(
     cwd: str,
     quiet: bool | None = True,
     outdir: str | None = None,
-) -> list[str]:
+) -> tuple[list[str], str | None]:
     """Turn the test into a command line."""
     test_command = [tool]
     test_command.extend(args)
@@ -406,7 +406,7 @@ def prepare_test_command(
     test_command.extend([os.path.normcase(processfile)])
     if jobfile:
         test_command.append(os.path.normcase(jobfile))
-    return test_command
+    return test_command, outdir
 
 
 def prepare_test_paths(
@@ -449,9 +449,10 @@ def run_test_plain(
     if test_number is not None:
         number = str(test_number)
     process: subprocess.Popen[str] | None = None
+    test_outdir: str | None = None
     try:
         cwd = os.getcwd()
-        test_command = prepare_test_command(
+        test_command, test_outdir = prepare_test_command(
             config.tool,
             config.args,
             config.testargs,
@@ -635,8 +636,8 @@ def run_test_plain(
         logger.warning("Compare failure %s", ex)
         fail_message = str(ex)
 
-    if config.outdir:
-        shutil.rmtree(config.outdir, True)
+    if config.outdir and test_outdir:
+        shutil.rmtree(test_outdir, True)
 
     return TestResult(
         (1 if fail_message else 0),
