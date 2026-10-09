@@ -110,6 +110,13 @@ def arg_parser() -> argparse.ArgumentParser:
         help="Create JSON badges, one for each tag (plus a computed 'all' tag) "
         " and store them in this directory.",
     )
+    parser.add_argument(
+        "--outdir",
+        type=str,
+        default=None,
+        help="Specify the output directory to use for tests. Defaults to "
+        "the system temporary directory.",
+    )
 
     try:
         ver = version("cwltest")
