@@ -39,3 +39,19 @@ def test_invalid_test_file(verbose: bool, tmp_path: "Path") -> None:
         f"Failed validating test file: {str(tmp_path / 'invalid_file.abc.txt')}",
         exc_info=verbose,
     )
+
+
+def test_outdir() -> None:
+    parser = arg_parser()
+    parsed = parser.parse_args(
+        ["--test", "test_name", "--outdir", "/gpfs/scratch/user/bla/tmp"]
+    )
+
+    assert parsed.outdir == "/gpfs/scratch/user/bla/tmp"
+
+
+def test_outdir_default() -> None:
+    parser = arg_parser()
+    parsed = parser.parse_args(["--test", "test_name"])
+
+    assert parsed.outdir is None
