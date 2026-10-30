@@ -370,7 +370,8 @@ def prepare_test_command(
     test: dict[str, Any],
     cwd: str,
     quiet: bool | None = True,
-) -> list[str]:
+    outdir: str | None = None,
+) -> tuple[list[str], str | None]:
     """Turn the test into a command line."""
     test_command = [tool]
     test_command.extend(args)
@@ -382,18 +383,22 @@ def prepare_test_command(
             if test_case_name in test:
                 test_command.extend([prefix, test[test_case_name]])
 
-    # Add prefixes if running on MacOSX so that boot2docker writes to /Users
-    with templock:
-        if "darwin" in sys.platform and tool.endswith("cwltool"):
-            outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
-            test_command.extend(
-                [
-                    f"--tmp-outdir-prefix={outdir}",
-                    f"--tmpdir-prefix={outdir}",
-                ]
-            )
-        else:
-            outdir = tempfile.mkdtemp()
+    if outdir:
+        os.makedirs(outdir, exist_ok=True)
+        outdir = tempfile.mkdtemp(dir=outdir)
+    else:
+        # Add prefixes if running on MacOSX so that boot2docker writes to /Users
+        with templock:
+            if "darwin" in sys.platform and tool.endswith("cwltool"):
+                outdir = tempfile.mkdtemp(prefix=os.path.abspath(os.path.curdir))
+                test_command.extend(
+                    [
+                        f"--tmp-outdir-prefix={outdir}",
+                        f"--tmpdir-prefix={outdir}",
+                    ]
+                )
+            else:
+                outdir = tempfile.mkdtemp()
     test_command.extend([f"--outdir={outdir}"])
     if quiet:
         test_command.extend(["--quiet"])
@@ -401,7 +406,7 @@ def prepare_test_command(
     test_command.extend([os.path.normcase(processfile)])
     if jobfile:
         test_command.append(os.path.normcase(jobfile))
-    return test_command
+    return test_command, outdir
 
 
 def prepare_test_paths(
@@ -444,10 +449,17 @@ def run_test_plain(
     if test_number is not None:
         number = str(test_number)
     process: subprocess.Popen[str] | None = None
+    test_outdir: str | None = None
     try:
         cwd = os.getcwd()
-        test_command = prepare_test_command(
-            config.tool, config.args, config.testargs, test, cwd, config.runner_quiet
+        test_command, test_outdir = prepare_test_command(
+            config.tool,
+            config.args,
+            config.testargs,
+            test,
+            cwd,
+            config.runner_quiet,
+            config.outdir,
         )
         if config.verbose:
             sys.stderr.write(f"Running: {' '.join(test_command)}\n")
@@ -624,8 +636,8 @@ def run_test_plain(
         logger.warning("Compare failure %s", ex)
         fail_message = str(ex)
 
-    if config.outdir:
-        shutil.rmtree(config.outdir, True)
+    if config.outdir and test_outdir:
+        shutil.rmtree(test_outdir, True)
 
     return TestResult(
         (1 if fail_message else 0),
