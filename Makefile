@@ -26,7 +26,6 @@ PACKAGE=cwltest
 # `SHELL=bash` doesn't work for some, so don't use BASH-isms like
 # `[[` conditional expressions.
 PYSOURCES=$(wildcard src/${MODULE}/**.py tests/*.py)
-DEVPKGS=-rtest-requirements.txt -rdev-requirements.txt -rmypy-requirements.txt
 DEBDEVPKGS=pep8 python-autopep8 pylint python-coverage pydocstyle sloccount \
 	   python-flake8 python-mock shellcheck
 VERSION=2.7.$(shell TZ=UTC git log --first-parent --max-count=1 \
@@ -46,7 +45,8 @@ cleanup: sort_imports format flake8 diff_pydocstyle_report
 install-dep: install-dependencies
 
 install-dependencies: FORCE
-	python3 -m pip install --upgrade $(DEVPKGS)
+	python3 -m pip install -U pip setuptools wheel build
+	python3 -m pip install --upgrade --group dev
 
 ## install-deb-dep        : install most of the dev dependencies via apt-get
 install-deb-dep:
@@ -58,7 +58,6 @@ install: FORCE
 
 ## dev                    : install the cwltest package in dev mode
 dev: install-dep
-	python3 -m pip install -U pip setuptools wheel
 	python3 -m pip install -e .
 
 ## dist                   : create a module package for distribution

@@ -44,6 +44,44 @@ pytest-plugin = ["pytest"]
 [project.scripts]
 cwltest = "cwltest.main:main"
 
+[dependency-groups]
+test = [
+  "cwlref-runner",
+  "cwltool",
+  "pytest-cov",
+  "pytest-xdist",
+  "defusedxml",
+]
+lint = [
+  "flake8-bugbear",
+  "black~=26.1",
+]
+mypy = [
+  "mypy==2.4.0",
+  "types-setuptools",
+  "types-PyYAML",
+  "cwltool",
+]
+dev = [
+  {include-group = "test"},
+  {include-group = "lint"},
+  {include-group = "mypy"},
+  "black ~= 26.10",
+  "pylint",
+  "pep257",
+  "pydocstyle",
+  "flake8",
+  "tox >4, < 5",
+  "isort",
+  "wheel",
+  "autoflake",
+  "flake8-bugbear",
+  "pyupgrade",
+  "bandit",
+  "auto-walrus",
+  "build",
+]
+
 [tool.aliases]
 test = "pytest"
 
