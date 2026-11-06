@@ -1,4 +1,4 @@
-include Makefile requirements.txt tox.ini mypy.ini
+include Makefile tox.ini mypy.ini
 include .flake8 .coveragerc release-test.sh
 include docs/Makefile docs/conf.py docs/requirements.txt docs/_static/favicon.ico docs/*.rst
 include cwltest/*.yml
