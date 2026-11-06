@@ -26,7 +26,11 @@ classifiers = [
     "Typing :: Typed",
 ]
 requires-python = ">=3.10,<3.16"
-dynamic = ["version", "dependencies"]
+dependencies = [
+  "schema-salad >= 5.0.20200220195218, < 9",
+  "junit-xml >= 1.8",
+]
+dynamic = ["version"]
 
 [project.readme]
 file = "README.rst"
@@ -94,9 +98,6 @@ include-package-data = true
 [tool.setuptools.package-data]
 cwltest = ["py.typed"]
 tests = ["test-data/*"]
-
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
 
 [tool.isort]
 multi_line_output = "3"
