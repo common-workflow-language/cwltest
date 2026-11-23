@@ -36,6 +36,8 @@ class CWLTestConfig:
         self,
         entry: str,
         entry_line: str,
+        label: str | None = None,
+        description: str | None = None,
         basedir: str | None = None,
         test_baseuri: str | None = None,
         test_basedir: str | None = None,
@@ -57,6 +59,8 @@ class CWLTestConfig:
         self.entry = urljoin(
             self.test_baseuri, os.path.basename(entry) + f"#L{entry_line}"
         )
+        self.label: str | None = label
+        self.description: str | None = description
         self.tool: str = tool or "cwl-runner"
         self.args: list[str] = args or []
         self.testargs: list[str] = testargs or []

@@ -163,8 +163,10 @@ class CWLItem(pytest.Item):
             basedir=self.config.getoption("cwl_basedir"),
             test_baseuri=self.config.getoption("cwl_basedir"),
             test_basedir=self.config.getoption("cwl_basedir"),
-            entry="tests.yaml",
-            entry_line="0",
+            entry=self.path.stem,
+            entry_line=self.spec.get("line", "0"),
+            label=self.spec.get("label"),
+            description=self.spec.get("doc"),
             outdir=str(
                 self.config._tmp_path_factory.mktemp(  # type: ignore[attr-defined]
                     self.spec.get("label", "unlabled_test")
