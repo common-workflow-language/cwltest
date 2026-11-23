@@ -68,6 +68,8 @@ def _run_test(
         classname=args.classname,
         entry=args.test,
         entry_line=test["line"],
+        label=test.get("label"),
+        description=test.get("doc"),
         tool=args.tool,
         args=args.args,
         testargs=args.testargs,
